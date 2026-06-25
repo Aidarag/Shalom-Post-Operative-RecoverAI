@@ -7,7 +7,15 @@ import {
   Play, 
   CheckCircle, 
   RotateCcw,
-  Volume2
+  Volume2,
+  ClipboardCheck,
+  MessageCircle,
+  HelpCircle,
+  X,
+  Droplets,
+  Car,
+  TrendingUp,
+  Scissors
 } from 'lucide-react';
 import { 
   type Message, 
@@ -217,20 +225,20 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     if (chatMode === 'check-in') {
       if (checkInStep === -1) {
         return [
-          { label: "📋 Start Daily Check-in", action: "check-in" },
-          { label: "❓ How does check-in work?", action: "how-checkin" }
+          { label: "Start Daily Check-in", action: "check-in", icon: <Play size={12} /> },
+          { label: "How does check-in work?", action: "how-checkin", icon: <HelpCircle size={12} /> }
         ];
       } else {
         return [
-          { label: "❌ Reset/Stop Check-in", action: "reset-checkin" }
+          { label: "Reset / Stop Check-in", action: "reset-checkin", icon: <X size={12} /> }
         ];
       }
     } else {
       return [
-        { label: "🚿 Can I take a shower?", action: "shower" },
-        { label: "🚗 When can I drive again?", action: "drive" },
-        { label: "🎈 Is swelling normal?", action: "swelling" },
-        { label: "🩹 How do I clean my incision?", action: "incision" }
+        { label: "Can I take a shower?", action: "shower", icon: <Droplets size={12} /> },
+        { label: "When can I drive again?", action: "drive", icon: <Car size={12} /> },
+        { label: "Is swelling normal?", action: "swelling", icon: <TrendingUp size={12} /> },
+        { label: "How do I clean my incision?", action: "incision", icon: <Scissors size={12} /> }
       ];
     }
   };
@@ -389,7 +397,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       let finalResponseText = "";
       const isEmergency = status === 'Emergency';
       if (isEmergency) {
-        finalResponseText = "🚨 **EMERGENCY WARNING** 🚨\n\nBased on your reported symptoms (such as chest pain or difficulty breathing), please **call 911 or go to the nearest emergency department immediately**. These symptoms require immediate medical attention.";
+        finalResponseText = "** EMERGENCY WARNING **\n\nBased on your reported symptoms (such as chest pain or difficulty breathing), please **call 911 or go to the nearest emergency department immediately**. These symptoms require immediate medical attention.";
       } else if (status === 'Red') {
         finalResponseText = "Thank you for sharing that. I'm sorry you are feeling this way. Based on what you reported, **your symptoms may need review by your healthcare team**. Please contact your healthcare provider's office directly today.";
       } else if (status === 'Yellow') {
@@ -520,7 +528,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         const isEmergency = status === 'Emergency';
         
         if (isEmergency) {
-          finalResponseText = "🚨 **EMERGENCY WARNING** 🚨\n\nBased on your reported symptoms (such as chest pain or difficulty breathing), please **call 911 or go to the nearest emergency department immediately**. These symptoms require immediate medical attention.";
+          finalResponseText = "** EMERGENCY WARNING **\n\nBased on your reported symptoms (such as chest pain or difficulty breathing), please **call 911 or go to the nearest emergency department immediately**. These symptoms require immediate medical attention.";
         } else if (status === 'Red') {
           finalResponseText = "Thank you for sharing that. I'm sorry you are feeling this way. Based on what you reported, **your symptoms may need review by your healthcare team**. Please contact your healthcare provider's office directly today.";
         } else if (status === 'Yellow') {
@@ -566,7 +574,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       setIsTyping(true);
       
       setTimeout(() => {
-        const resp = "🚨 **EMERGENCY WARNING** 🚨\n\nBased on your reported symptoms (such as chest pain or difficulty breathing), please **call 911 or go to the nearest emergency department immediately**. These symptoms require immediate medical attention.";
+        const resp = "** EMERGENCY WARNING **\n\nBased on your reported symptoms (such as chest pain or difficulty breathing), please **call 911 or go to the nearest emergency department immediately**. These symptoms require immediate medical attention.";
         setMessages(prev => [...prev, {
           id: `shalom-resp-${Date.now()}`,
           sender: 'shalom',
@@ -1107,7 +1115,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             transition: 'all 0.2s ease'
           }}
         >
-          <span style={{ fontSize: '14px' }}>📋</span> Check-in Mode
+          <ClipboardCheck size={14} /> Check-in Mode
         </button>
         <button 
           onClick={() => setChatMode('faq')}
@@ -1129,7 +1137,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             transition: 'all 0.2s ease'
           }}
         >
-          <span style={{ fontSize: '14px' }}>💬</span> Chat / Ask Shalom
+          <MessageCircle size={14} /> Chat / Ask Shalom
         </button>
       </div>
 
@@ -1214,7 +1222,9 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 key={idx} 
                 className={`pill-chip ${chip.action === 'emergency' ? 'emergency' : ''}`}
                 onClick={() => handleChipClick(chip.action)}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}
               >
+                {chip.icon}
                 {chip.label}
               </button>
             ))}

@@ -3,7 +3,15 @@ import {
   MessageSquare,
   User,
   Settings,
-  Compass
+  Compass,
+  Hospital,
+  ClipboardList,
+  Pill,
+  Key,
+  Mic2,
+  FlaskConical,
+  CheckCircle2,
+  Phone
 } from 'lucide-react';
 import { ChatInterface } from './components/ChatInterface';
 import { type CheckInAnswers, type CareTeamReport } from './utils/shalomAgent';
@@ -214,7 +222,7 @@ function App() {
           {/* Post-Op / Discharge Details */}
           <div className="glass-panel" style={{ padding: '20px', borderRadius: '18px', display: 'flex', flexDirection: 'column', gap: '14px', background: 'rgba(255, 255, 255, 0.65)', border: '1px solid rgba(255,255,255,0.7)' }}>
             <h3 style={{ fontSize: '15px', fontWeight: '700', color: 'var(--primary-dark)', margin: 0, borderBottom: '1px solid rgba(0,0,0,0.05)', paddingBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              🏥 Surgery & Discharge Details
+              <Hospital size={15} style={{ color: 'var(--primary)' }} /> Surgery &amp; Discharge Details
             </h3>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '13px' }}>
               <div>
@@ -247,7 +255,7 @@ function App() {
           {/* Clinical History */}
           <div className="glass-panel" style={{ padding: '20px', borderRadius: '18px', display: 'flex', flexDirection: 'column', gap: '14px', background: 'rgba(255, 255, 255, 0.65)', border: '1px solid rgba(255,255,255,0.7)' }}>
             <h3 style={{ fontSize: '15px', fontWeight: '700', color: 'var(--primary-dark)', margin: 0, borderBottom: '1px solid rgba(0,0,0,0.05)', paddingBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              📋 Medical History & Vitals
+              <ClipboardList size={15} style={{ color: 'var(--primary)' }} /> Medical History &amp; Vitals
             </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '13px' }}>
               <div>
@@ -282,8 +290,8 @@ function App() {
 
         {/* Discharge Care Plan */}
         <div className="glass-panel" style={{ padding: '24px', borderRadius: '20px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'rgba(255, 255, 255, 0.65)', border: '1px solid rgba(255,255,255,0.7)' }}>
-          <h3 style={{ fontSize: '16px', fontWeight: '700', color: 'var(--primary-dark)', margin: 0, borderBottom: '1px solid rgba(0,0,0,0.05)', paddingBottom: '8px' }}>
-            💊 Discharge Instructions & Recovery Care Plan
+          <h3 style={{ fontSize: '16px', fontWeight: '700', color: 'var(--primary-dark)', margin: 0, borderBottom: '1px solid rgba(0,0,0,0.05)', paddingBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Pill size={16} style={{ color: 'var(--primary)' }} /> Discharge Instructions &amp; Recovery Care Plan
           </h3>
           
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
@@ -318,6 +326,7 @@ function App() {
           </div>
 
           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '12px', background: 'rgba(255,255,255,0.7)', padding: '14px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.03)', fontSize: '13px' }}>
+            <Phone size={13} style={{ color: 'var(--primary)' }} />
             <span style={{ fontWeight: 'bold', color: 'var(--text-main)' }}>Emergency Contact:</span>
             <span>{patient_profile.emergency_contact.name} ({patient_profile.emergency_contact.relationship})</span>
             <span>•</span>
@@ -334,8 +343,8 @@ function App() {
       <div className="settings-container" style={{ display: 'flex', flexDirection: 'column', gap: '24px', maxWidth: '600px', margin: '0 auto', animation: 'fadeIn 0.3s ease-out' }}>
         
         <div>
-          <h2 style={{ fontSize: '20px', fontWeight: '700', color: 'var(--primary-dark)', margin: 0 }}>
-            ⚙️ Shalom Assistant Settings
+          <h2 style={{ fontSize: '20px', fontWeight: '700', color: 'var(--primary-dark)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Settings size={18} style={{ color: 'var(--primary)' }} /> Shalom Assistant Settings
           </h2>
           <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '4px' }}>
             Configure voice synthesis preferences and clinical intelligence modules.
@@ -345,7 +354,7 @@ function App() {
         {/* Voice and Speech Synthesis Card */}
         <div className="glass-panel" style={{ padding: '20px', borderRadius: '18px', background: 'rgba(255, 255, 255, 0.65)', border: '1px solid rgba(255,255,255,0.7)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <h3 style={{ fontSize: '15px', fontWeight: '700', color: 'var(--primary-dark)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-            🗣️ Speech & Audio Controls
+            <Mic2 size={15} style={{ color: 'var(--primary)' }} /> Speech &amp; Audio Controls
           </h3>
 
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(0,0,0,0.04)', paddingBottom: '12px' }}>
@@ -401,8 +410,8 @@ function App() {
 
         {/* Clinical RAG / API Configuration Card */}
         <div className="glass-panel" style={{ padding: '20px', borderRadius: '18px', background: 'rgba(255, 255, 255, 0.65)', border: '1px solid rgba(255,255,255,0.7)', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          <h3 style={{ fontSize: '15px', fontWeight: '700', color: 'var(--primary-dark)', margin: 0 }}>
-            🔑 Clinical Intelligence Engine (Gemini RAG)
+          <h3 style={{ fontSize: '15px', fontWeight: '700', color: 'var(--primary-dark)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Key size={15} style={{ color: 'var(--primary)' }} /> Clinical Intelligence Engine (Gemini RAG)
           </h3>
           <p style={{ fontSize: '12.5px', color: 'var(--text-muted)', margin: 0, lineHeight: '1.4' }}>
             Provide a Google Gemini API key to activate advanced clinical reasoning, permitting natural follow-up conversation grounded strictly on James Carter's profile and FAQ dataset.
@@ -428,7 +437,7 @@ function App() {
             </div>
             {apiKey && (
               <span style={{ fontSize: '11px', color: 'var(--success)', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
-                ✓ API key saved. Advanced grounding is fully active.
+                <CheckCircle2 size={12} /> API key saved. Advanced grounding is fully active.
               </span>
             )}
           </div>
@@ -436,8 +445,8 @@ function App() {
 
         {/* Demo Fast Triggers for Testing */}
         <div className="glass-panel" style={{ padding: '20px', borderRadius: '18px', background: 'rgba(255, 255, 255, 0.65)', border: '1px solid rgba(255,255,255,0.7)', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          <h3 style={{ fontSize: '15px', fontWeight: '700', color: 'var(--primary-dark)', margin: 0 }}>
-            🧪 Quick Triage Scenarios (Demo & Evaluation)
+          <h3 style={{ fontSize: '15px', fontWeight: '700', color: 'var(--primary-dark)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <FlaskConical size={15} style={{ color: 'var(--primary)' }} /> Quick Triage Scenarios (Demo &amp; Evaluation)
           </h3>
           <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: 0 }}>
             Quickly trigger predefined clinical responses to test Shalom's triage categorization (Stable, Yellow Monitor, Red Urgent, Emergency).
