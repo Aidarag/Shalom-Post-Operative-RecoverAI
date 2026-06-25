@@ -1,0 +1,30 @@
+{
+  "patientName": "Arthur",
+  "age": 68,
+  "surgeryType": "Left Total Hip Arthroplasty (Anterior Approach)",
+  "dischargeDate": "June 20, 2026",
+  "allergies": [
+    "Penicillin",
+    "Sulfa drugs"
+  ],
+  "preExistingConditions": [
+    "Hypertension",
+    "Type 2 Diabetes",
+    "Mild Osteoarthritis"
+  ],
+  "activeMedications": [
+    {
+      "name": "Apixaban (Eliquis)",
+      "dose": "2.5mg"
+    },
+    {
+      "name": "Metformin",
+      "dose": "500mg"
+    },
+    {
+      "name": "Lisinopril",
+      "dose": "10mg"
+    }
+  ],
+  "surgeonNotes": "Monitor pain management and incision healing closely. Arthur is highly compliant but has a history of mild DVT, so Eliquis adherence is critical."
+}

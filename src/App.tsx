@@ -4,20 +4,21 @@ import {
   Sparkles, 
   MessageSquare,
   Settings,
-  MoreHorizontal,
-  Paperclip,
-  BrainCircuit,
-  Send,
   Check,
   LineChart,
   Activity,
   ShieldAlert,
-  Compass
+  Compass,
+  Database,
+  Upload,
+  Trash2,
+  AlertTriangle,
+  User
 } from 'lucide-react';
 import { ChatInterface } from './components/ChatInterface';
 import { type CheckInAnswers, type CareTeamReport } from './utils/shalomAgent';
 
-type TabType = 'home' | 'check-in' | 'insights' | 'about';
+type TabType = 'home' | 'check-in' | 'dataset' | 'insights' | 'about';
 
 function App() {
   const [activeTab, setActiveTab] = useState<TabType>('home');
@@ -31,6 +32,10 @@ function App() {
   
   // State to trigger a preset scenario programmatically
   const [presetScenarioTrigger, setPresetScenarioTrigger] = useState<CheckInAnswers | null>(null);
+
+  // Grounding Dataset state
+  const [attachedFile, setAttachedFile] = useState<File | null>(null);
+  const [medicalHistory, setMedicalHistory] = useState<any | null>(null);
 
   // Preset Scenario Data Definitions
   const PRESET_SCENARIOS = {
@@ -102,6 +107,8 @@ function App() {
         return renderHomePage();
       case 'check-in':
         return renderCheckInPage();
+      case 'dataset':
+        return renderDatasetPage();
       case 'insights':
         return renderInsightsSection();
       case 'about':
@@ -138,52 +145,300 @@ function App() {
           <div className="liquid-orb-reflection"></div>
         </div>
 
-        {/* Suggestion Chips - Visually identical to mockup, functionally triggers demo scenarios */}
-        <div className="pill-chips-container">
-          <button className="pill-chip" onClick={() => handleTriggerPreset('green')}>
-            <Check size={13} style={{ color: 'var(--success)' }} /> Stable Progress
+        {/* Action Button Row - Clearly distinguishes landing page from chat page */}
+        <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', marginTop: '20px', marginBottom: '40px' }}>
+          <button className="btn-primary" onClick={() => setActiveTab('check-in')} style={{ padding: '14px 28px', borderRadius: '30px', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <MessageSquare size={16} /> Start Patient Check-In
           </button>
-          <button className="pill-chip" onClick={() => handleTriggerPreset('yellow')}>
-            <Activity size={13} style={{ color: 'var(--warning)' }} /> Monitor Status
-          </button>
-          <button className="pill-chip" onClick={() => handleTriggerPreset('red')}>
-            <FileText size={13} style={{ color: 'var(--emergency)' }} /> Urgent Review
-          </button>
-          <button className="pill-chip" onClick={() => handleTriggerPreset('emergency')}>
-            <ShieldAlert size={13} style={{ color: '#b33939' }} /> Emergency Alert
-          </button>
-          <button className="pill-chip" onClick={handleResetStatus} title="Reset status">
-            <MoreHorizontal size={13} />
+          <button className="btn-secondary" onClick={() => setActiveTab('dataset')} style={{ padding: '14px 28px', borderRadius: '30px', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Upload size={16} /> Upload Patient Dataset
           </button>
         </div>
 
-        {/* Custom Console input box mimic matching the mockup */}
-        <div className="console-container" style={{ cursor: 'pointer' }} onClick={() => setActiveTab('check-in')}>
-          <div className="console-input-row">
-            <span style={{ color: '#a3a3a3', fontSize: '14.5px', textAlign: 'left', flexGrow: 1 }}>
-              Ask me anything...
-            </span>
+        {/* Features Capabilities Grid */}
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+          gap: '20px', 
+          width: '100%', 
+          maxWidth: '900px', 
+          margin: '0 auto 20px auto' 
+        }}>
+          <div className="glass-panel" style={{ padding: '20px', borderRadius: '16px', textAlign: 'left', gap: '8px', border: '1px solid rgba(255,255,255,0.4)', background: 'rgba(255,255,255,0.3)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary)' }}>
+              <MessageSquare size={18} />
+              <strong style={{ fontSize: '14px' }}>Daily Check-Ins</strong>
+            </div>
+            <p style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: '1.4', margin: 0 }}>
+              Guided recovery checks tracking pain, medication, mobility, and symptom progressions.
+            </p>
           </div>
-          <div className="console-actions-row">
-            <div className="console-left-actions">
-              <span className="console-btn"><Paperclip size={13} /> Attach</span>
-              <span className="console-btn"><BrainCircuit size={13} /> Deep Think</span>
+          <div className="glass-panel" style={{ padding: '20px', borderRadius: '16px', textAlign: 'left', gap: '8px', border: '1px solid rgba(255,255,255,0.4)', background: 'rgba(255,255,255,0.3)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent)' }}>
+              <Activity size={18} />
+              <strong style={{ fontSize: '14px' }}>Early Detection</strong>
             </div>
-            <div className="console-right-actions">
-              <span className="console-btn">
-                <Sparkles size={13} style={{ color: '#e170c1' }} /> Voice
-              </span>
-              <button className="console-send-btn">
-                Send <Send size={13} style={{ marginLeft: '4px' }} />
-              </button>
+            <p style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: '1.4', margin: 0 }}>
+              Instantly triage symptoms into Green, Yellow, or Red to prevent clinical complications.
+            </p>
+          </div>
+          <div className="glass-panel" style={{ padding: '20px', borderRadius: '16px', textAlign: 'left', gap: '8px', border: '1px solid rgba(255,255,255,0.4)', background: 'rgba(255,255,255,0.3)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary-dark)' }}>
+              <FileText size={18} />
+              <strong style={{ fontSize: '14px' }}>Clinical Reports</strong>
             </div>
+            <p style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: '1.4', margin: 0 }}>
+              Generate concise, structured case summaries for the caregiver clinical dashboard.
+            </p>
+          </div>
+          <div className="glass-panel" style={{ padding: '20px', borderRadius: '16px', textAlign: 'left', gap: '8px', border: '1px solid rgba(255,255,255,0.4)', background: 'rgba(255,255,255,0.3)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--success)' }}>
+              <Database size={18} />
+              <strong style={{ fontSize: '14px' }}>Dataset Grounding</strong>
+            </div>
+            <p style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: '1.4', margin: 0 }}>
+              Ground the AI assistant's clinical logic in specific patient discharge guidelines.
+            </p>
+          </div>
+        </div>
+
+        {/* Demo Fast Triggers */}
+        <div style={{ marginTop: '10px' }}>
+          <span style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-muted)', display: 'block', marginBottom: '8px' }}>Or click to test preset recovery scenarios directly:</span>
+          <div className="pill-chips-container" style={{ marginBottom: 0 }}>
+            <button className="pill-chip" onClick={() => handleTriggerPreset('green')}>
+              <Check size={13} style={{ color: 'var(--success)' }} /> Stable Progress
+            </button>
+            <button className="pill-chip" onClick={() => handleTriggerPreset('yellow')}>
+              <Activity size={13} style={{ color: 'var(--warning)' }} /> Monitor Status
+            </button>
+            <button className="pill-chip" onClick={() => handleTriggerPreset('red')}>
+              <FileText size={13} style={{ color: 'var(--emergency)' }} /> Urgent Review
+            </button>
+            <button className="pill-chip" onClick={() => handleTriggerPreset('emergency')}>
+              <ShieldAlert size={13} style={{ color: '#b33939' }} /> Emergency Alert
+            </button>
           </div>
         </div>
 
         {/* MVP Description & Safety Notice */}
-        <div style={{ marginTop: '36px', maxWidth: '700px', padding: '16px 20px', background: 'rgba(255, 255, 255, 0.4)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.3)', backdropFilter: 'blur(10px)', fontSize: '12px', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+        <div style={{ marginTop: '24px', maxWidth: '700px', padding: '12px 18px', background: 'rgba(255, 255, 255, 0.4)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.3)', backdropFilter: 'blur(10px)', fontSize: '11px', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '2px' }}>
           <strong>Post-Operative Recovery Assistant MVP Demo</strong>
           <span>This interactive prototype simulates rules-based clinical triage (Green, Yellow, Red) and triggers alerts directly to a nursing care dashboard. Click any scenario button above to auto-run a complete demo.</span>
+        </div>
+      </div>
+    );
+  };
+
+  const renderDatasetPage = () => {
+    const loadDefaultDataset = async () => {
+      try {
+        const response = await fetch('/patient_record.json');
+        if (!response.ok) {
+          throw new Error("Could not fetch file");
+        }
+        const data = await response.json();
+        setMedicalHistory(data);
+        setAttachedFile(new File([JSON.stringify(data, null, 2)], "patient_record.json", { type: "application/json" }));
+      } catch (err) {
+        // Fallback data if public fetching fails
+        const fallbackData = {
+          "patientName": "Arthur",
+          "age": 68,
+          "surgeryType": "Left Total Hip Arthroplasty (Anterior Approach)",
+          "dischargeDate": "June 20, 2026",
+          "allergies": ["Penicillin", "Sulfa drugs"],
+          "preExistingConditions": ["Hypertension", "Type 2 Diabetes", "Mild Osteoarthritis"],
+          "activeMedications": [
+            { "name": "Apixaban (Eliquis)", "dose": "2.5mg" },
+            { "name": "Metformin", "dose": "500mg" },
+            { "name": "Lisinopril", "dose": "10mg" }
+          ],
+          "surgeonNotes": "Monitor pain management and incision healing closely. Arthur is highly compliant but has a history of mild DVT, so Eliquis adherence is critical."
+        };
+        setMedicalHistory(fallbackData);
+        setAttachedFile(new File([JSON.stringify(fallbackData, null, 2)], "patient_record.json", { type: "application/json" }));
+      }
+    };
+
+    const handleCustomFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const json = JSON.parse(event.target?.result as string);
+          setAttachedFile(file);
+          setMedicalHistory(json);
+        } catch (err) {
+          alert("Invalid JSON file format. Please upload a valid patient record dataset JSON.");
+        }
+      };
+      reader.readAsText(file);
+    };
+
+    const handleClearDataset = () => {
+      setAttachedFile(null);
+      setMedicalHistory(null);
+    };
+
+    return (
+      <div className="glass-panel" style={{ maxWidth: '850px', margin: '0 auto', gap: '24px', animation: 'fadeIn 0.3s ease-out' }}>
+        <div style={{ borderBottom: '1px solid rgba(0,0,0,0.05)', paddingBottom: '16px' }}>
+          <h2 style={{ fontSize: '20px', fontWeight: '700', color: 'var(--primary-dark)', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+            <Database size={20} style={{ color: 'var(--primary)' }} /> Patient Record Dataset Grounding
+          </h2>
+          <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: '4px 0 0 0' }}>
+            Upload or select a patient record JSON dataset to ground Shalom's AI assistant in custom guidelines, pre-existing conditions, and discharge instructions.
+          </p>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
+          {/* Upload card */}
+          <div style={{ background: 'white', padding: '24px', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '16px', border: '1px solid rgba(0,0,0,0.03)' }}>
+            <h4 style={{ fontSize: '14.5px', fontWeight: '700', color: 'var(--primary-dark)', margin: 0 }}>Grounding Setup</h4>
+            
+            {attachedFile ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', background: 'var(--success-bg)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(33, 140, 116, 0.15)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <Check size={20} style={{ color: 'var(--success)' }} />
+                  <div>
+                    <strong style={{ display: 'block', fontSize: '13px', color: 'var(--success)' }}>Dataset Grounding Active</strong>
+                    <span style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>File: {attachedFile.name}</span>
+                  </div>
+                </div>
+                <button className="btn-secondary btn-sm" onClick={handleClearDataset} style={{ display: 'flex', alignItems: 'center', gap: '6px', width: 'fit-content', color: 'var(--emergency)', borderColor: 'rgba(179, 57, 57, 0.1)', cursor: 'pointer' }}>
+                  <Trash2 size={13} /> Unload Dataset
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ 
+                  border: '2px dashed rgba(192, 122, 176, 0.3)', 
+                  borderRadius: '12px', 
+                  padding: '30px 20px', 
+                  textAlign: 'center', 
+                  background: 'rgba(255,255,255,0.4)',
+                  cursor: 'pointer',
+                  position: 'relative'
+                }}>
+                  <input 
+                    type="file" 
+                    accept=".json"
+                    onChange={handleCustomFileUpload}
+                    style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', width: '100%', height: '100%' }}
+                  />
+                  <Upload size={32} style={{ color: 'var(--primary)', opacity: 0.7, marginBottom: '8px', margin: '0 auto' }} />
+                  <span style={{ display: 'block', fontSize: '13.5px', fontWeight: '600', color: 'var(--text-main)' }}>Click to browse Patient JSON</span>
+                  <span style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>Supports structured discharge profiles (.json)</span>
+                </div>
+
+                <div style={{ textAlign: 'center', fontSize: '12px', color: 'var(--text-muted)', position: 'relative' }}>
+                  <span style={{ background: '#fff', padding: '0 8px', position: 'relative', zIndex: 1 }}>OR</span>
+                  <div style={{ borderBottom: '1px solid rgba(0,0,0,0.05)', position: 'absolute', top: '50%', left: 0, right: 0, zIndex: 0 }}></div>
+                </div>
+
+                <button className="btn-primary" onClick={loadDefaultDataset} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
+                  <User size={15} /> Load Default Demo Patient (Arthur)
+                </button>
+              </div>
+            )}
+
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: '1.4', background: 'var(--bg-primary)', padding: '12px', borderRadius: '8px', borderLeft: '3px solid var(--primary)' }}>
+              <strong>Why ground the agent?</strong>
+              <p style={{ margin: '4px 0 0 0' }}>By uploading a dataset, Shalom references specific discharge details like the surgery type (e.g. Hip Arthroplasty), pre-existing conditions (e.g. Diabetes), and active medication schedules (e.g. Eliquis) to give precise safety guidelines and verify medication compliance.</p>
+            </div>
+          </div>
+
+          {/* Dataset Preview card */}
+          <div style={{ background: 'white', padding: '24px', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '16px', border: '1px solid rgba(0,0,0,0.03)' }}>
+            <h4 style={{ fontSize: '14.5px', fontWeight: '700', color: 'var(--primary-dark)', margin: 0 }}>Active Patient Profile Preview</h4>
+            
+            {medicalHistory ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '13px' }}>
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center', borderBottom: '1px solid rgba(0,0,0,0.04)', paddingBottom: '12px' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 'bold', fontSize: '16px' }}>
+                    {medicalHistory.patientName?.[0] || 'P'}
+                  </div>
+                  <div>
+                    <h5 style={{ fontSize: '14.5px', fontWeight: '700', color: 'var(--primary-dark)', margin: 0 }}>{medicalHistory.patientName}</h5>
+                    <span style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>Age: {medicalHistory.age} • Discharged: {medicalHistory.dischargeDate}</span>
+                  </div>
+                </div>
+
+                <div>
+                  <span style={{ fontSize: '10.5px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 'bold', display: 'block', marginBottom: '2px' }}>Surgery Procedure</span>
+                  <strong style={{ color: 'var(--text-main)', fontSize: '13px' }}>{medicalHistory.surgeryType}</strong>
+                </div>
+
+                {medicalHistory.allergies && medicalHistory.allergies.length > 0 && (
+                  <div>
+                    <span style={{ fontSize: '10.5px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 'bold', display: 'block', marginBottom: '4px' }}>Allergies</span>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                      {medicalHistory.allergies.map((all: string, idx: number) => (
+                        <span key={idx} style={{ background: 'var(--emergency-bg)', color: 'var(--emergency)', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          <AlertTriangle size={10} /> {all}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {medicalHistory.preExistingConditions && medicalHistory.preExistingConditions.length > 0 && (
+                  <div>
+                    <span style={{ fontSize: '10.5px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 'bold', display: 'block', marginBottom: '4px' }}>Pre-existing Conditions</span>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                      {medicalHistory.preExistingConditions.map((cond: string, idx: number) => (
+                        <span key={idx} style={{ background: 'rgba(0,0,0,0.03)', color: 'var(--text-main)', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', border: '1px solid rgba(0,0,0,0.04)' }}>
+                          {cond}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {medicalHistory.activeMedications && medicalHistory.activeMedications.length > 0 && (
+                  <div>
+                    <span style={{ fontSize: '10.5px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 'bold', display: 'block', marginBottom: '4px' }}>Active Discharge Medications</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      {medicalHistory.activeMedications.map((med: any, idx: number) => (
+                        <div key={idx} style={{ background: 'rgba(94, 158, 203, 0.05)', border: '1px solid rgba(94, 158, 203, 0.1)', padding: '6px 12px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <strong style={{ color: 'var(--primary-dark)', fontSize: '12px' }}>{med.name}</strong>
+                          <span style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.05)', padding: '1px 6px', borderRadius: '4px', fontSize: '11px', color: 'var(--text-muted)' }}>{med.dose}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {medicalHistory.surgeonNotes && (
+                  <div style={{ borderTop: '1px solid rgba(0,0,0,0.04)', paddingTop: '10px' }}>
+                    <span style={{ fontSize: '10.5px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 'bold', display: 'block', marginBottom: '4px' }}>Surgeon Recovery Notes</span>
+                    <p style={{ margin: 0, fontStyle: 'italic', color: '#525c6c', lineHeight: '1.4', background: 'rgba(0,0,0,0.02)', padding: '10px', borderRadius: '8px', borderLeft: '3px solid var(--accent)' }}>
+                      "{medicalHistory.surgeonNotes}"
+                    </p>
+                  </div>
+                )}
+
+                <button 
+                  className="btn-primary" 
+                  onClick={() => setActiveTab('check-in')}
+                  style={{ width: '100%', marginTop: '8px', display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'center' }}
+                >
+                  <MessageSquare size={14} /> Start Grounded Chat Check-In
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: '260px', border: '1px dashed rgba(0,0,0,0.08)', borderRadius: '12px', padding: '20px', textAlign: 'center' }}>
+                <Database size={32} style={{ color: 'var(--text-muted)', opacity: 0.3, marginBottom: '12px' }} />
+                <h5 style={{ fontSize: '14px', fontWeight: 'bold', color: 'var(--text-muted)', margin: 0 }}>No Patient Record Active</h5>
+                <p style={{ fontSize: '12px', color: 'var(--text-muted)', maxWidth: '240px', marginTop: '6px', margin: '6px auto 0 auto' }}>
+                  Load a patient record dataset to visualize clinical grounding metrics. Shalom will fall back to baseline post-op guidelines if none is provided.
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -199,6 +454,10 @@ function App() {
           presetScenarioTrigger={presetScenarioTrigger}
           clearPresetScenarioTrigger={() => setPresetScenarioTrigger(null)}
           onResetStatus={handleResetStatus}
+          attachedFile={attachedFile}
+          setAttachedFile={setAttachedFile}
+          medicalHistory={medicalHistory}
+          setMedicalHistory={setMedicalHistory}
         />
         
         {checkInComplete && riskStatus && (
@@ -461,6 +720,15 @@ function App() {
               title="Patient Check-In"
             >
               <MessageSquare size={18} />
+            </button>
+          </li>
+          <li>
+            <button 
+              className={`nav-btn ${activeTab === 'dataset' ? 'active' : ''}`}
+              onClick={() => setActiveTab('dataset')}
+              title="Dataset Grounding"
+            >
+              <Database size={18} />
             </button>
           </li>
           <li>

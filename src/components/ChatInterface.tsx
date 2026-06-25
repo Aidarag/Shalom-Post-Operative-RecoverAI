@@ -39,6 +39,10 @@ interface ChatInterfaceProps {
   presetScenarioTrigger: CheckInAnswers | null;
   clearPresetScenarioTrigger: () => void;
   onResetStatus: () => void;
+  attachedFile: File | null;
+  setAttachedFile: (file: File | null) => void;
+  medicalHistory: any | null;
+  setMedicalHistory: (history: any | null) => void;
 }
 
 export const ChatInterface: React.FC<ChatInterfaceProps> = ({ 
@@ -47,7 +51,11 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   onCheckInComplete,
   presetScenarioTrigger,
   clearPresetScenarioTrigger,
-  onResetStatus
+  onResetStatus,
+  attachedFile,
+  setAttachedFile,
+  medicalHistory,
+  setMedicalHistory
 }) => {
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -62,8 +70,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const [showSettings, setShowSettings] = useState(false);
   const [tempKey, setTempKey] = useState(apiKey);
 
-  const [attachedFile, setAttachedFile] = useState<File | null>(null);
-  const [medicalHistory, setMedicalHistory] = useState<any | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleAttachClick = () => {
@@ -96,12 +102,19 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       const updateVoices = () => {
         const allVoices = window.speechSynthesis.getVoices();
-        setVoices(allVoices);
-        if (allVoices.length > 0) {
+        
+        // Limit to max 5 voices: 3 English, 1 French, 1 Spanish
+        const englishVoices = allVoices.filter(v => v.lang.toLowerCase().startsWith('en')).slice(0, 3);
+        const frenchVoices = allVoices.filter(v => v.lang.toLowerCase().startsWith('fr')).slice(0, 1);
+        const spanishVoices = allVoices.filter(v => v.lang.toLowerCase().startsWith('es')).slice(0, 1);
+        const filteredVoices = [...englishVoices, ...frenchVoices, ...spanishVoices];
+        
+        setVoices(filteredVoices);
+        if (filteredVoices.length > 0) {
           // Select French voice if user prompt was French, then English, then first available
-          const preferredFrench = allVoices.find(v => v.lang.toLowerCase().startsWith('fr'));
-          const preferredEnglish = allVoices.find(v => v.lang.toLowerCase().startsWith('en'));
-          const defaultVoice = preferredFrench || preferredEnglish || allVoices[0];
+          const preferredFrench = filteredVoices.find(v => v.lang.toLowerCase().startsWith('fr'));
+          const preferredEnglish = filteredVoices.find(v => v.lang.toLowerCase().startsWith('en'));
+          const defaultVoice = preferredFrench || preferredEnglish || filteredVoices[0];
           setSelectedVoiceName(prev => prev || defaultVoice.name);
         }
       };
