@@ -5,26 +5,29 @@ import {
   Pill, 
   FileSpreadsheet, 
   FileText, 
-  CheckCircle,
-  Info,
   Activity,
-  TrendingUp
+  TrendingUp,
+  HelpCircle,
+  Users
 } from 'lucide-react';
 import { ChatInterface } from './components/ChatInterface';
 import { MedTracker } from './components/MedTracker';
 import { VisitPrep } from './components/VisitPrep';
 import { DischargeDecoder } from './components/DischargeDecoder';
-import { ClinicalSummary } from './components/ClinicalSummary';
-import { MOCK_RECOVERY_HISTORY, type RecoveryLog } from './utils/mockData';
+import { NurseDashboard } from './components/NurseDashboard';
+import { MOCK_PATIENTS_SEEDED, type Patient, type RecoveryLog } from './utils/mockData';
 
-type TabType = 'overview' | 'chat' | 'meds' | 'visit' | 'decode' | 'support';
+type TabType = 'home' | 'patient-portal' | 'nurse-dashboard' | 'about';
+type PatientSubTab = 'check-in' | 'meds' | 'visit' | 'decode';
 
 function App() {
-  const [activeTab, setActiveTab] = useState<TabType>('overview');
+  const [activeTab, setActiveTab] = useState<TabType>('home');
+  const [patientSubTab, setPatientSubTab] = useState<PatientSubTab>('check-in');
   const [apiKey, setApiKey] = useState<string>('');
   
-  // Manage patient recovery history in central App state to sync across tabs
-  const [recoveryHistory, setRecoveryHistory] = useState<RecoveryLog[]>(MOCK_RECOVERY_HISTORY);
+  // Centralized state of active patients in the system
+  const [patients, setPatients] = useState<Patient[]>(MOCK_PATIENTS_SEEDED);
+
 
   const handleCheckInComplete = (answers: {
     painLevel: number;
@@ -32,240 +35,289 @@ function App() {
     medsAdherence: number;
     mobility: 'None' | 'Limited' | 'Moderate' | 'Good';
     sleepQuality: 'Poor' | 'Fair' | 'Good';
-    woundAppearance: 'Normal' | 'Mild Redness' | 'Redness & Swelling' | 'Drainage' | 'Infected';
+    woundAppearance: 'Normal' | 'Mild Redness' | 'Redness & Swelling' | 'Drainage' | 'Infected' | 'Getting Worse';
     notes: string;
+    riskLevel: 'Green' | 'Yellow' | 'Red';
   }) => {
-    setRecoveryHistory(prev => {
-      const nextDay = prev.length + 1;
+    // Find Arthur and add Day 6 to his history
+    setPatients(prev => prev.map(patient => {
+      if (patient.id !== 'pat-2') return patient; // Simulate updating Arthur's logs in this demo
+
+      const nextDay = patient.postOpDay + 1;
       const dateStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
       
-      // Prevent duplicate logging for the same day if re-run
-      if (prev.some(log => log.day === nextDay)) {
-        return prev;
+      // Check if Day 6 is already logged to avoid double entries
+      if (patient.history.some(log => log.day === nextDay)) {
+        return patient;
       }
-      
+
       const newLog: RecoveryLog = {
         day: nextDay,
         date: dateStr,
         painLevel: answers.painLevel,
         temperature: answers.temperature,
-        mobility: answers.mobility,
-        sleepQuality: answers.sleepQuality,
-        woundAppearance: answers.woundAppearance,
         medsAdherence: answers.medsAdherence,
+        woundAppearance: answers.woundAppearance,
+        mobility: answers.mobility,
         notes: answers.notes
       };
+
+      const newHistory = [...patient.history, newLog];
       
-      return [...prev, newLog];
-    });
+      const symptomsList: string[] = [];
+      if (answers.painLevel >= 8) symptomsList.push('Severe Pain');
+      if (answers.temperature >= 100.4) symptomsList.push('Fever');
+      if (answers.woundAppearance !== 'Normal') symptomsList.push(answers.woundAppearance);
+      if (answers.medsAdherence === 0) symptomsList.push('Missed Medications');
+
+      let actionText = "Routine daily checks. Continue light walking and resting.";
+      if (answers.riskLevel === 'Red') {
+        actionText = "Clinical review recommended today. Direct contact with orthopedic nurse advised.";
+      } else if (answers.riskLevel === 'Yellow') {
+        actionText = "Monitor symptoms over next 24 hours. Reinforce medication compliance.";
+      }
+
+      return {
+        ...patient,
+        postOpDay: nextDay,
+        painLevel: answers.painLevel,
+        symptoms: symptomsList,
+        medicationStatus: answers.medsAdherence === 100 ? 'Taken' : 'Missed',
+        riskLevel: answers.riskLevel,
+        aiSummary: `Patient Arthur is recovering on Day ${nextDay} post-hip surgery. Pain is logged at ${answers.painLevel}/10, temp is ${answers.temperature}°F. Incision site status: ${answers.woundAppearance}. Notes: ${answers.notes}`,
+        recommendedAction: actionText,
+        history: newHistory
+      };
+    }));
+
+    // Trigger tab navigation to nurse dashboard to review the updated stats
+    setTimeout(() => {
+      alert("Arthur's daily check-in is complete! Redirecting to the Nurse Dashboard to review clinical risk level changes.");
+      setActiveTab('nurse-dashboard');
+    }, 1500);
   };
 
   const renderActiveTabContent = () => {
     switch (activeTab) {
-      case 'overview':
-        return renderDashboardOverview();
-      case 'chat':
-        return (
-          <ChatInterface 
-            apiKey={apiKey} 
-            setApiKey={setApiKey} 
-            onNavigateToTool={handleNavigateToTool} 
-            onCheckInComplete={handleCheckInComplete}
-          />
-        );
-      case 'meds':
-        return <MedTracker />;
-      case 'visit':
-        return <VisitPrep />;
-      case 'decode':
-        return <DischargeDecoder apiKey={apiKey} />;
-      case 'support':
-        return <ClinicalSummary history={recoveryHistory} />;
+      case 'home':
+        return renderHomePage();
+      case 'patient-portal':
+        return renderPatientPortal();
+      case 'nurse-dashboard':
+        return <NurseDashboard patients={patients} />;
+      case 'about':
+        return renderAboutSection();
       default:
-        return renderDashboardOverview();
+        return renderHomePage();
     }
   };
 
-  const handleNavigateToTool = (toolId: string) => {
-    setActiveTab(toolId as TabType);
-  };
 
-  const renderDashboardOverview = () => {
-    const latestLog = recoveryHistory[recoveryHistory.length - 1];
-    const targetDay = 14;
-    const progressPercent = Math.min(100, Math.round((latestLog.day / targetDay) * 100));
+  const renderHomePage = () => {
+    const redCount = patients.filter(p => p.riskLevel === 'Red').length;
+    const yellowCount = patients.filter(p => p.riskLevel === 'Yellow').length;
+    const greenCount = patients.filter(p => p.riskLevel === 'Green').length;
 
     return (
       <div className="dashboard-overview-container">
         {/* Welcome Section */}
-        <div className="welcome-hero" style={{ padding: '24px 32px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-            <div>
-              <span style={{ textTransform: 'uppercase', fontSize: '11px', letterSpacing: '1px', color: 'rgba(255,255,255,0.7)', fontWeight: 'bold' }}>
-                Active Patient Profile
-              </span>
-              <h1 style={{ marginTop: '4px', marginBottom: '8px' }}>Arthur's Recovery Dashboard</h1>
-              <p style={{ margin: 0, opacity: 0.9 }}>
-                Left Total Hip Arthroplasty (Anterior Approach) | Post-Op Day {latestLog.day} of {targetDay}
+        <div className="welcome-hero" style={{ padding: '40px 32px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <span style={{ textTransform: 'uppercase', fontSize: '12px', letterSpacing: '2px', color: 'rgba(255,255,255,0.8)', fontWeight: 'bold' }}>
+            DEMO MVP PROTOTYPE
+          </span>
+          <h1 style={{ marginTop: '8px', marginBottom: '16px', fontSize: '32px' }}>
+            Shalom helps patients recover safely after surgery.
+          </h1>
+          <p style={{ margin: '0 auto', opacity: 0.95, maxWidth: '650px', fontSize: '15px', lineHeight: '1.6' }}>
+            An interactive post-operative recovery assistant designed to track clinical symptoms at home, simplify discharge orders, and alert clinical teams to potential healing deviations.
+          </p>
+
+          <div style={{ display: 'flex', gap: '16px', marginTop: '24px', flexWrap: 'wrap', justifyContent: 'center' }}>
+            <button 
+              className="btn-primary" 
+              onClick={() => { setActiveTab('patient-portal'); setPatientSubTab('check-in'); }}
+              style={{ padding: '12px 28px', fontSize: '15px', display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: 'white', color: 'var(--primary-dark)', fontWeight: 'bold' }}
+            >
+              <MessageSquare size={18} /> Start Patient Check-In
+            </button>
+            <button 
+              className="btn-secondary" 
+              onClick={() => setActiveTab('nurse-dashboard')}
+              style={{ padding: '12px 28px', fontSize: '15px', display: 'flex', alignItems: 'center', gap: '8px', border: '2px solid rgba(255,255,255,0.4)', color: 'white', fontWeight: 'bold' }}
+            >
+              <Users size={18} /> Open Nurse Dashboard
+            </button>
+          </div>
+        </div>
+
+        {/* Portal Gateway Section */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', margin: '30px 0' }}>
+          <div className="stat-card" style={{ padding: '24px', cursor: 'pointer' }} onClick={() => { setActiveTab('patient-portal'); setPatientSubTab('check-in'); }}>
+            <div className="stat-icon-wrapper" style={{ backgroundColor: 'var(--primary-light)', color: 'var(--primary-dark)' }}>
+              <MessageSquare size={24} />
+            </div>
+            <div className="stat-info" style={{ marginTop: '12px' }}>
+              <h3 style={{ fontSize: '18px', color: 'var(--primary-dark)', marginBottom: '6px' }}>Patient Portal</h3>
+              <p style={{ fontSize: '13px', color: 'var(--text-dark)', lineHeight: '1.4' }}>
+                Complete your daily recovery check-in questionnaire, track pain levels and temperature, organize post-op medications, and simplify discharge instructions.
               </p>
+              <span className="chat-action-btn" style={{ marginTop: '12px', display: 'inline-block' }}>Access Patient Portal →</span>
             </div>
-            {/* Circular Timeline Indicator */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.1)', padding: '10px 16px', borderRadius: '12px' }}>
-              <div style={{ position: 'relative', width: '48px', height: '48px' }}>
-                <svg width="48" height="48" viewBox="0 0 36 36" style={{ transform: 'rotate(-90deg)' }}>
-                  <circle cx="18" cy="18" r="15.915" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="3" />
-                  <circle cx="18" cy="18" r="15.915" fill="none" stroke="white" strokeWidth="3" strokeDasharray={`${progressPercent} ${100 - progressPercent}`} />
-                </svg>
-                <div style={{ position: 'absolute', top: 0, left: 0, width: '48px', height: '48px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 'bold' }}>
-                  {progressPercent}%
-                </div>
-              </div>
-              <div style={{ fontSize: '12px' }}>
-                <strong style={{ display: 'block' }}>Timeline Progress</strong>
-                <span>Day {latestLog.day} / {targetDay}</span>
-              </div>
+          </div>
+
+          <div className="stat-card" style={{ padding: '24px', cursor: 'pointer' }} onClick={() => setActiveTab('nurse-dashboard')}>
+            <div className="stat-icon-wrapper" style={{ backgroundColor: 'rgba(235, 94, 40, 0.1)', color: 'var(--accent)' }}>
+              <Users size={24} />
+            </div>
+            <div className="stat-info" style={{ marginTop: '12px' }}>
+              <h3 style={{ fontSize: '18px', color: 'var(--primary-dark)', marginBottom: '6px' }}>Nurse Dashboard Portal</h3>
+              <p style={{ fontSize: '13px', color: 'var(--text-dark)', lineHeight: '1.4' }}>
+                Monitor simulated patients recovering at home, view risk-prioritized alert statuses, check historical recovery charts, and review automated AI case summaries.
+              </p>
+              <span className="chat-action-btn" style={{ marginTop: '12px', display: 'inline-block', color: 'var(--accent)' }}>Open Nurse Portal →</span>
             </div>
           </div>
         </div>
 
-        {/* Quick Stats Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', margin: '20px 0' }}>
-          <div className="schedule-slot-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 'bold', textTransform: 'uppercase' }}>Pain Severity</span>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
-              <strong style={{ fontSize: '24px', color: latestLog.painLevel >= 7 ? 'var(--danger)' : latestLog.painLevel >= 4 ? 'var(--warning)' : 'var(--success)' }}>
-                {latestLog.painLevel}
-              </strong>
-              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>/ 10</span>
+        {/* Quick System Stats */}
+        <div className="schedule-slot-card" style={{ padding: '20px', marginTop: '20px' }}>
+          <h4 style={{ color: 'var(--primary-dark)', fontSize: '14px', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Activity size={16} style={{ color: 'var(--primary)' }} /> Live Simulated Clinical Metrics
+          </h4>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', textAlign: 'center' }}>
+            <div style={{ padding: '10px', background: 'var(--bg-light)', borderRadius: '6px' }}>
+              <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block' }}>Simulated Patients</span>
+              <strong style={{ fontSize: '20px' }}>{patients.length}</strong>
             </div>
-            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Trend: {latestLog.painLevel >= 5 ? 'Elevated' : 'Controlled'}</span>
-          </div>
-
-          <div className="schedule-slot-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 'bold', textTransform: 'uppercase' }}>Temperature</span>
-            <strong style={{ fontSize: '24px', color: latestLog.temperature >= 99.4 ? 'var(--warning)' : 'var(--success)' }}>
-              {latestLog.temperature}°F
-            </strong>
-            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Normal range: 97.0°-99.0°</span>
-          </div>
-
-          <div className="schedule-slot-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 'bold', textTransform: 'uppercase' }}>Mobility Rating</span>
-            <strong style={{ fontSize: '24px', color: 'var(--accent)' }}>{latestLog.mobility}</strong>
-            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Progressing daily</span>
-          </div>
-
-          <div className="schedule-slot-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 'bold', textTransform: 'uppercase' }}>Wound Site</span>
-            <strong style={{ fontSize: '18px', color: latestLog.woundAppearance === 'Normal' ? 'var(--success)' : 'var(--warning)' }}>
-              {latestLog.woundAppearance}
-            </strong>
-            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Inspect daily</span>
+            <div style={{ padding: '10px', background: '#fff5f5', borderRadius: '6px' }}>
+              <span style={{ fontSize: '11px', color: 'var(--danger)', display: 'block', fontWeight: 'bold' }}>Red Alerts</span>
+              <strong style={{ fontSize: '20px', color: 'var(--danger)' }}>{redCount}</strong>
+            </div>
+            <div style={{ padding: '10px', background: '#fffbeb', borderRadius: '6px' }}>
+              <span style={{ fontSize: '11px', color: 'var(--warning)', display: 'block', fontWeight: 'bold' }}>Yellow Monitors</span>
+              <strong style={{ fontSize: '20px', color: 'var(--warning)' }}>{yellowCount}</strong>
+            </div>
+            <div style={{ padding: '10px', background: '#f0fdf4', borderRadius: '6px' }}>
+              <span style={{ fontSize: '11px', color: 'var(--success)', display: 'block', fontWeight: 'bold' }}>Green Stable</span>
+              <strong style={{ fontSize: '20px', color: 'var(--success)' }}>{greenCount}</strong>
+            </div>
           </div>
         </div>
+      </div>
+    );
+  };
 
-        {/* Dashboard grid layout */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '24px', margin: '20px 0' }}>
+  const renderPatientPortal = () => {
+    return (
+      <div style={{ display: 'grid', gridTemplateColumns: '240px 1fr', gap: '20px' }}>
+        
+        {/* Left Side: Subtab Selector */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderRight: '1px solid var(--border-color)', paddingRight: '16px' }}>
+          <h4 style={{ margin: '0 0 10px 0', color: 'var(--primary-dark)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '1px' }}>
+            Patient Portal Tools
+          </h4>
+          <button 
+            className={`nav-btn ${patientSubTab === 'check-in' ? 'active' : ''}`}
+            onClick={() => setPatientSubTab('check-in')}
+            style={{ textAlign: 'left', width: '100%' }}
+          >
+            <MessageSquare size={16} className="nav-icon" /> Daily Check-In Chat
+          </button>
+          <button 
+            className={`nav-btn ${patientSubTab === 'meds' ? 'active' : ''}`}
+            onClick={() => setPatientSubTab('meds')}
+            style={{ textAlign: 'left', width: '100%' }}
+          >
+            <Pill size={16} className="nav-icon" /> Medication Tracker
+          </button>
+          <button 
+            className={`nav-btn ${patientSubTab === 'decode' ? 'active' : ''}`}
+            onClick={() => setPatientSubTab('decode')}
+            style={{ textAlign: 'left', width: '100%' }}
+          >
+            <FileText size={16} className="nav-icon" /> Discharge Decoder
+          </button>
+          <button 
+            className={`nav-btn ${patientSubTab === 'visit' ? 'active' : ''}`}
+            onClick={() => setPatientSubTab('visit')}
+            style={{ textAlign: 'left', width: '100%' }}
+          >
+            <FileSpreadsheet size={16} className="nav-icon" /> Surgeon Follow-Up Prep
+          </button>
           
-          {/* Left Column: Today's Tasks */}
-          <div className="schedule-slot-card" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <h3 style={{ margin: 0, fontSize: '16px', color: 'var(--primary-dark)', display: 'flex', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
-              <CheckCircle size={18} style={{ marginRight: '8px', color: 'var(--success)' }} /> Today's Post-Op Recovery Tasks
-            </h3>
-            <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '14px', padding: 0, margin: 0 }}>
-              <li style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                <input type="checkbox" defaultChecked={recoveryHistory.length > 5} style={{ accentColor: 'var(--primary)', width: '16px', height: '16px' }} />
-                <span>Complete daily recovery check-in with Shalom AI {recoveryHistory.length > 5 ? '✓' : ''}</span>
-              </li>
-              <li style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                <input type="checkbox" defaultChecked style={{ accentColor: 'var(--primary)', width: '16px', height: '16px' }} />
-                <span>Wound Care: Visually inspect hip dressing. Keep dry.</span>
-              </li>
-              <li style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                <input type="checkbox" style={{ accentColor: 'var(--primary)', width: '16px', height: '16px' }} />
-                <span>Physical Therapy: Walk with walker for 10-15 minutes (3 sessions)</span>
-              </li>
-              <li style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                <input type="checkbox" style={{ accentColor: 'var(--primary)', width: '16px', height: '16px' }} />
-                <span>Hydration: Drink 6-8 glasses of water today.</span>
-              </li>
-              <li style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                <input type="checkbox" style={{ accentColor: 'var(--primary)', width: '16px', height: '16px' }} />
-                <span>Log medication compliance in Medication Tracker.</span>
-              </li>
-            </ul>
+          <div style={{ marginTop: '30px', padding: '12px', background: 'var(--bg-light)', borderRadius: '8px', fontSize: '11px', lineHeight: '1.4' }}>
+            <strong style={{ display: 'block', color: 'var(--primary-dark)', marginBottom: '4px' }}>Active Profile</strong>
+            <span style={{ color: 'var(--text-dark)' }}>Arthur (Hip Replacement)</span>
+            <span style={{ display: 'block', color: 'var(--text-muted)', fontSize: '10px', marginTop: '2px' }}>Recovery Timeline: Day 5</span>
           </div>
-
-          {/* Right Column: Support & Disclaimers */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div className="safety-box" style={{ margin: 0, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-                <Info size={24} style={{ color: 'var(--warning)', flexShrink: 0 }} />
-                <div>
-                  <h4 style={{ color: 'var(--warning)', fontSize: '15px', fontWeight: 'bold', marginBottom: '4px' }}>Incision Red Flag Reminder</h4>
-                  <p style={{ fontSize: '13px', lineHeight: '1.4', margin: 0, color: 'var(--text-dark)' }}>
-                    Contact your surgical care team immediately if you observe a fever of 101.5°F or higher, spreading redness/warmth around the hip incision, or foul-smelling yellow drainage.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
         </div>
 
-        {/* Dashboard quick stats/tools access */}
-        <div className="quick-links-section" style={{ marginTop: '24px' }}>
-          <h3>Post-Op Recovery Toolkit</h3>
-          <div className="dashboard-stats-row">
-            <div className="stat-card" onClick={() => setActiveTab('chat')}>
-              <div className="stat-icon-wrapper">
-                <MessageSquare size={22} />
-              </div>
-              <div className="stat-info">
-                <h4>Daily Check-in Chat</h4>
-                <p>Run your comprehensive recovery scan. Discuss pain levels, symptoms, and receive structured post-op support.</p>
-              </div>
+        {/* Right Side: Tab View */}
+        <div style={{ minWidth: 0 }}>
+          {patientSubTab === 'check-in' && (
+            <ChatInterface 
+              apiKey={apiKey} 
+              setApiKey={setApiKey} 
+              onCheckInComplete={handleCheckInComplete}
+            />
+          )}
+          {patientSubTab === 'meds' && <MedTracker />}
+          {patientSubTab === 'decode' && <DischargeDecoder apiKey={apiKey} />}
+          {patientSubTab === 'visit' && <VisitPrep />}
+        </div>
+      </div>
+    );
+  };
+
+  const renderAboutSection = () => {
+    return (
+      <div className="tool-card" style={{ maxWidth: '800px', margin: '0 auto' }}>
+        <h2 style={{ color: 'var(--primary-dark)', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>About Shalom AI Recovery Assistant</h2>
+        
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', fontSize: '14px', lineHeight: '1.6' }}>
+          <div>
+            <h4 style={{ color: 'var(--primary)', marginBottom: '4px' }}>The Problem</h4>
+            <p style={{ margin: 0 }}>
+              The first two weeks following hospital discharge are critical for surgical patients. Due to complex clinical discharge documents, confusing medication schedules, and self-monitoring fatigue, up to 15% of patients experience preventable complications (like surgical site infections or medication dosage errors) at home, driving up emergency readmissions and overwhelming hospital clinical personnel.
+            </p>
+          </div>
+
+          <div>
+            <h4 style={{ color: 'var(--primary)', marginBottom: '4px' }}>Who Shalom Serves</h4>
+            <p style={{ margin: 0 }}>
+              Shalom serves post-operative patients recovering in their home environments and the discharge nursing care teams monitoring their progress. It acts as an educational and triage bridge, alerting clinical nurses to warning signs so they can focus clinical outreach on the patients who need attention most.
+            </p>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginTop: '10px' }}>
+            <div style={{ padding: '12px 16px', background: '#f0fdf4', borderRadius: '8px', borderLeft: '4px solid var(--success)' }}>
+              <strong style={{ color: 'var(--success)', display: 'block', marginBottom: '6px' }}>What Shalom CAN Do:</strong>
+              <ul style={{ paddingLeft: '16px', margin: 0, fontSize: '12px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <li>Conduct daily structured recovery check-ins.</li>
+                <li>Simulate internal clinical risk status classifications.</li>
+                <li>Track and organize complex post-operative drug doses.</li>
+                <li>Simplify jargon-heavy medical discharge summaries.</li>
+                <li>Generate clinical trend charts and narratives for providers.</li>
+              </ul>
             </div>
 
-            <div className="stat-card" onClick={() => setActiveTab('meds')}>
-              <div className="stat-icon-wrapper">
-                <Pill size={22} />
-              </div>
-              <div className="stat-info">
-                <h4>Medication Tracker</h4>
-                <p>Track blood thinners, pain medications, stool softeners, and follow safety dosage guidelines.</p>
-              </div>
+            <div style={{ padding: '12px 16px', background: '#fff5f5', borderRadius: '8px', borderLeft: '4px solid var(--danger)' }}>
+              <strong style={{ color: 'var(--danger)', display: 'block', marginBottom: '6px' }}>What Shalom CANNOT Do:</strong>
+              <ul style={{ paddingLeft: '16px', margin: 0, fontSize: '12px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <li>Diagnose infections, blood clots, or other illnesses.</li>
+                <li>Prescribe or adjust recovery drug dosages.</li>
+                <li>Replace the judgment of surgeons, physicians, or nurses.</li>
+                <li>Diagnose or manage active life-threatening emergencies.</li>
+                <li>Guarantee clinical recovery outcomes.</li>
+              </ul>
             </div>
+          </div>
 
-            <div className="stat-card visit" onClick={() => setActiveTab('visit')}>
-              <div className="stat-icon-wrapper">
-                <FileSpreadsheet size={22} />
-              </div>
-              <div className="stat-info">
-                <h4>Surgeon Follow-Up Prep</h4>
-                <p>Build a checklist of critical questions regarding your stitches, stitches removal, physical therapy milestones.</p>
-              </div>
-            </div>
-
-            <div className="stat-card decode" onClick={() => setActiveTab('decode')}>
-              <div className="stat-icon-wrapper">
-                <FileText size={22} />
-              </div>
-              <div className="stat-info">
-                <h4>Discharge Decoder</h4>
-                <p>Decode complex orthopedic discharge instructions into clear daily directives.</p>
-              </div>
-            </div>
-
-            <div className="stat-card support" onClick={() => setActiveTab('support')}>
-              <div className="stat-icon-wrapper" style={{ backgroundColor: 'rgba(235, 94, 40, 0.1)', color: 'var(--accent)' }}>
-                <TrendingUp size={22} />
-              </div>
-              <div className="stat-info">
-                <h4>Provider Reports</h4>
-                <p>Access historical trend logs for pain and temperature, review the internal status flag, and generate clinic printouts.</p>
-              </div>
-            </div>
+          <div className="safety-box" style={{ margin: '10px 0 0 0' }}>
+            <h4 style={{ color: 'var(--warning)', fontSize: '14px', marginBottom: '6px' }}>Student Competition Prototype Note</h4>
+            <p style={{ margin: 0, fontSize: '12px', lineHeight: '1.4' }}>
+              Shalom was built as a digital prototype to demonstrate how agentic AI workflows and simple rules-based clinical triage filters can support hospital transition-to-home models. No clinical decisions should be made based on this prototype.
+            </p>
           </div>
         </div>
       </div>
@@ -282,65 +334,49 @@ function App() {
           </div>
           <div>
             <h2 className="brand-title">Shalom AI</h2>
-            <span className="brand-subtitle">Recovery Assistant</span>
+            <span className="brand-subtitle">Post-Op Copilot</span>
           </div>
         </div>
 
         <ul className="nav-links">
           <li>
             <button 
-              className={`nav-btn ${activeTab === 'overview' ? 'active' : ''}`}
-              onClick={() => setActiveTab('overview')}
+              className={`nav-btn ${activeTab === 'home' ? 'active' : ''}`}
+              onClick={() => setActiveTab('home')}
             >
-              <LayoutDashboard size={18} className="nav-icon" /> Dashboard
+              <LayoutDashboard size={18} className="nav-icon" /> Home Page
             </button>
           </li>
           <li>
             <button 
-              className={`nav-btn ${activeTab === 'chat' ? 'active' : ''}`}
-              onClick={() => setActiveTab('chat')}
+              className={`nav-btn ${activeTab === 'patient-portal' ? 'active' : ''}`}
+              onClick={() => setActiveTab('patient-portal')}
             >
-              <MessageSquare size={18} className="nav-icon" /> Daily Check-in Chat
+              <MessageSquare size={18} className="nav-icon" /> Patient Portal
             </button>
           </li>
           <li>
             <button 
-              className={`nav-btn ${activeTab === 'meds' ? 'active' : ''}`}
-              onClick={() => setActiveTab('meds')}
+              className={`nav-btn ${activeTab === 'nurse-dashboard' ? 'active' : ''}`}
+              onClick={() => setActiveTab('nurse-dashboard')}
             >
-              <Pill size={18} className="nav-icon" /> Medication Tracker
+              <TrendingUp size={18} className="nav-icon" /> Nurse Dashboard
             </button>
           </li>
           <li>
             <button 
-              className={`nav-btn ${activeTab === 'visit' ? 'active' : ''}`}
-              onClick={() => setActiveTab('visit')}
+              className={`nav-btn ${activeTab === 'about' ? 'active' : ''}`}
+              onClick={() => setActiveTab('about')}
             >
-              <FileSpreadsheet size={18} className="nav-icon" /> Surgeon Follow-Up Prep
-            </button>
-          </li>
-          <li>
-            <button 
-              className={`nav-btn ${activeTab === 'decode' ? 'active' : ''}`}
-              onClick={() => setActiveTab('decode')}
-            >
-              <FileText size={18} className="nav-icon" /> Discharge Decoder
-            </button>
-          </li>
-          <li>
-            <button 
-              className={`nav-btn ${activeTab === 'support' ? 'active' : ''}`}
-              onClick={() => setActiveTab('support')}
-            >
-              <TrendingUp size={18} className="nav-icon" /> Provider Reports
+              <HelpCircle size={18} className="nav-icon" /> About Shalom
             </button>
           </li>
         </ul>
 
         <div className="sidebar-footer">
           <div className="loved-one-badge" style={{ backgroundColor: 'rgba(255,255,255,0.06)' }}>
-            <p>Active Patient</p>
-            <span>Arthur (Hip Post-Op)</span>
+            <p>Simulated Environment</p>
+            <span>Active Patients: 4</span>
           </div>
         </div>
       </nav>

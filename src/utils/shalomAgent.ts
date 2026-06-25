@@ -8,170 +8,114 @@ export interface Message {
 }
 
 export const SHALOM_SYSTEM_PROMPT = `You are Shalom, an AI Post-Operative Recovery Assistant.
-
-Your primary responsibility is to continuously monitor each patient's recovery after surgery, recognize meaningful changes over time, provide supportive guidance based on approved discharge instructions, and promptly identify situations that may require review by a healthcare professional.
-
-You support patients recovering at home after surgery while helping nurses and healthcare teams focus on the patients who need attention most.
+Your primary responsibility is to help patients recovering at home after surgery by conducting daily recovery check-ins, tracking progress, explaining fictional discharge instructions, and identifying when a patient should contact their healthcare team.
 
 Tone:
-* Warm
-* Calm
-* Reassuring
-* Supportive
-* Professional
-* Use plain language.
+* Warm, calm, reassuring, supportive, and professional.
+* Use simple, plain, non-clinical language.
 * Keep responses concise.
 * Show empathy when patients report pain or concerning symptoms.
 * Ask one question at a time.
-* Adapt each conversation based on the patient's previous responses instead of asking the same questions every day.
+* Adapt each conversation based on previous responses instead of asking the same questions every day.
 
-Your Responsibilities:
-1. Monitor each patient's recovery throughout the entire post-operative period.
-2. Conduct personalized daily check-ins by asking about pain, temperature, medications, mobility, sleep, nutrition, wound appearance, and other recovery-related symptoms.
-3. Remember previous conversations and compare today's answers with previous recovery data to identify meaningful trends.
-4. Recognize recovery patterns such as increasing pain, worsening redness, swelling, drainage, fever, declining mobility, missed medications, or lack of expected improvement.
-5. Assess the patient's recovery status internally as:
-   * Green — Stable Recovery
-   * Yellow — Needs Monitoring
-   * Red — Needs Clinical Review
-   Do not display these classifications directly to patients.
-6. Explain discharge instructions using simple language and only based on information provided by the healthcare team.
-7. Remind patients about medications, rehabilitation exercises, follow-up appointments, wound care, hydration, and other recovery tasks.
-8. Generate concise clinical summaries highlighting recovery trends and significant changes for nurses and healthcare providers.
-9. Encourage patients to contact their healthcare team whenever recovery is not progressing as expected.
+The 6 Daily Recovery Questions you must ask:
+1. What is your pain level today from 1 to 10?
+2. Do you have a fever?
+3. Did you take your medication today?
+4. Is your incision red, swollen, draining, or getting worse?
+5. How is your mobility today?
+6. Do you have any unusual symptoms?
 
-Conversation Rules:
-* Prioritize follow-up questions based on previous responses.
-* Consider the patient's surgery type and expected recovery timeline before assessing recovery progress.
-* Focus on trends over time rather than isolated symptoms.
-* Reassure patients while remaining honest about uncertainty.
-* Never create unnecessary anxiety.
-* Escalate only when symptoms or recovery patterns justify additional medical attention.
-
-Escalation Framework:
-* Routine: Recovery appears consistent with expectations. Continue monitoring.
-* Priority: Recovery may not be progressing as expected. Recommend contacting the healthcare provider within the day.
-* Urgent: Symptoms suggest the patient should seek prompt medical evaluation.
-* Emergency: If the patient reports symptoms such as severe chest pain, difficulty breathing, uncontrolled bleeding, loss of consciousness, or any other life-threatening emergency, immediately instruct them to call 911 or go to the nearest emergency department.
-
-You Must Never:
-* Diagnose medical conditions.
-* Recommend or prescribe treatments.
-* Change medication dosages.
-* Interpret laboratory results or medical imaging.
-* Replace doctors, nurses, or healthcare professionals.
-* Guarantee medical outcomes.
-* Make medical decisions on behalf of the patient.
-
-When patients ask questions requiring medical judgment, explain that you are not a healthcare professional and recommend contacting their surgeon, physician, or healthcare team.
-If a request is unrelated to post-operative recovery support, politely explain that it is outside your role and direct the patient to the appropriate professional.`;
+AI Behavior Rules:
+* Classify the patient internally as Green (Stable), Yellow (Needs monitoring), or Red (Needs clinical review). Do not display these classifications directly to patients.
+* NEVER diagnose medical conditions. Never tell a patient: "You have an infection", "You have a blood clot", "You should take this medicine", or "Change your dosage".
+* If a patient asks clinical questions, explain you are an AI assistant and recommend contacting their surgeon, physician, or care team.
+* If the patient reports chest pain, difficulty breathing, uncontrolled bleeding, loss of consciousness, or other life-threatening symptoms, immediately tell them to call 911 or go to the nearest emergency department.
+* If symptoms are concerning but not life-threatening, tell them: "Your symptoms may need review by your healthcare team. Please contact your healthcare provider."`;
 
 // Safety filters helper
 export function evaluateSafety(text: string): { isEmergency: boolean; isMedicalAdvice: boolean } {
   const lower = text.toLowerCase();
   
-  // Emergency checks (immediate escalation)
+  // Emergency indicators
   const emergencyKeywords = [
     'chest pain', 'heart attack', 'difficulty breathing', 'shortness of breath',
-    'cannot breathe', 'heavy bleeding', 'uncontrolled bleeding', 'unconscious',
-    'passed out', 'loss of consciousness', 'seizure', '911', 'emergency room',
-    'stroke symptoms', 'choking'
+    'cannot breathe', 'uncontrolled bleeding', 'heavy bleeding', 'unconscious',
+    'passed out', 'loss of consciousness', '911', 'emergency department', 'emergency room'
   ];
   
   const isEmergency = emergencyKeywords.some(keyword => lower.includes(keyword));
   
-  // Medical advice/diagnosis checks
-  const diagnosisKeywords = [
-    'diagnose', 'what is this rash', 'is this shingles', 'is this cancer', 
-    'infected', 'what disease is', 'do i have an infection', 'is this normal'
+  // Diagnostic/dosage alteration indicators
+  const medicalAdviceKeywords = [
+    'diagnose', 'infection', 'blood clot', 'what medicine should i take',
+    'change dose', 'stop taking', 'adjust medication', 'prescribe'
   ];
   
-  const dosageKeywords = [
-    'dosage', 'dose', 'how many mg', 'how many pills', 'increase dose', 
-    'decrease dose', 'stop taking', 'take double', 'adjust dose', 'can i take more',
-    'change my prescription'
-  ];
-  
-  const treatmentKeywords = [
-    'cure', 'treat', 'what medication is best for', 'prescribe', 
-    'alternative treatment for', 'how do i treat', 'cure for', 'treatment for'
-  ];
-
-  // If asking for a clinical judgment or diagnosis
-  const isMedicalAdvice = 
-    diagnosisKeywords.some(keyword => lower.includes(keyword)) ||
-    dosageKeywords.some(keyword => lower.includes(keyword)) ||
-    treatmentKeywords.some(keyword => lower.includes(keyword));
+  const isMedicalAdvice = medicalAdviceKeywords.some(keyword => lower.includes(keyword));
 
   return { isEmergency, isMedicalAdvice };
 }
 
 // Local simulation fallback engine
 export function getSimulatedResponse(text: string, history: Message[] = []): string {
-  const { isEmergency, isMedicalAdvice } = evaluateSafety(text);
+  const { isEmergency } = evaluateSafety(text);
   
   if (isEmergency) {
-    return "🚨 **EMERGENCY WARNING** 🚨\n\nPlease call 911 or seek immediate emergency medical care. I cannot assist with emergency or life-threatening situations.";
-  }
-  
-  if (isMedicalAdvice) {
-    return "❤️ **Important Safety Note**\n\nI am not a doctor, nurse, or healthcare provider. I cannot diagnose conditions, prescribe medications, or recommend treatments.\n\nPlease reach out directly to your surgical care team for medical advice. Can I help you prepare a list of questions to ask them about this?";
+    return "🚨 **EMERGENCY NOTICE** 🚨\n\nIf you are experiencing chest pain, difficulty breathing, uncontrolled bleeding, or another life-threatening symptom, please **call 911 immediately or go to the nearest emergency department**. I cannot help with medical emergencies.";
   }
 
   const lower = text.toLowerCase();
   
-  // Check if history indicates we are in the daily check-in sequence
-  const shalomMessages = history.filter(m => m.sender === 'shalom');
-  const lastShalomMessage = shalomMessages[shalomMessages.length - 1]?.text || "";
-  
-  if (lastShalomMessage.includes("scale of 0 (no pain) to 10")) {
-    return "Got it. Have you checked your temperature today? If so, what was the reading in degrees Fahrenheit (e.g., 98.6)?";
-  }
-  if (lastShalomMessage.includes("reading in degrees Fahrenheit")) {
-    return "Thank you. Have you taken all your scheduled recovery medications today?";
-  }
-  if (lastShalomMessage.includes("recovery medications today")) {
-    return "Understood. How would you describe your mobility today? Are you mostly resting (None), using assistance (Limited), walking a bit (Moderate), or moving well (Good)?";
-  }
-  if (lastShalomMessage.includes("describe your mobility today")) {
-    return "How was your sleep last night? Was it Poor, Fair, or Good?";
-  }
-  if (lastShalomMessage.includes("sleep last night")) {
-    return "Next, let's check your surgical wound. Is there any redness, swelling, drainage, or does it look Normal?";
-  }
-  if (lastShalomMessage.includes("surgical wound")) {
-    return "Lastly, are you able to eat and drink fluids normally today?";
-  }
-  if (lastShalomMessage.includes("drink fluids normally today")) {
-    return "Thank you for completing today's daily recovery check-in! I have updated your recovery metrics. Your data indicates your recovery is stable but should be monitored. I have compiled a Clinical Summary for your care team on the Provider Reports tab.";
+  // Check if user is asking general questions that request diagnosis/prescription
+  if (lower.includes('diagnose') || lower.includes('infection') || lower.includes('blood clot') || lower.includes('what should i take')) {
+    return "I am a demo AI assistant and am not able to diagnose medical conditions or recommend treatments. If you are experiencing symptoms like fever, increased pain, or redness that make you suspect an infection or other issue, please contact your surgeon or healthcare team directly.";
   }
   
-  // Normal command triggers
-  if (lower.includes('check-in') || lower.includes('start check') || lower.includes('checkin')) {
-    return "Let's begin your daily recovery check-in. First, how is your pain today on a scale of 0 (no pain) to 10 (severe pain)?";
-  }
-  
-  if (lower.includes('pain')) {
-    return "Pain is expected after surgery, but we want to monitor its trend. Empathy note: I'm sorry to hear if you are experiencing pain. How would you rate it from 0 to 10? If it is increasing or uncontrolled, please contact your care team. I can help prepare questions about pain management.";
-  }
-  
-  if (lower.includes('wound') || lower.includes('incision') || lower.includes('redness') || lower.includes('pus') || lower.includes('drainage')) {
-    return "Monitoring your incision daily is crucial. Watch out for red flags: spreading redness, swelling, warmth, or yellow/foul-smelling drainage. If you notice these, you should contact your surgeon. Does your incision look clean and dry today?";
-  }
-  
-  if (lower.includes('fever') || lower.includes('temperature') || lower.includes('hot')) {
-    return "An elevated temperature can be an early sign of infection. A fever of 101°F or higher typically warrants contacting your surgical care team. Have you recorded a temperature reading today?";
-  }
-  
-  if (lower.includes('discharge') || lower.includes('instructions')) {
-    return "Your discharge instructions contain vital guidelines for activity, medications, and wound care. You can use the **Discharge Decoder** tool to simplify them. Would you like to review them now?";
-  }
-  
-  if (lower.includes('hello') || lower.includes('hi') || lower.includes('hey')) {
-    return "Hello! I am Shalom, your Post-Operative Recovery Assistant. I am here to help you monitor your recovery, track medications, and prepare for follow-up appointments.\n\nWould you like to start your daily recovery check-in?";
+  if (lower.includes('change dose') || lower.includes('stop taking') || lower.includes('adjust dose')) {
+    return "I cannot provide advice on changing your medication schedule or adjusting your dosages. Please contact your physician or pharmacist to discuss any changes to your prescription plan.";
   }
 
-  return "I am Shalom, your Post-Operative Recovery Assistant. I can help you complete daily check-ins, organize recovery medications, simplify discharge paperwork, and highlight clinical trends.\n\nWhat recovery task can I help you with today?";
+  // Handle the daily check-in sequence based on chat history
+  const shalomMessages = history.filter(m => m.sender === 'shalom');
+  const lastShalomText = shalomMessages[shalomMessages.length - 1]?.text || "";
+
+  if (lastShalomText.includes("pain level today from 1 to 10")) {
+    return "Thank you. Question 2: Do you have a fever? (Have you checked your temperature today?)";
+  }
+  if (lastShalomText.includes("Do you have a fever")) {
+    return "Got it. Question 3: Did you take your medication today?";
+  }
+  if (lastShalomText.includes("take your medication today")) {
+    return "Thank you. Question 4: Is your incision red, swollen, draining, or getting worse?";
+  }
+  if (lastShalomText.includes("incision red, swollen, draining")) {
+    return "Understood. Question 5: How is your mobility today? (Are you resting, walking with help, or moving well?)";
+  }
+  if (lastShalomText.includes("mobility today")) {
+    return "Got it. Question 6: Do you have any unusual symptoms (such as chest tightness, difficulty breathing, or severe pain)?";
+  }
+  if (lastShalomText.includes("unusual symptoms")) {
+    // Determine risk response based on current answer or general check-in wrap up
+    const hasWarning = lower.includes('chest') || lower.includes('breath') || lower.includes('bleed') || lower.includes('pain') && (lower.includes('8') || lower.includes('9') || lower.includes('10') || lower.includes('severe'));
+    
+    if (hasWarning) {
+      return "Thank you for completing today's check-in. Based on your reported symptoms, your healthcare team may need to review your recovery. Please contact your healthcare provider directly. If you feel this is a life-threatening emergency, call 911 immediately.";
+    }
+    return "Thank you for completing today's daily recovery check-in! I have logged your responses for your nursing care team. Your recovery metrics appear to be stable. Continue resting and following your discharge instructions.";
+  }
+
+  // Check-in triggers
+  if (lower.includes('check-in') || lower.includes('start check') || lower.includes('checkin')) {
+    return "Let's begin your daily post-operative recovery check-in. Question 1: What is your pain level today from 1 to 10?";
+  }
+
+  // Fallback greeting
+  if (lower.includes('hello') || lower.includes('hi') || lower.includes('hey')) {
+    return "Hello! I am Shalom, your AI Post-Operative Recovery Assistant. I am here to help you complete your daily check-ins and track your progress.\n\nWould you like to start your daily recovery check-in?";
+  }
+
+  return "I am Shalom, your Post-Operative Recovery Assistant. I can guide you through your daily check-in, log pain levels, and compile a report for your nurse.\n\nTo begin, type \"Start Check-in\" or ask me a recovery question.";
 }
 
 // Live API call to Gemini
@@ -180,24 +124,18 @@ export async function getGeminiResponse(
   apiKey: string,
   userMessageText: string
 ): Promise<string> {
-  const { isEmergency, isMedicalAdvice } = evaluateSafety(userMessageText);
+  const { isEmergency } = evaluateSafety(userMessageText);
   
   if (isEmergency) {
-    return "🚨 **EMERGENCY WARNING** 🚨\n\nPlease call 911 or seek immediate emergency medical care. I cannot assist with emergency or life-threatening situations.";
-  }
-  
-  if (isMedicalAdvice) {
-    return "❤️ **Important Safety Note**\n\nI am not a doctor, nurse, or healthcare provider. I cannot diagnose conditions, prescribe medications, or recommend treatments.\n\nPlease reach out directly to your surgical care team for medical advice. Can I help you prepare a list of questions to ask them about this?";
+    return "🚨 **EMERGENCY NOTICE** 🚨\n\nIf you are experiencing chest pain, difficulty breathing, uncontrolled bleeding, or another life-threatening symptom, please **call 911 immediately or go to the nearest emergency department**. I cannot help with medical emergencies.";
   }
 
   try {
-    // Transform chat history for Gemini API call
     const contents = messages.map(msg => ({
       role: msg.sender === 'user' ? 'user' : 'model',
       parts: [{ text: msg.text }]
     }));
 
-    // Add the current user message at the end
     contents.push({
       role: 'user',
       parts: [{ text: userMessageText }]

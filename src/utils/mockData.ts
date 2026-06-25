@@ -1,77 +1,32 @@
 export interface RecoveryLog {
   day: number;
   date: string;
-  painLevel: number; // 0-10
+  painLevel: number; // 1-10
   temperature: number; // °F
-  mobility: 'None' | 'Limited' | 'Moderate' | 'Good';
-  sleepQuality: 'Poor' | 'Fair' | 'Good';
-  woundAppearance: 'Normal' | 'Mild Redness' | 'Redness & Swelling' | 'Drainage' | 'Infected';
   medsAdherence: number; // Percentage, e.g. 100
+  woundAppearance: 'Normal' | 'Mild Redness' | 'Redness & Swelling' | 'Drainage' | 'Infected' | 'Getting Worse';
+  mobility: 'None' | 'Limited' | 'Moderate' | 'Good';
   notes: string;
+}
+
+export interface Patient {
+  id: string;
+  name: string;
+  surgery: string;
+  postOpDay: number;
+  painLevel: number;
+  symptoms: string[];
+  medicationStatus: 'Taken' | 'Missed' | 'Delayed';
+  riskLevel: 'Green' | 'Yellow' | 'Red';
+  aiSummary: string;
+  recommendedAction: string;
+  history: RecoveryLog[];
 }
 
 export interface VisitQuestionTemplate {
   specialty: string;
   suggestedQuestions: string[];
 }
-
-export const MOCK_RECOVERY_HISTORY: RecoveryLog[] = [
-  {
-    day: 1,
-    date: 'June 21',
-    painLevel: 7,
-    temperature: 99.1,
-    mobility: 'None',
-    sleepQuality: 'Poor',
-    woundAppearance: 'Normal',
-    medsAdherence: 100,
-    notes: 'First day home after hip surgery. Sore, sleepy, resting in bed.'
-  },
-  {
-    day: 2,
-    date: 'June 22',
-    painLevel: 6,
-    temperature: 98.9,
-    mobility: 'Limited',
-    sleepQuality: 'Fair',
-    woundAppearance: 'Normal',
-    medsAdherence: 100,
-    notes: 'Began walking short distances with the walker. Taking pain meds on schedule.'
-  },
-  {
-    day: 3,
-    date: 'June 23',
-    painLevel: 5,
-    temperature: 98.6,
-    mobility: 'Limited',
-    sleepQuality: 'Fair',
-    woundAppearance: 'Normal',
-    medsAdherence: 100,
-    notes: 'Pain is manageable. Sleeping slightly better. Dressing dry and intact.'
-  },
-  {
-    day: 4,
-    date: 'June 24',
-    painLevel: 4,
-    temperature: 98.7,
-    mobility: 'Moderate',
-    sleepQuality: 'Good',
-    woundAppearance: 'Mild Redness',
-    medsAdherence: 100,
-    notes: 'Noticed slight redness around the edge of the dressing. No drainage, no fever.'
-  },
-  {
-    day: 5,
-    date: 'June 25',
-    painLevel: 5,
-    temperature: 99.5,
-    mobility: 'Limited',
-    sleepQuality: 'Fair',
-    woundAppearance: 'Redness & Swelling',
-    medsAdherence: 75,
-    notes: 'Missed morning meds because of stomach upset. Redness seems to have spread slightly, feeling warm.'
-  }
-];
 
 export const VISIT_QUESTION_TEMPLATES: VisitQuestionTemplate[] = [
   {
@@ -175,5 +130,81 @@ ALERT SYMPTOMS (Notify Surgeon):
 - Persistent nausea, vomiting, or inability to keep liquids down.
 - Spreading redness, swelling, or foul-smelling yellow drainage from incisions.
 - Yellowing of skin or eyes (jaundice).`
+  }
+];
+
+export const MOCK_PATIENTS_SEEDED: Patient[] = [
+  {
+    id: 'pat-1',
+    name: 'John Martin',
+    surgery: 'Knee Surgery',
+    postOpDay: 3,
+    painLevel: 8,
+    symptoms: ['Fever', 'Incision redness', 'Severe swelling'],
+    medicationStatus: 'Taken',
+    riskLevel: 'Red',
+    aiSummary: 'Patient John Martin is experiencing severe pain (8/10), an elevated temperature, and spreading redness/swelling around the knee incision. These indications suggest a potential complications alert.',
+    recommendedAction: 'Clinical review recommended today. Direct contact with orthopedic nurse advised.',
+    history: [
+      { day: 1, date: 'June 23', painLevel: 6, temperature: 98.7, medsAdherence: 100, woundAppearance: 'Normal', mobility: 'None', notes: 'Resting with leg elevated.' },
+      { day: 2, date: 'June 24', painLevel: 5, temperature: 99.0, medsAdherence: 100, woundAppearance: 'Mild Redness', mobility: 'Limited', notes: 'Slight redness noticed.' },
+      { day: 3, date: 'June 25', painLevel: 8, temperature: 100.4, medsAdherence: 100, woundAppearance: 'Redness & Swelling', mobility: 'Limited', notes: 'Wound looks red and feels hot. Swelling increased.' }
+    ]
+  },
+  {
+    id: 'pat-2',
+    name: 'Arthur',
+    surgery: 'Hip Surgery',
+    postOpDay: 5,
+    painLevel: 5,
+    symptoms: ['Mild swelling', 'Missed morning medication dose'],
+    medicationStatus: 'Missed',
+    riskLevel: 'Yellow',
+    aiSummary: 'Arthur is recovering steadily on Day 5, but missed his morning medication schedule. He reports mild hip swelling and moderate pain (5/10). Incision is otherwise dry.',
+    recommendedAction: 'Monitor symptoms over next 24 hours. Reinforce medication schedule compliance.',
+    history: [
+      { day: 1, date: 'June 21', painLevel: 7, temperature: 99.0, medsAdherence: 100, woundAppearance: 'Normal', mobility: 'None', notes: 'Sore but resting.' },
+      { day: 2, date: 'June 22', painLevel: 6, temperature: 98.8, medsAdherence: 100, woundAppearance: 'Normal', mobility: 'Limited', notes: 'Walking with assistance.' },
+      { day: 3, date: 'June 23', painLevel: 5, temperature: 98.6, medsAdherence: 100, woundAppearance: 'Normal', mobility: 'Limited', notes: 'Managed daily physical therapy exercises.' },
+      { day: 4, date: 'June 24', painLevel: 4, temperature: 98.7, medsAdherence: 100, woundAppearance: 'Normal', mobility: 'Moderate', notes: 'Increasing walking distances.' },
+      { day: 5, date: 'June 25', painLevel: 5, temperature: 99.1, medsAdherence: 50, woundAppearance: 'Mild Redness', mobility: 'Limited', notes: 'Missed morning dose. Hip feels a bit stiff and swollen.' }
+    ]
+  },
+  {
+    id: 'pat-3',
+    name: 'Sarah Jenkins',
+    surgery: 'Gallbladder Surgery',
+    postOpDay: 2,
+    painLevel: 3,
+    symptoms: [],
+    medicationStatus: 'Taken',
+    riskLevel: 'Green',
+    aiSummary: 'Sarah Jenkins is demonstrating stable recovery progress on Day 2 post-laparoscopic gallbladder removal. Pain is mild (3/10) and managed. Incisions are dry, and vitals are normal.',
+    recommendedAction: 'Routine daily check-ins. Continue light walking and post-op diet.',
+    history: [
+      { day: 1, date: 'June 24', painLevel: 5, temperature: 98.8, medsAdherence: 100, woundAppearance: 'Normal', mobility: 'Limited', notes: 'Slight soreness near laparoscopy cuts.' },
+      { day: 2, date: 'June 25', painLevel: 3, temperature: 98.6, medsAdherence: 100, woundAppearance: 'Normal', mobility: 'Moderate', notes: 'Incisions clean. Eating bland food and walking around.' }
+    ]
+  },
+  {
+    id: 'pat-4',
+    name: 'Elena Rostova',
+    surgery: 'Spine Surgery',
+    postOpDay: 7,
+    painLevel: 9,
+    symptoms: ['Chest tightness', 'Difficulty breathing'],
+    medicationStatus: 'Taken',
+    riskLevel: 'Red',
+    aiSummary: 'EMERGENCY: Elena is experiencing severe pain (9/10), chest tightness, and difficulty breathing on Day 7 post-spinal fusion. This is an active clinical danger signal.',
+    recommendedAction: 'EMERGENCY: Advise patient to call 911 or report to the nearest emergency department immediately.',
+    history: [
+      { day: 1, date: 'June 19', painLevel: 8, temperature: 98.6, medsAdherence: 100, woundAppearance: 'Normal', mobility: 'None', notes: 'Post-op fusion soreness.' },
+      { day: 2, date: 'June 20', painLevel: 7, temperature: 98.5, medsAdherence: 100, woundAppearance: 'Normal', mobility: 'None', notes: 'Resting on back.' },
+      { day: 3, date: 'June 21', painLevel: 6, temperature: 98.5, medsAdherence: 100, woundAppearance: 'Normal', mobility: 'Limited', notes: 'Logging brief standing sessions.' },
+      { day: 4, date: 'June 22', painLevel: 5, temperature: 98.6, medsAdherence: 100, woundAppearance: 'Normal', mobility: 'Limited', notes: 'Log roll movement standard.' },
+      { day: 5, date: 'June 23', painLevel: 5, temperature: 98.7, medsAdherence: 100, woundAppearance: 'Normal', mobility: 'Moderate', notes: 'Walking short hallways.' },
+      { day: 6, date: 'June 24', painLevel: 6, temperature: 98.8, medsAdherence: 100, woundAppearance: 'Normal', mobility: 'Moderate', notes: 'Stiffness in lower back.' },
+      { day: 7, date: 'June 25', painLevel: 9, temperature: 99.3, medsAdherence: 100, woundAppearance: 'Normal', mobility: 'None', notes: 'Sudden onset of severe chest tightness and trouble breathing.' }
+    ]
   }
 ];
