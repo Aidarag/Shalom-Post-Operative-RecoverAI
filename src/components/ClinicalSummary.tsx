@@ -360,10 +360,10 @@ RECOVERY OBSERVATION:
               <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Mobility Rating</span>
               <strong style={{ fontSize: '16px', color: 'var(--accent)' }}>{latest.mobility}</strong>
               <span style={{ fontSize: '11px', display: 'block', marginTop: '6px', color: 'var(--text-dark)' }}>
-                {latest.mobility === 'Good' && '🚶 Walking well'}
-                {latest.mobility === 'Moderate' && '🚶 Light walking'}
-                {latest.mobility === 'Limited' && '♿ Restrictive movement'}
-                {latest.mobility === 'None' && '🛏️ Strictly resting'}
+                {latest.mobility === 'Good' && 'Walking well'}
+                {latest.mobility === 'Moderate' && 'Light walking'}
+                {latest.mobility === 'Limited' && 'Restrictive movement'}
+                {latest.mobility === 'None' && 'Strictly resting'}
               </span>
             </div>
           </div>

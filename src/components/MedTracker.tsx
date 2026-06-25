@@ -292,7 +292,9 @@ export const MedTracker: React.FC = () => {
           )}
 
           <div className="safety-box">
-            <h4>⚠️ Post-Operative Medication Safety Warnings</h4>
+            <h4 style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <ShieldAlert size={16} /> Post-Operative Medication Safety Warnings
+            </h4>
             <ul>
               <li><strong>Acetaminophen limit:</strong> Do not exceed 3000mg in 24 hours to prevent liver toxicity. Many cold/pain meds contain Acetaminophen.</li>
               <li><strong>Narcotics (Oxycodone):</strong> Use only as needed for severe breakthrough pain. Opioids cause significant drowsiness and severe constipation.</li>
