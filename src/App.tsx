@@ -146,7 +146,7 @@ function App() {
         </div>
 
         {/* Action Button Row - Clearly distinguishes landing page from chat page */}
-        <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', marginTop: '20px', marginBottom: '40px' }}>
+        <div className="hero-buttons-row" style={{ display: 'flex', gap: '16px', justifyContent: 'center', marginTop: '20px', marginBottom: '40px' }}>
           <button className="btn-primary" onClick={() => setActiveTab('check-in')} style={{ padding: '14px 28px', borderRadius: '30px', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <MessageSquare size={16} /> Start Patient Check-In
           </button>
@@ -156,7 +156,7 @@ function App() {
         </div>
 
         {/* Features Capabilities Grid */}
-        <div style={{ 
+        <div className="features-grid" style={{ 
           display: 'grid', 
           gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
           gap: '20px', 
@@ -294,7 +294,7 @@ function App() {
           </p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
+        <div className="dataset-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
           {/* Upload card */}
           <div style={{ background: 'white', padding: '24px', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '16px', border: '1px solid rgba(0,0,0,0.03)' }}>
             <h4 style={{ fontSize: '14.5px', fontWeight: '700', color: 'var(--primary-dark)', margin: 0 }}>Grounding Setup</h4>
@@ -538,7 +538,7 @@ function App() {
           </button>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px', alignItems: 'start' }}>
+        <div className="insights-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px', alignItems: 'start' }}>
           {/* Diagnostic Summary */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             <div style={{ 
@@ -665,7 +665,7 @@ function App() {
             </p>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginTop: '8px' }}>
+          <div className="about-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginTop: '8px' }}>
             <div style={{ padding: '16px', background: '#f0fdf4', borderRadius: '12px', borderLeft: '4px solid var(--success)' }}>
               <strong style={{ color: 'var(--success)', display: 'block', marginBottom: '6px' }}>What Shalom CAN Do:</strong>
               <ul style={{ paddingLeft: '14px', margin: 0, fontSize: '12px', display: 'flex', flexDirection: 'column', gap: '4px' }}>

@@ -96,6 +96,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [selectedVoiceName, setSelectedVoiceName] = useState<string>('');
   const [isTtsEnabled, setIsTtsEnabled] = useState<boolean>(true);
+  const activeUtterancesRef = useRef<SpeechSynthesisUtterance[]>([]);
 
   // Load available system voices
   useEffect(() => {
@@ -111,10 +112,12 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         
         setVoices(filteredVoices);
         if (filteredVoices.length > 0) {
-          // Select French voice if user prompt was French, then English, then first available
-          const preferredFrench = filteredVoices.find(v => v.lang.toLowerCase().startsWith('fr'));
+          // Select English voice first by default (since the app content is in English),
+          // fallback to French, then Spanish, then first available
           const preferredEnglish = filteredVoices.find(v => v.lang.toLowerCase().startsWith('en'));
-          const defaultVoice = preferredFrench || preferredEnglish || filteredVoices[0];
+          const preferredFrench = filteredVoices.find(v => v.lang.toLowerCase().startsWith('fr'));
+          const preferredSpanish = filteredVoices.find(v => v.lang.toLowerCase().startsWith('es'));
+          const defaultVoice = preferredEnglish || preferredFrench || preferredSpanish || filteredVoices[0];
           setSelectedVoiceName(prev => prev || defaultVoice.name);
         }
       };
@@ -130,8 +133,9 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const speakText = (text: string) => {
     if (!isTtsEnabled || typeof window === 'undefined' || !('speechSynthesis' in window)) return;
     
-    // Stop any ongoing speech
+    // Stop any ongoing speech and clear active references
     window.speechSynthesis.cancel();
+    activeUtterancesRef.current = [];
 
     // Clean text: strip markdown and emojis for cleaner speech
     const cleanText = text
@@ -148,8 +152,20 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     if (voice) {
       utterance.voice = voice;
       utterance.lang = voice.lang;
+    } else {
+      utterance.lang = 'en-US';
     }
     
+    // Reference the utterance to prevent garbage collection cutting off the voice mid-speech
+    activeUtterancesRef.current.push(utterance);
+    
+    utterance.onend = () => {
+      activeUtterancesRef.current = activeUtterancesRef.current.filter(u => u !== utterance);
+    };
+    utterance.onerror = () => {
+      activeUtterancesRef.current = activeUtterancesRef.current.filter(u => u !== utterance);
+    };
+
     window.speechSynthesis.speak(utterance);
   };
 
@@ -588,7 +604,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     if (checkInStep === 1) { // Fever (Yes/No)
       return (
         <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center' }}>
-          <div style={{ display: 'flex', gap: '16px' }}>
+          <div className="questionnaire-options-row" style={{ display: 'flex', gap: '16px' }}>
             <button 
               className={`checkbox-btn ${answers.hasFever ? 'active' : ''}`}
               onClick={() => setAnswers({ ...answers, hasFever: true, temperature: 100.6 })}
@@ -638,7 +654,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
     if (checkInStep === 2) { // Medications (Yes/No)
       return (
-        <div style={{ padding: '20px', display: 'flex', gap: '16px', justifyContent: 'center' }}>
+        <div className="questionnaire-options-row" style={{ padding: '20px', display: 'flex', gap: '16px', justifyContent: 'center' }}>
           <button 
             className="checkbox-btn"
             onClick={() => {
