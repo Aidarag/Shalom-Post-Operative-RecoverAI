@@ -1,30 +1,150 @@
 {
-  "patientName": "Arthur",
-  "age": 68,
-  "surgeryType": "Left Total Hip Arthroplasty (Anterior Approach)",
-  "dischargeDate": "June 20, 2026",
-  "allergies": [
-    "Penicillin",
-    "Sulfa drugs"
-  ],
-  "preExistingConditions": [
-    "Hypertension",
-    "Type 2 Diabetes",
-    "Mild Osteoarthritis"
-  ],
-  "activeMedications": [
+  "patient_profile": {
+    "patient_id": "PAT-2026-0001",
+    "first_name": "James",
+    "last_name": "Carter",
+    "fictional": true,
+    "age": 58,
+    "sex": "Male",
+    "occupation": "High School Teacher",
+    "height_cm": 180,
+    "weight_kg": 92,
+    "blood_type": "A+",
+    "emergency_contact": {
+      "name": "Lisa Carter",
+      "relationship": "Wife",
+      "phone": "(555) 555-0142"
+    }
+  },
+  "medical_history": {
+    "chronic_conditions": [
+      "Hypertension",
+      "Type 2 Diabetes"
+    ],
+    "allergies": [
+      "Penicillin"
+    ],
+    "past_surgeries": [
+      "Arthroscopic meniscus repair (2018)"
+    ],
+    "current_medications": [
+      {
+        "name": "Lisinopril",
+        "dose": "20 mg daily"
+      },
+      {
+        "name": "Metformin",
+        "dose": "500 mg twice daily"
+      }
+    ],
+    "smoker": false,
+    "alcohol_use": "Occasional"
+  },
+  "hospital_discharge": {
+    "hospital_name": "River Valley Medical Center",
+    "surgeon": "Dr. Sarah Thompson",
+    "procedure": "Total Knee Replacement",
+    "surgery_date": "2026-06-02",
+    "discharge_date": "2026-06-04",
+    "follow_up_date": "2026-06-16",
+    "mobility_aid": "Walker",
+    "risk_level": "Moderate"
+  },
+  "discharge_instructions": {
+    "medications": [
+      {
+        "name": "Oxycodone",
+        "dose": "5 mg",
+        "frequency": "Every 6 hours as needed"
+      },
+      {
+        "name": "Aspirin",
+        "dose": "81 mg",
+        "frequency": "Twice daily"
+      },
+      {
+        "name": "Cephalexin",
+        "dose": "500 mg",
+        "frequency": "Every 8 hours for 7 days"
+      }
+    ],
+    "activity": [
+      "Walk 5\u201310 minutes three times daily",
+      "Attend physical therapy",
+      "Ice the knee for swelling",
+      "Keep incision clean and dry"
+    ],
+    "warning_signs": [
+      "Fever above 100.4\u00b0F",
+      "Increasing pain",
+      "Increasing redness",
+      "Increasing swelling",
+      "Drainage from incision",
+      "Calf pain or swelling"
+    ],
+    "emergency_symptoms": [
+      "Chest pain",
+      "Difficulty breathing",
+      "Loss of consciousness"
+    ]
+  },
+  "daily_checkins": [
     {
-      "name": "Apixaban (Eliquis)",
-      "dose": "2.5mg"
+      "day": 1,
+      "pain_level": 4,
+      "temperature_f": 98.7,
+      "redness": "None",
+      "swelling": "Mild",
+      "drainage": false,
+      "mobility": "Walking with walker",
+      "medications_taken": true,
+      "notes": "Recovering as expected"
     },
     {
-      "name": "Metformin",
-      "dose": "500mg"
+      "day": 2,
+      "pain_level": 5,
+      "temperature_f": 99.4,
+      "redness": "Mild",
+      "swelling": "Mild",
+      "drainage": false,
+      "mobility": "Completed physical therapy exercises",
+      "medications_taken": true,
+      "notes": "Slight increase in pain"
     },
     {
-      "name": "Lisinopril",
-      "dose": "10mg"
+      "day": 3,
+      "pain_level": 6,
+      "temperature_f": 100.2,
+      "redness": "Moderate",
+      "swelling": "Moderate",
+      "drainage": false,
+      "mobility": "Walking is becoming more painful",
+      "medications_taken": true,
+      "notes": "Unsure if symptoms are normal"
+    },
+    {
+      "day": 4,
+      "pain_level": 8,
+      "temperature_f": 101.1,
+      "redness": "Increasing",
+      "swelling": "Increasing",
+      "drainage": true,
+      "mobility": "Difficulty walking",
+      "medications_taken": true,
+      "notes": "Thinking about waiting another day before calling"
     }
   ],
-  "surgeonNotes": "Monitor pain management and incision healing closely. Arthur is highly compliant but has a history of mild DVT, so Eliquis adherence is critical."
+  "ai_analysis": {
+    "trend_detected": [
+      "Pain increasing over 4 days",
+      "Fever above discharge threshold",
+      "Increasing redness",
+      "Increasing swelling",
+      "New wound drainage"
+    ],
+    "risk_level": "Concerning",
+    "recommended_action": "Contact your healthcare provider today.",
+    "emergency_action": "If you develop chest pain, trouble breathing, or lose consciousness, call 911 immediately.",
+    "disclaimer": "Shalom provides guidance based on uploaded discharge instructions and reported symptoms. It does not diagnose or replace medical professionals."
+  }
 }

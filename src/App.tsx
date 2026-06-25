@@ -16,7 +16,7 @@ import {
   User
 } from 'lucide-react';
 import { ChatInterface } from './components/ChatInterface';
-import { type CheckInAnswers, type CareTeamReport } from './utils/shalomAgent';
+import { type CheckInAnswers, type CareTeamReport, normalizePatientRecord } from './utils/shalomAgent';
 
 type TabType = 'home' | 'check-in' | 'dataset' | 'insights' | 'about';
 
@@ -355,81 +355,99 @@ function App() {
           <div style={{ background: 'white', padding: '24px', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '16px', border: '1px solid rgba(0,0,0,0.03)' }}>
             <h4 style={{ fontSize: '14.5px', fontWeight: '700', color: 'var(--primary-dark)', margin: 0 }}>Active Patient Profile Preview</h4>
             
-            {medicalHistory ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '13px' }}>
-                <div style={{ display: 'flex', gap: '12px', alignItems: 'center', borderBottom: '1px solid rgba(0,0,0,0.04)', paddingBottom: '12px' }}>
-                  <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 'bold', fontSize: '16px' }}>
-                    {medicalHistory.patientName?.[0] || 'P'}
+            {medicalHistory ? (() => {
+              const normalized = normalizePatientRecord(medicalHistory);
+              if (!normalized) return null;
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '13px' }}>
+                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center', borderBottom: '1px solid rgba(0,0,0,0.04)', paddingBottom: '12px' }}>
+                    <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 'bold', fontSize: '16px' }}>
+                      {normalized.patientName?.[0] || 'P'}
+                    </div>
+                    <div>
+                      <h5 style={{ fontSize: '14.5px', fontWeight: '700', color: 'var(--primary-dark)', margin: 0 }}>{normalized.patientName}</h5>
+                      <span style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>Age: {normalized.age} {normalized.sex ? `• Sex: ${normalized.sex}` : ''} • Discharged: {normalized.dischargeDate}</span>
+                    </div>
                   </div>
+
                   <div>
-                    <h5 style={{ fontSize: '14.5px', fontWeight: '700', color: 'var(--primary-dark)', margin: 0 }}>{medicalHistory.patientName}</h5>
-                    <span style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>Age: {medicalHistory.age} • Discharged: {medicalHistory.dischargeDate}</span>
+                    <span style={{ fontSize: '10.5px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 'bold', display: 'block', marginBottom: '2px' }}>Surgery Procedure</span>
+                    <strong style={{ color: 'var(--text-main)', fontSize: '13px' }}>{normalized.surgeryType}</strong>
                   </div>
+
+                  {normalized.allergies && normalized.allergies.length > 0 && (
+                    <div>
+                      <span style={{ fontSize: '10.5px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 'bold', display: 'block', marginBottom: '4px' }}>Allergies</span>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                        {normalized.allergies.map((all: string, idx: number) => (
+                          <span key={idx} style={{ background: 'var(--emergency-bg)', color: 'var(--emergency)', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                            <AlertTriangle size={10} /> {all}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {normalized.preExistingConditions && normalized.preExistingConditions.length > 0 && (
+                    <div>
+                      <span style={{ fontSize: '10.5px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 'bold', display: 'block', marginBottom: '4px' }}>Pre-existing Conditions</span>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                        {normalized.preExistingConditions.map((cond: string, idx: number) => (
+                          <span key={idx} style={{ background: 'rgba(0,0,0,0.03)', color: 'var(--text-main)', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', border: '1px solid rgba(0,0,0,0.04)' }}>
+                            {cond}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {normalized.activeMedications && normalized.activeMedications.length > 0 && (
+                    <div>
+                      <span style={{ fontSize: '10.5px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 'bold', display: 'block', marginBottom: '4px' }}>Active Discharge Medications</span>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        {normalized.activeMedications.map((med: any, idx: number) => (
+                          <div key={idx} style={{ background: 'rgba(94, 158, 203, 0.05)', border: '1px solid rgba(94, 158, 203, 0.1)', padding: '6px 12px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <strong style={{ color: 'var(--primary-dark)', fontSize: '12px' }}>{med.name}</strong>
+                            <span style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.05)', padding: '1px 6px', borderRadius: '4px', fontSize: '11px', color: 'var(--text-muted)' }}>{med.dose}{med.frequency ? ` (${med.frequency})` : ''}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {normalized.chronicMedications && normalized.chronicMedications.length > 0 && (
+                    <div>
+                      <span style={{ fontSize: '10.5px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 'bold', display: 'block', marginBottom: '4px' }}>Chronic/Current Medications</span>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        {normalized.chronicMedications.map((med: any, idx: number) => (
+                          <div key={idx} style={{ background: 'rgba(94, 158, 203, 0.02)', border: '1px solid rgba(0,0,0,0.04)', padding: '6px 12px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <strong style={{ color: 'var(--text-main)', fontSize: '12px' }}>{med.name}</strong>
+                            <span style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.05)', padding: '1px 6px', borderRadius: '4px', fontSize: '11px', color: 'var(--text-muted)' }}>{med.dose}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {normalized.surgeonNotes && (
+                    <div style={{ borderTop: '1px solid rgba(0,0,0,0.04)', paddingTop: '10px' }}>
+                      <span style={{ fontSize: '10.5px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 'bold', display: 'block', marginBottom: '4px' }}>Recovery Notes / Instructions</span>
+                      <p style={{ margin: 0, fontStyle: 'italic', color: '#525c6c', lineHeight: '1.4', background: 'rgba(0,0,0,0.02)', padding: '10px', borderRadius: '8px', borderLeft: '3px solid var(--accent)' }}>
+                        "{normalized.surgeonNotes}"
+                      </p>
+                    </div>
+                  )}
+
+                  <button 
+                    className="btn-primary" 
+                    onClick={() => setActiveTab('check-in')}
+                    style={{ width: '100%', marginTop: '8px', display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'center' }}
+                  >
+                    <MessageSquare size={14} /> Start Grounded Chat Check-In
+                  </button>
                 </div>
-
-                <div>
-                  <span style={{ fontSize: '10.5px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 'bold', display: 'block', marginBottom: '2px' }}>Surgery Procedure</span>
-                  <strong style={{ color: 'var(--text-main)', fontSize: '13px' }}>{medicalHistory.surgeryType}</strong>
-                </div>
-
-                {medicalHistory.allergies && medicalHistory.allergies.length > 0 && (
-                  <div>
-                    <span style={{ fontSize: '10.5px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 'bold', display: 'block', marginBottom: '4px' }}>Allergies</span>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                      {medicalHistory.allergies.map((all: string, idx: number) => (
-                        <span key={idx} style={{ background: 'var(--emergency-bg)', color: 'var(--emergency)', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                          <AlertTriangle size={10} /> {all}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {medicalHistory.preExistingConditions && medicalHistory.preExistingConditions.length > 0 && (
-                  <div>
-                    <span style={{ fontSize: '10.5px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 'bold', display: 'block', marginBottom: '4px' }}>Pre-existing Conditions</span>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                      {medicalHistory.preExistingConditions.map((cond: string, idx: number) => (
-                        <span key={idx} style={{ background: 'rgba(0,0,0,0.03)', color: 'var(--text-main)', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', border: '1px solid rgba(0,0,0,0.04)' }}>
-                          {cond}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {medicalHistory.activeMedications && medicalHistory.activeMedications.length > 0 && (
-                  <div>
-                    <span style={{ fontSize: '10.5px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 'bold', display: 'block', marginBottom: '4px' }}>Active Discharge Medications</span>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      {medicalHistory.activeMedications.map((med: any, idx: number) => (
-                        <div key={idx} style={{ background: 'rgba(94, 158, 203, 0.05)', border: '1px solid rgba(94, 158, 203, 0.1)', padding: '6px 12px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <strong style={{ color: 'var(--primary-dark)', fontSize: '12px' }}>{med.name}</strong>
-                          <span style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.05)', padding: '1px 6px', borderRadius: '4px', fontSize: '11px', color: 'var(--text-muted)' }}>{med.dose}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {medicalHistory.surgeonNotes && (
-                  <div style={{ borderTop: '1px solid rgba(0,0,0,0.04)', paddingTop: '10px' }}>
-                    <span style={{ fontSize: '10.5px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 'bold', display: 'block', marginBottom: '4px' }}>Surgeon Recovery Notes</span>
-                    <p style={{ margin: 0, fontStyle: 'italic', color: '#525c6c', lineHeight: '1.4', background: 'rgba(0,0,0,0.02)', padding: '10px', borderRadius: '8px', borderLeft: '3px solid var(--accent)' }}>
-                      "{medicalHistory.surgeonNotes}"
-                    </p>
-                  </div>
-                )}
-
-                <button 
-                  className="btn-primary" 
-                  onClick={() => setActiveTab('check-in')}
-                  style={{ width: '100%', marginTop: '8px', display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'center' }}
-                >
-                  <MessageSquare size={14} /> Start Grounded Chat Check-In
-                </button>
-              </div>
-            ) : (
+              );
+            })() : (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: '260px', border: '1px dashed rgba(0,0,0,0.08)', borderRadius: '12px', padding: '20px', textAlign: 'center' }}>
                 <Database size={32} style={{ color: 'var(--text-muted)', opacity: 0.3, marginBottom: '12px' }} />
                 <h5 style={{ fontSize: '14px', fontWeight: 'bold', color: 'var(--text-muted)', margin: 0 }}>No Patient Record Active</h5>

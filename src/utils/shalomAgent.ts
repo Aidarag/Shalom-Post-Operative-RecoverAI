@@ -27,6 +27,106 @@ export interface CareTeamReport {
   generatedAt: string;
 }
 
+export interface NormalizedPatientRecord {
+  patientName: string;
+  age: number;
+  sex?: string;
+  surgeryType: string;
+  dischargeDate: string;
+  allergies: string[];
+  preExistingConditions: string[];
+  activeMedications: { name: string; dose: string; frequency?: string }[];
+  chronicMedications?: { name: string; dose: string }[];
+  dischargeInstructions?: {
+    activity?: string[];
+    warningSigns?: string[];
+    emergencySymptoms?: string[];
+  };
+  surgeonNotes: string;
+  raw: any;
+}
+
+export function normalizePatientRecord(raw: any): NormalizedPatientRecord | null {
+  if (!raw) return null;
+  
+  // If it's already normalized or in the old format:
+  if (raw.patientName && !raw.patient_profile) {
+    return {
+      patientName: raw.patientName,
+      age: raw.age || 0,
+      surgeryType: raw.surgeryType || 'Post-operative Recovery',
+      dischargeDate: raw.dischargeDate || '',
+      allergies: raw.allergies || [],
+      preExistingConditions: raw.preExistingConditions || [],
+      activeMedications: raw.activeMedications || [],
+      surgeonNotes: raw.surgeonNotes || '',
+      raw: raw
+    };
+  }
+
+  // Detect knee replacement dataset format
+  const profile = raw.patient_profile || {};
+  const history = raw.medical_history || {};
+  const discharge = raw.hospital_discharge || {};
+  const instructions = raw.discharge_instructions || {};
+  
+  const patientName = [profile.first_name, profile.last_name].filter(Boolean).join(' ') || 'Patient';
+  const age = profile.age || 0;
+  const sex = profile.sex;
+  const surgeryType = discharge.procedure || 'Post-operative Recovery';
+  const dischargeDate = discharge.discharge_date || '';
+  const allergies = history.allergies || [];
+  const preExistingConditions = history.chronic_conditions || [];
+  
+  const activeMedications = (instructions.medications || []).map((m: any) => ({
+    name: m.name,
+    dose: m.dose,
+    frequency: m.frequency
+  }));
+
+  const chronicMedications = (history.current_medications || []).map((m: any) => ({
+    name: m.name,
+    dose: m.dose
+  }));
+
+  let notesParts: string[] = [];
+  if (discharge.surgeon) {
+    notesParts.push(`Surgeon: ${discharge.surgeon}.`);
+  }
+  if (discharge.hospital_name) {
+    notesParts.push(`Hospital: ${discharge.hospital_name}.`);
+  }
+  if (discharge.mobility_aid) {
+    notesParts.push(`Mobility aid: ${discharge.mobility_aid}.`);
+  }
+  if (instructions.activity && instructions.activity.length > 0) {
+    notesParts.push(`Activity guidelines: ${instructions.activity.join(', ')}.`);
+  }
+  if (instructions.warning_signs && instructions.warning_signs.length > 0) {
+    notesParts.push(`Warning signs: ${instructions.warning_signs.join(', ')}.`);
+  }
+  const surgeonNotes = notesParts.join(' ');
+
+  return {
+    patientName,
+    age,
+    sex,
+    surgeryType,
+    dischargeDate,
+    allergies,
+    preExistingConditions,
+    activeMedications,
+    chronicMedications,
+    dischargeInstructions: {
+      activity: instructions.activity || [],
+      warningSigns: instructions.warning_signs || [],
+      emergencySymptoms: instructions.emergency_symptoms || []
+    },
+    surgeonNotes,
+    raw: raw
+  };
+}
+
 /**
  * Classifies recovery risk level based on the daily check-in answers.
  */
@@ -236,25 +336,30 @@ export function getSimulatedResponse(text: string, _history: Message[] = [], med
 
   const lower = text.toLowerCase();
   
-  // If medical dataset is attached, try to extract relevant answers
-  if (medicalHistory) {
+  // Normalize patient record for robust local checks
+  const normalized = normalizePatientRecord(medicalHistory);
+  
+  if (normalized) {
     if (lower.includes('allergy') || lower.includes('allergies')) {
-      const allergies = medicalHistory.allergies?.join(', ') || 'No known allergies';
+      const allergies = normalized.allergies?.join(', ') || 'No known allergies';
       return `Based on your attached medical dataset, your logged allergies are: ${allergies}.`;
     }
-    if (lower.includes('surgery') || lower.includes('operation')) {
-      return `Your medical record indicates you had a ${medicalHistory.surgeryType || 'surgery'} discharged on ${medicalHistory.dischargeDate || 'recently'}.`;
+    if (lower.includes('surgery') || lower.includes('operation') || lower.includes('procedure')) {
+      return `Your medical record indicates you had a ${normalized.surgeryType || 'surgery'} discharged on ${normalized.dischargeDate || 'recently'}.`;
     }
     if (lower.includes('condition') || lower.includes('medical history') || lower.includes('diseases')) {
-      const conds = medicalHistory.preExistingConditions?.join(', ') || 'None listed';
+      const conds = normalized.preExistingConditions?.join(', ') || 'None listed';
       return `Your records list the following pre-existing conditions: ${conds}.`;
     }
-    if (lower.includes('active medication') || lower.includes('my meds') || lower.includes('medication list')) {
-      const medsList = medicalHistory.activeMedications?.map((m: any) => `${m.name} (${m.dose})`).join(', ') || 'None listed';
+    if (lower.includes('active medication') || lower.includes('my meds') || lower.includes('medication list') || lower.includes('meds')) {
+      const medsList = normalized.activeMedications?.map((m: any) => {
+        const freqPart = m.frequency ? ` - ${m.frequency}` : '';
+        return `${m.name} (${m.dose}${freqPart})`;
+      }).join(', ') || 'None listed';
       return `Your active medications in the record are: ${medsList}.`;
     }
-    if (lower.includes('surgeon note') || lower.includes('surgeon instruction') || lower.includes('doctor note')) {
-      return `Your surgeon noted: "${medicalHistory.surgeonNotes || 'No specific notes listed.'}"`;
+    if (lower.includes('surgeon note') || lower.includes('surgeon instruction') || lower.includes('doctor note') || lower.includes('notes') || lower.includes('instruction')) {
+      return `Your surgeon/discharge notes indicate: "${normalized.surgeonNotes || 'No specific notes listed.'}"`;
     }
   }
   
@@ -309,7 +414,33 @@ AI Behavior Rules:
 * If symptoms are concerning but not life-threatening, tell them: "Your symptoms may need review by your healthcare team. Please contact your healthcare provider."`;
 
   if (medicalHistoryContext) {
-    shalomSystemPrompt += `\n\nPatient Medical History Context (Uploaded JSON Dataset):\n${medicalHistoryContext}\n\nPlease tailor your feedback, check-in answers, or questions to align with this patient's medical history.`;
+    let normalizedSummary = "";
+    try {
+      const parsed = JSON.parse(medicalHistoryContext);
+      const normalized = normalizePatientRecord(parsed);
+      if (normalized) {
+        normalizedSummary = `
+--- Grounded Patient Profile ---
+Patient Name: ${normalized.patientName}
+Age: ${normalized.age} ${normalized.sex ? `(Sex: ${normalized.sex})` : ''}
+Surgery Procedure: ${normalized.surgeryType}
+Discharge Date: ${normalized.dischargeDate}
+Allergies: ${normalized.allergies.join(', ') || 'No known allergies'}
+Pre-existing Conditions: ${normalized.preExistingConditions.join(', ') || 'None'}
+Active Post-Op Medications: ${normalized.activeMedications.map(m => `${m.name} (${m.dose}${m.frequency ? ` - ${m.frequency}` : ''})`).join(', ') || 'None'}
+Chronic Medications: ${normalized.chronicMedications?.map(m => `${m.name} (${m.dose})`).join(', ') || 'None'}
+Surgeon/Discharge Notes: ${normalized.surgeonNotes}
+--------------------------------`;
+      }
+    } catch (e) {
+      console.warn("Failed to parse/normalize medical history context in getGeminiResponse", e);
+    }
+
+    shalomSystemPrompt += `\n\nPatient Medical History Context (Raw JSON Dataset):\n${medicalHistoryContext}`;
+    if (normalizedSummary) {
+      shalomSystemPrompt += `\n\nPatient Medical History (Normalized Text):\n${normalizedSummary}`;
+    }
+    shalomSystemPrompt += `\n\nPlease tailor your feedback, check-in answers, or questions to align with this patient's medical history, active medications, and post-op instructions.`;
   }
 
   try {
