@@ -1,20 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   Send, 
-  Key, 
-  Sparkles, 
   AlertTriangle, 
   ShieldAlert, 
   ArrowRight, 
   Play, 
   CheckCircle, 
   RotateCcw,
-  Paperclip,
-  BrainCircuit,
-  Mic,
-  Volume2,
-  VolumeX,
-  FileText
+  Volume2
 } from 'lucide-react';
 import { 
   type Message, 
@@ -30,7 +23,6 @@ import {
 
 interface ChatInterfaceProps {
   apiKey: string;
-  setApiKey: (key: string) => void;
   onCheckInComplete: (
     answers: CheckInAnswers, 
     status: 'Green' | 'Yellow' | 'Red' | 'Emergency', 
@@ -39,11 +31,11 @@ interface ChatInterfaceProps {
   presetScenarioTrigger: CheckInAnswers | null;
   clearPresetScenarioTrigger: () => void;
   onResetStatus: () => void;
-  attachedFile: File | null;
-  setAttachedFile: (file: File | null) => void;
   medicalHistory: any | null;
-  setMedicalHistory: (history: any | null) => void;
   faqDataset: any | null;
+  isTtsEnabled: boolean;
+  selectedVoiceName: string;
+  voices: SpeechSynthesisVoice[];
 }
 
 const parseCheckInAnswer = (text: string, step: number): any => {
@@ -141,16 +133,15 @@ const parseCheckInAnswer = (text: string, step: number): any => {
 
 export const ChatInterface: React.FC<ChatInterfaceProps> = ({ 
   apiKey, 
-  setApiKey, 
   onCheckInComplete,
   presetScenarioTrigger,
   clearPresetScenarioTrigger,
   onResetStatus,
-  attachedFile,
-  setAttachedFile,
   medicalHistory,
-  setMedicalHistory,
-  faqDataset
+  faqDataset,
+  isTtsEnabled,
+  selectedVoiceName,
+  voices
 }) => {
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -162,69 +153,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   ]);
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
-  const [tempKey, setTempKey] = useState(apiKey);
   const [chatMode, setChatMode] = useState<'check-in' | 'faq'>('check-in');
-
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleAttachClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const json = JSON.parse(event.target?.result as string);
-        setAttachedFile(file);
-        setMedicalHistory(json);
-      } catch (err) {
-        alert("Invalid JSON file format. Please upload a valid patient record dataset JSON.");
-      }
-    };
-    reader.readAsText(file);
-  };
-
-  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
-  const [selectedVoiceName, setSelectedVoiceName] = useState<string>('');
-  const [isTtsEnabled, setIsTtsEnabled] = useState<boolean>(true);
   const activeUtterancesRef = useRef<SpeechSynthesisUtterance[]>([]);
-
-  // Load available system voices
-  useEffect(() => {
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      const updateVoices = () => {
-        const allVoices = window.speechSynthesis.getVoices();
-        
-        // Limit to max 5 voices: 3 English, 1 French, 1 Spanish
-        const englishVoices = allVoices.filter(v => v.lang.toLowerCase().startsWith('en')).slice(0, 3);
-        const frenchVoices = allVoices.filter(v => v.lang.toLowerCase().startsWith('fr')).slice(0, 1);
-        const spanishVoices = allVoices.filter(v => v.lang.toLowerCase().startsWith('es')).slice(0, 1);
-        const filteredVoices = [...englishVoices, ...frenchVoices, ...spanishVoices];
-        
-        setVoices(filteredVoices);
-        if (filteredVoices.length > 0) {
-          // Select English voice first by default (since the app content is in English),
-          // fallback to French, then Spanish, then first available
-          const preferredEnglish = filteredVoices.find(v => v.lang.toLowerCase().startsWith('en'));
-          const preferredFrench = filteredVoices.find(v => v.lang.toLowerCase().startsWith('fr'));
-          const preferredSpanish = filteredVoices.find(v => v.lang.toLowerCase().startsWith('es'));
-          const defaultVoice = preferredEnglish || preferredFrench || preferredSpanish || filteredVoices[0];
-          setSelectedVoiceName(prev => prev || defaultVoice.name);
-        }
-      };
-
-      updateVoices();
-      window.speechSynthesis.onvoiceschanged = updateVoices;
-      return () => {
-        window.speechSynthesis.onvoiceschanged = null;
-      };
-    }
-  }, []);
 
   const speakText = (text: string) => {
     if (!isTtsEnabled || typeof window === 'undefined' || !('speechSynthesis' in window)) return;
@@ -1134,11 +1064,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     return null;
   };
 
-  const saveApiKey = () => {
-    setApiKey(tempKey);
-    setShowSettings(false);
-  };
-
   return (
     <div className="chat-card">
       <div className="chat-header">
@@ -1151,90 +1076,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             </span>
           </div>
         </div>
-        
-        <div className="chat-header-actions" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          {/* Audio voice settings always visible */}
-          <div className="voice-controls">
-            <button 
-              className={`mute-btn ${!isTtsEnabled ? 'muted' : ''}`}
-              onClick={() => {
-                const newValue = !isTtsEnabled;
-                setIsTtsEnabled(newValue);
-                if (!newValue && typeof window !== 'undefined' && 'speechSynthesis' in window) {
-                  window.speechSynthesis.cancel();
-                }
-              }}
-              title={isTtsEnabled ? "Mute responses" : "Unmute responses"}
-              type="button"
-            >
-              {isTtsEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />}
-            </button>
-            {isTtsEnabled && voices.length > 0 && (
-              <select
-                value={selectedVoiceName}
-                onChange={(e) => {
-                  setSelectedVoiceName(e.target.value);
-                  if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-                    window.speechSynthesis.cancel();
-                  }
-                }}
-                className="voice-select"
-                title="Select assistant voice"
-              >
-                {voices.map(voice => (
-                  <option key={voice.name} value={voice.name}>
-                    {voice.name} ({voice.lang})
-                  </option>
-                ))}
-              </select>
-            )}
-          </div>
-
-          <button 
-            className={`settings-toggle-btn ${apiKey ? 'has-key' : ''}`}
-            onClick={() => setShowSettings(!showSettings)}
-            title="Configure API Settings"
-            style={{ display: checkInStep !== -1 ? 'none' : 'flex' }}
-            type="button"
-          >
-            <Key size={16} />
-            {apiKey ? 'API Connected' : 'Connect API'}
-          </button>
-        </div>
       </div>
-
-      {showSettings && (
-        <div className="api-settings-panel">
-          <h4 style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 'bold', fontSize: '13px' }}>
-            <Sparkles size={14} style={{ color: 'var(--accent)' }} />
-            Configure Google Gemini API (Optional)
-          </h4>
-          <p className="settings-desc" style={{ marginTop: '2px' }}>
-            Enter a Gemini API key to activate natural, open-ended clinical chat support.
-          </p>
-          <div className="api-key-input-row">
-            <input
-              type="password"
-              placeholder="Enter Gemini API key (AIzaSy...)"
-              value={tempKey}
-              onChange={(e) => setTempKey(e.target.value)}
-              className="settings-input"
-            />
-            <button className="btn-primary btn-sm" onClick={saveApiKey} style={{ borderRadius: '6px' }}>
-              Save
-            </button>
-          </div>
-          {apiKey && (
-            <button 
-              className="text-btn btn-danger-text" 
-              onClick={() => { setApiKey(''); setTempKey(''); }}
-              style={{ marginTop: '8px', fontSize: '12px' }}
-            >
-              Clear API key
-            </button>
-          )}
-        </div>
-      )}
 
       {/* Mode Selector Tab Group */}
       <div className="chat-mode-tabs" style={{
@@ -1379,33 +1221,9 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
           </div>
         )}
 
-        {/* Chat Input Console (Matches Screenshot) */}
+        {/* Chat Input Console */}
         <div className="console-container">
-          {/* Hidden JSON File Input */}
-          <input 
-            type="file" 
-            accept=".json" 
-            ref={fileInputRef} 
-            style={{ display: 'none' }} 
-            onChange={handleFileChange} 
-          />
-
-          {attachedFile && (
-            <div className="attached-file-chip" style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255, 255, 255, 0.85)', border: '1px solid rgba(192, 122, 176, 0.25)', borderRadius: '12px', padding: '4px 10px', fontSize: '12px', width: 'fit-content', animation: 'fadeIn 0.2s ease-out' }}>
-              <FileText size={12} style={{ color: 'var(--primary)' }} />
-              <span style={{ fontWeight: '500', color: '#525c6c' }}>{attachedFile.name}</span>
-              <button 
-                onClick={() => { setAttachedFile(null); setMedicalHistory(null); if (fileInputRef.current) fileInputRef.current.value = ''; }} 
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontWeight: 'bold', marginLeft: '4px', fontSize: '13px', display: 'flex', alignItems: 'center' }}
-                type="button"
-                title="Remove attachment"
-              >
-                &times;
-              </button>
-            </div>
-          )}
-
-          <div className="console-input-row">
+          <div className="console-input-row" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <input
               type="text"
               placeholder={
@@ -1419,45 +1237,16 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
               onChange={(e) => setInputText(e.target.value)}
               onKeyDown={handleKeyPress}
               className="console-textarea"
+              style={{ flex: 1 }}
             />
-          </div>
-          <div className="console-actions-row">
-            <div className="console-left-actions">
-              <button 
-                className="console-btn" 
-                type="button" 
-                title="Attach file" 
-                onClick={handleAttachClick}
-              >
-                <Paperclip size={13} /> Attach
-              </button>
-              <button 
-                className="console-btn" 
-                type="button" 
-                title="Activate Deep Think" 
-                onClick={() => alert("Simulated: Deep Think reasoning mode enabled.")}
-              >
-                <BrainCircuit size={13} /> Deep Think
-              </button>
-            </div>
-            <div className="console-right-actions">
-              <button 
-                className="console-btn" 
-                type="button" 
-                title="Activate Voice Input" 
-                onClick={() => alert("Simulated: Voice recording interface enabled.")}
-              >
-                <Mic size={13} /> Voice
-              </button>
-              <button 
-                className="console-send-btn" 
-                onClick={() => handleSendMessage(inputText)}
-                disabled={!inputText.trim()}
-                title="Send message"
-              >
-                Send <Send size={13} style={{ marginLeft: '4px' }} />
-              </button>
-            </div>
+            <button 
+              className="console-send-btn" 
+              onClick={() => handleSendMessage(inputText)}
+              disabled={!inputText.trim()}
+              title="Send message"
+            >
+              Send <Send size={13} style={{ marginLeft: '4px' }} />
+            </button>
           </div>
         </div>
       </div>
