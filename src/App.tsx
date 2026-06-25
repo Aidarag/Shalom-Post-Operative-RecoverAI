@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   MessageSquare,
   User,
@@ -11,16 +11,27 @@ import {
   Mic2,
   FlaskConical,
   CheckCircle2,
-  Phone
+  Phone,
+  Home,
+  UploadCloud,
+  FileText,
+  Loader2,
+  ArrowRight
 } from 'lucide-react';
 import { ChatInterface } from './components/ChatInterface';
 import { type CheckInAnswers, type CareTeamReport } from './utils/shalomAgent';
+import { extractTextFromPdf } from './utils/pdfParser';
 
-type TabType = 'chat' | 'profile' | 'settings';
+type TabType = 'home' | 'chat' | 'profile' | 'settings';
 
 function App() {
-  const [activeTab, setActiveTab] = useState<TabType>('chat');
+  const [activeTab, setActiveTab] = useState<TabType>('home');
   const [apiKey, setApiKey] = useState<string>('');
+  const pdfInputRef = useRef<HTMLInputElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [pdfUploading, setPdfUploading] = useState(false);
+  const [pdfUploadedName, setPdfUploadedName] = useState<string | null>(null);
+  const [pdfError, setPdfError] = useState<string | null>(null);
   
   // Speech synthesis hoisted states
   const [isTtsEnabled, setIsTtsEnabled] = useState<boolean>(true);
@@ -148,6 +159,8 @@ function App() {
 
   const renderActiveTabContent = () => {
     switch (activeTab) {
+      case 'home':
+        return renderHomePage();
       case 'chat':
         return renderChatPage();
       case 'profile':
@@ -155,8 +168,158 @@ function App() {
       case 'settings':
         return renderSettingsPage();
       default:
-        return renderChatPage();
+        return renderHomePage();
     }
+  };
+
+  const handlePdfFile = useCallback(async (file: File) => {
+    if (!file || !file.name.toLowerCase().endsWith('.pdf')) {
+      setPdfError('Please upload a valid PDF file.');
+      return;
+    }
+    setPdfError(null);
+    setPdfUploading(true);
+    try {
+      const text = await extractTextFromPdf(file);
+      // Store extracted text as medicalHistory context
+      setMedicalHistory({ pdfText: text, fileName: file.name, uploadedAt: new Date().toISOString() });
+      setPdfUploadedName(file.name);
+      // Auto-navigate to Chat after 800ms to let the user see the success state
+      setTimeout(() => setActiveTab('chat'), 900);
+    } catch (err: any) {
+      setPdfError(err?.message || 'Failed to parse PDF. Please try another file.');
+    } finally {
+      setPdfUploading(false);
+    }
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file) handlePdfFile(file);
+  }, [handlePdfFile]);
+
+  const renderHomePage = () => {
+    const isSuccess = !!pdfUploadedName && !pdfUploading;
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 'calc(100vh - 120px)', width: '100%', maxWidth: '760px', margin: '0 auto', textAlign: 'center', animation: 'fadeIn 0.5s ease-out', gap: '0px' }}>
+        
+        {/* Hero headline */}
+        <h1 style={{ fontSize: '34px', fontWeight: '700', lineHeight: '1.2', fontFamily: 'var(--font-body)', background: 'linear-gradient(90deg, #c07ab0 0%, #5e9ecb 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '6px' }}>
+          Welcome to Shalom
+        </h1>
+        <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '0px', maxWidth: '480px', lineHeight: '1.6' }}>
+          Your AI post-operative recovery assistant. Upload your discharge summary or medical records to get personalized guidance.
+        </p>
+
+        {/* Floating Liquid Glass Orb */}
+        <div className="liquid-orb-container" style={{ marginTop: '4px', marginBottom: '-10px' }}>
+          <div className="liquid-orb"></div>
+          <div className="liquid-orb-reflection"></div>
+        </div>
+
+        {/* PDF Upload Card */}
+        <div
+          onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+          onDragLeave={() => setIsDragging(false)}
+          onDrop={handleDrop}
+          onClick={() => !pdfUploading && pdfInputRef.current?.click()}
+          style={{
+            width: '100%',
+            maxWidth: '520px',
+            borderRadius: '24px',
+            border: `2px dashed ${isDragging ? 'var(--primary)' : isSuccess ? 'var(--success)' : 'rgba(192, 122, 176, 0.35)'}`,
+            background: isDragging
+              ? 'rgba(192, 122, 176, 0.06)'
+              : isSuccess
+              ? 'rgba(33, 140, 116, 0.04)'
+              : 'rgba(255, 255, 255, 0.6)',
+            backdropFilter: 'blur(20px)',
+            padding: '32px 36px',
+            cursor: pdfUploading ? 'wait' : 'pointer',
+            transition: 'all 0.3s ease',
+            boxShadow: isDragging
+              ? '0 8px 32px rgba(192, 122, 176, 0.14)'
+              : '0 4px 24px rgba(0,0,0,0.03)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '14px',
+            marginTop: '8px'
+          }}
+        >
+          <input
+            ref={pdfInputRef}
+            type="file"
+            accept=".pdf"
+            style={{ display: 'none' }}
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) handlePdfFile(f); }}
+          />
+
+          {/* Icon state */}
+          <div style={{
+            width: '56px', height: '56px', borderRadius: '16px',
+            background: isSuccess ? 'var(--success-bg)' : 'rgba(192, 122, 176, 0.08)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            transition: 'all 0.3s ease'
+          }}>
+            {pdfUploading
+              ? <Loader2 size={26} style={{ color: 'var(--primary)', animation: 'spin 1s linear infinite' }} />
+              : isSuccess
+              ? <CheckCircle2 size={26} style={{ color: 'var(--success)' }} />
+              : <UploadCloud size={26} style={{ color: 'var(--primary)' }} />
+            }
+          </div>
+
+          {/* Text states */}
+          {pdfUploading && (
+            <>
+              <p style={{ fontWeight: '600', fontSize: '15px', color: 'var(--primary-dark)', margin: 0 }}>Parsing your document...</p>
+              <p style={{ fontSize: '12.5px', color: 'var(--text-muted)', margin: 0 }}>Extracting medical history from PDF</p>
+            </>
+          )}
+
+          {isSuccess && (
+            <>
+              <p style={{ fontWeight: '700', fontSize: '15px', color: 'var(--success)', margin: 0 }}>Document uploaded successfully</p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(33,140,116,0.06)', padding: '6px 14px', borderRadius: '20px', fontSize: '12.5px', color: 'var(--success)' }}>
+                <FileText size={13} /> {pdfUploadedName}
+              </div>
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: 0 }}>Redirecting you to your assistant...</p>
+            </>
+          )}
+
+          {!pdfUploading && !isSuccess && (
+            <>
+              <div>
+                <p style={{ fontWeight: '600', fontSize: '15px', color: 'var(--primary-dark)', margin: '0 0 4px 0' }}>Drop your medical PDF here</p>
+                <p style={{ fontSize: '12.5px', color: 'var(--text-muted)', margin: 0 }}>Discharge summary, surgical report, or care plan</p>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-muted)' }}>
+                <span style={{ padding: '3px 10px', borderRadius: '20px', border: '1px solid rgba(0,0,0,0.07)', background: 'rgba(255,255,255,0.8)', fontSize: '11.5px' }}>PDF</span>
+                <span>· Max 20 MB · Click or drag</span>
+              </div>
+            </>
+          )}
+
+          {pdfError && (
+            <p style={{ fontSize: '12px', color: 'var(--emergency)', margin: 0, background: 'var(--emergency-bg)', padding: '6px 14px', borderRadius: '8px' }}>{pdfError}</p>
+          )}
+        </div>
+
+        {/* Skip / Continue without upload */}
+        <button
+          onClick={() => setActiveTab('chat')}
+          style={{ marginTop: '18px', display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '13px', cursor: 'pointer', padding: '6px 12px', borderRadius: '8px', transition: 'color 0.2s' }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--primary-dark)')}
+          onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
+        >
+          Continue without uploading <ArrowRight size={14} />
+        </button>
+
+      </div>
+    );
   };
 
   const renderChatPage = () => {
@@ -483,6 +646,15 @@ function App() {
         </div>
 
         <ul className="nav-links">
+          <li>
+            <button 
+              className={`nav-btn ${activeTab === 'home' ? 'active' : ''}`}
+              onClick={() => setActiveTab('home')}
+              title="Home"
+            >
+              <Home size={18} />
+            </button>
+          </li>
           <li>
             <button 
               className={`nav-btn ${activeTab === 'chat' ? 'active' : ''}`}
