@@ -1,0 +1,1086 @@
+{
+  "dataset_name": "Shalom MVP Knowledge Base FAQ",
+  "version": "1.0",
+  "created_for": "Shalom post-operative recovery assistant MVP",
+  "design_direction": {
+    "brand_voice": "calm, warm, human, simple, reassuring, safety-first",
+    "personality": "like a peaceful recovery companion, not a cold medical bot",
+    "reading_level": "simple patient-friendly English",
+    "style_rules": [
+      "Use short sentences.",
+      "Avoid medical jargon when possible.",
+      "Always prioritize discharge instructions.",
+      "Never diagnose.",
+      "Escalate red flags to provider or emergency care.",
+      "Reassure when appropriate, but do not minimize risk."
+    ]
+  },
+  "intended_use": "FAQ dataset for patient questions and Shalom responses inside the MVP.",
+  "safety_note": "This synthetic dataset is for a student prototype and does not replace professional medical advice.",
+  "records_count": 76,
+  "faq": [
+    {
+      "id": "shalom_faq_001",
+      "category": "pain",
+      "patient_question": "Is it normal to have pain after surgery?",
+      "shalom_response": "Some pain is expected after surgery, especially during the first few days. Track your pain level, take your medication only as prescribed, rest, ice, and elevate if your discharge instructions allow it. If the pain suddenly becomes severe, keeps getting worse, or does not improve with prescribed medication, contact your care team.",
+      "urgency_level": "monitor",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "pain",
+        "monitor",
+        "post_op_recovery"
+      ]
+    },
+    {
+      "id": "shalom_faq_002",
+      "category": "pain",
+      "patient_question": "My pain is getting worse every day. What should I do?",
+      "shalom_response": "Pain should usually become more manageable over time. Since your pain is getting worse instead of improving, Shalom recommends contacting your surgeon or care team today for guidance. If the pain is severe, sudden, or comes with chest pain, trouble breathing, or confusion, seek emergency help.",
+      "urgency_level": "contact_provider",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "pain",
+        "contact_provider",
+        "post_op_recovery"
+      ]
+    },
+    {
+      "id": "shalom_faq_003",
+      "category": "pain",
+      "patient_question": "Can I take extra pain medicine if I still hurt?",
+      "shalom_response": "Do not take extra medication unless your doctor told you to. Taking more than prescribed can be dangerous. Shalom recommends following your medication schedule and contacting your provider if your pain is not controlled.",
+      "urgency_level": "contact_provider",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "pain",
+        "contact_provider",
+        "post_op_recovery"
+      ]
+    },
+    {
+      "id": "shalom_faq_004",
+      "category": "pain",
+      "patient_question": "Why does my knee hurt more when I walk?",
+      "shalom_response": "It is common to feel more discomfort when you start moving after knee surgery. Move slowly, use support if instructed, and rest between activities. If the pain becomes sharp, severe, or comes with major swelling or redness, contact your care team.",
+      "urgency_level": "monitor",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "pain",
+        "monitor",
+        "post_op_recovery"
+      ]
+    },
+    {
+      "id": "shalom_faq_005",
+      "category": "pain",
+      "patient_question": "Is sharp pain normal?",
+      "shalom_response": "Mild soreness or aching can be normal, but sharp, severe, or sudden pain should be taken seriously. Shalom recommends checking your other symptoms and contacting your provider if it continues, worsens, or feels unusual for your recovery.",
+      "urgency_level": "contact_provider",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "pain",
+        "contact_provider",
+        "post_op_recovery"
+      ]
+    },
+    {
+      "id": "shalom_faq_006",
+      "category": "swelling",
+      "patient_question": "Is swelling normal after surgery?",
+      "shalom_response": "Mild swelling is common after surgery. Elevating the leg, resting, and using ice if allowed in your instructions can help. If swelling is rapidly increasing, very painful, only on one side, or comes with calf pain, redness, or shortness of breath, contact your provider or seek urgent care.",
+      "urgency_level": "monitor",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "swelling",
+        "monitor",
+        "post_op_recovery"
+      ]
+    },
+    {
+      "id": "shalom_faq_007",
+      "category": "swelling",
+      "patient_question": "My leg is very swollen. Should I worry?",
+      "shalom_response": "A lot of swelling can happen after surgery, but major or worsening swelling should be checked. Shalom recommends contacting your care team, especially if swelling is increasing, painful, warm, or connected to calf pain.",
+      "urgency_level": "contact_provider",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "swelling",
+        "contact_provider",
+        "post_op_recovery"
+      ]
+    },
+    {
+      "id": "shalom_faq_008",
+      "category": "swelling",
+      "patient_question": "How do I reduce swelling?",
+      "shalom_response": "Follow your discharge instructions. Usually, patients are told to rest, elevate the surgical area, avoid overdoing activity, and use ice if approved. If swelling keeps getting worse, contact your care team.",
+      "urgency_level": "self_care",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "swelling",
+        "self_care",
+        "post_op_recovery"
+      ]
+    },
+    {
+      "id": "shalom_faq_009",
+      "category": "swelling",
+      "patient_question": "My calf is swollen and painful. What does that mean?",
+      "shalom_response": "Calf pain and swelling can be a warning sign and should not be ignored. Shalom recommends contacting your provider urgently. If you also have chest pain, trouble breathing, dizziness, or coughing blood, call emergency services immediately.",
+      "urgency_level": "urgent",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "swelling",
+        "urgent",
+        "post_op_recovery"
+      ]
+    },
+    {
+      "id": "shalom_faq_010",
+      "category": "incision",
+      "patient_question": "Is redness around my incision normal?",
+      "shalom_response": "A little redness near the incision can be normal. But redness that spreads, gets hotter, becomes more painful, or comes with fever or drainage can be a sign of infection. Shalom recommends contacting your care team if it is increasing.",
+      "urgency_level": "contact_provider",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "incision",
+        "contact_provider",
+        "post_op_recovery"
+      ]
+    },
+    {
+      "id": "shalom_faq_011",
+      "category": "incision",
+      "patient_question": "My incision is leaking fluid. What should I do?",
+      "shalom_response": "Small clear drainage may happen early after surgery, but yellow, green, bloody, smelly, or increasing drainage should be checked. Shalom recommends contacting your surgeon or care team today.",
+      "urgency_level": "contact_provider",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "incision",
+        "contact_provider",
+        "post_op_recovery"
+      ]
+    },
+    {
+      "id": "shalom_faq_012",
+      "category": "incision",
+      "patient_question": "My incision smells bad. Is that normal?",
+      "shalom_response": "A bad smell from the incision is not something to ignore. It can be a warning sign of infection. Shalom recommends contacting your provider today.",
+      "urgency_level": "contact_provider",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "incision",
+        "contact_provider",
+        "post_op_recovery"
+      ]
+    },
+    {
+      "id": "shalom_faq_013",
+      "category": "incision",
+      "patient_question": "Can I touch my incision?",
+      "shalom_response": "Avoid touching your incision unless your discharge instructions say to clean or change the dressing. Always wash your hands first. Do not scratch, pick, or remove anything unless your provider told you to.",
+      "urgency_level": "self_care",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "incision",
+        "self_care",
+        "post_op_recovery"
+      ]
+    },
+    {
+      "id": "shalom_faq_014",
+      "category": "incision",
+      "patient_question": "When can I remove my bandage?",
+      "shalom_response": "Follow your discharge instructions because bandage timing depends on the surgery and dressing type. If you are unsure, do not remove it yet. Contact your care team or ask Shalom to check your discharge instructions if they were uploaded.",
+      "urgency_level": "refer_to_discharge",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "incision",
+        "post_op_recovery",
+        "refer_to_discharge"
+      ]
+    },
+    {
+      "id": "shalom_faq_015",
+      "category": "incision",
+      "patient_question": "My stitches feel tight. Is that okay?",
+      "shalom_response": "Some tightness can happen as the skin heals and swelling changes. If the area becomes very painful, opens, bleeds, drains, or gets red and hot, contact your care team.",
+      "urgency_level": "monitor",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "incision",
+        "monitor",
+        "post_op_recovery"
+      ]
+    },
+    {
+      "id": "shalom_faq_016",
+      "category": "fever",
+      "patient_question": "Is a fever normal after surgery?",
+      "shalom_response": "A low temperature can happen after surgery, but fever can also be a warning sign. If your temperature reaches the limit listed in your discharge instructions, or if you have chills, worsening pain, redness, or drainage, contact your provider.",
+      "urgency_level": "contact_provider",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "fever",
+        "contact_provider",
+        "post_op_recovery"
+      ]
+    },
+    {
+      "id": "shalom_faq_017",
+      "category": "fever",
+      "patient_question": "I have chills. What should I do?",
+      "shalom_response": "Chills after surgery can be a warning sign, especially with fever, redness, drainage, or worsening pain. Shalom recommends checking your temperature and contacting your care team today.",
+      "urgency_level": "contact_provider",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "fever",
+        "contact_provider",
+        "post_op_recovery"
+      ]
+    },
+    {
+      "id": "shalom_faq_018",
+      "category": "fever",
+      "patient_question": "My temperature is 101.5°F. Should I call someone?",
+      "shalom_response": "A temperature of 101.5°F after surgery should be reported unless your discharge instructions say otherwise. Shalom recommends contacting your surgeon or care team today, especially if you also feel worse.",
+      "urgency_level": "contact_provider",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "fever",
+        "contact_provider",
+        "post_op_recovery"
+      ]
+    },
+    {
+      "id": "shalom_faq_019",
+      "category": "medication",
+      "patient_question": "I forgot to take my medication. What should I do?",
+      "shalom_response": "Do not double the next dose unless your provider told you to. Check your medication instructions or contact your pharmacist or care team. Shalom can help you mark the missed dose and reset your reminder schedule.",
+      "urgency_level": "self_care",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "self_care",
+        "post_op_recovery",
+        "medication"
+      ]
+    },
+    {
+      "id": "shalom_faq_020",
+      "category": "medication",
+      "patient_question": "Can Shalom remind me to take my medication?",
+      "shalom_response": "Yes. In the MVP, Shalom can show medication reminders based on the schedule entered in the patient profile. The goal is to help you stay consistent and reduce missed doses during recovery.",
+      "urgency_level": "feature",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "feature",
+        "post_op_recovery",
+        "medication"
+      ]
+    },
+    {
+      "id": "shalom_faq_021",
+      "category": "medication",
+      "patient_question": "I feel nauseous after my medicine. Is that normal?",
+      "shalom_response": "Some medications can cause nausea, but you should not ignore it if it is severe, repeated, or stops you from eating, drinking, or taking medication. Shalom recommends contacting your care team if it continues.",
+      "urgency_level": "contact_provider",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "contact_provider",
+        "post_op_recovery",
+        "medication"
+      ]
+    },
+    {
+      "id": "shalom_faq_022",
+      "category": "medication",
+      "patient_question": "Can I stop taking my medicine if I feel better?",
+      "shalom_response": "Do not stop a prescribed medication without checking with your provider. Some medications are important even if you feel better. Shalom recommends following the plan from your discharge instructions.",
+      "urgency_level": "refer_to_discharge",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "post_op_recovery",
+        "refer_to_discharge",
+        "medication"
+      ]
+    },
+    {
+      "id": "shalom_faq_023",
+      "category": "medication",
+      "patient_question": "Can I take ibuprofen?",
+      "shalom_response": "Only take ibuprofen if your provider said it is safe for you. It may not be appropriate for every patient, especially depending on surgery type, bleeding risk, kidney issues, or other medications. Check your discharge instructions or ask your care team.",
+      "urgency_level": "refer_to_discharge",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "post_op_recovery",
+        "refer_to_discharge",
+        "medication"
+      ]
+    },
+    {
+      "id": "shalom_faq_024",
+      "category": "medication",
+      "patient_question": "Can I drink alcohol while taking pain medication?",
+      "shalom_response": "Avoid alcohol while taking prescription pain medication unless your provider clearly says it is safe. Mixing alcohol with some medications can be dangerous and can affect breathing, balance, and recovery.",
+      "urgency_level": "self_care",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "self_care",
+        "post_op_recovery",
+        "medication"
+      ]
+    },
+    {
+      "id": "shalom_faq_025",
+      "category": "mobility",
+      "patient_question": "How much should I walk after surgery?",
+      "shalom_response": "Follow your discharge instructions. In many recoveries, short gentle walks are encouraged, but overdoing it can increase pain and swelling. Shalom can help you track your walking and symptoms day by day.",
+      "urgency_level": "refer_to_discharge",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "post_op_recovery",
+        "mobility",
+        "refer_to_discharge"
+      ]
+    },
+    {
+      "id": "shalom_faq_026",
+      "category": "mobility",
+      "patient_question": "Can I climb stairs?",
+      "shalom_response": "Stairs depend on your surgery, strength, and discharge instructions. If stairs are allowed, use support and move slowly. If your instructions say to avoid stairs, follow that plan until your care team clears you.",
+      "urgency_level": "refer_to_discharge",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "post_op_recovery",
+        "mobility",
+        "refer_to_discharge"
+      ]
+    },
+    {
+      "id": "shalom_faq_027",
+      "category": "mobility",
+      "patient_question": "I feel dizzy when I stand up. What should I do?",
+      "shalom_response": "Sit or lie down right away and avoid walking alone. Dizziness can happen after surgery, medication, dehydration, or blood pressure changes. If it continues, is severe, or comes with chest pain, shortness of breath, or fainting, seek urgent help.",
+      "urgency_level": "urgent",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "urgent",
+        "mobility",
+        "post_op_recovery"
+      ]
+    },
+    {
+      "id": "shalom_faq_028",
+      "category": "mobility",
+      "patient_question": "Can I exercise after surgery?",
+      "shalom_response": "Only do exercises approved by your care team or physical therapist. Shalom can help you follow the exercise plan in your discharge instructions, but it should not create new exercises that were not approved.",
+      "urgency_level": "refer_to_discharge",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "post_op_recovery",
+        "mobility",
+        "refer_to_discharge"
+      ]
+    },
+    {
+      "id": "shalom_faq_029",
+      "category": "mobility",
+      "patient_question": "I cannot move my leg like before. Is that normal?",
+      "shalom_response": "Limited movement can be normal early in recovery, but sudden weakness, numbness, or loss of movement should be reported. Shalom recommends contacting your care team if this is new or worsening.",
+      "urgency_level": "contact_provider",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "contact_provider",
+        "mobility",
+        "post_op_recovery"
+      ]
+    },
+    {
+      "id": "shalom_faq_030",
+      "category": "mobility",
+      "patient_question": "Can I drive after surgery?",
+      "shalom_response": "Driving depends on your surgery, pain medication, mobility, and provider clearance. Do not drive while taking medications that make you sleepy or unsafe. Follow your discharge instructions and ask your provider before driving again.",
+      "urgency_level": "refer_to_discharge",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "post_op_recovery",
+        "mobility",
+        "refer_to_discharge"
+      ]
+    },
+    {
+      "id": "shalom_faq_031",
+      "category": "wound_care",
+      "patient_question": "Can I shower after surgery?",
+      "shalom_response": "Shower timing depends on your discharge instructions and dressing type. Many patients must keep the incision dry for a specific period. Shalom recommends checking the uploaded discharge instructions first before showering.",
+      "urgency_level": "refer_to_discharge",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "wound_care",
+        "post_op_recovery",
+        "refer_to_discharge"
+      ]
+    },
+    {
+      "id": "shalom_faq_032",
+      "category": "wound_care",
+      "patient_question": "Can I take a bath?",
+      "shalom_response": "Do not soak the incision in a bath, pool, or hot tub until your provider says it is safe. Soaking too early can increase infection risk.",
+      "urgency_level": "self_care",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "wound_care",
+        "self_care",
+        "post_op_recovery"
+      ]
+    },
+    {
+      "id": "shalom_faq_033",
+      "category": "wound_care",
+      "patient_question": "How do I keep my incision clean?",
+      "shalom_response": "Follow your discharge instructions. Keep the area clean and dry, wash your hands before touching anything near the incision, and do not apply creams or products unless your provider told you to.",
+      "urgency_level": "refer_to_discharge",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "wound_care",
+        "post_op_recovery",
+        "refer_to_discharge"
+      ]
+    },
+    {
+      "id": "shalom_faq_034",
+      "category": "wound_care",
+      "patient_question": "Can I put lotion on my incision?",
+      "shalom_response": "Do not put lotion, oil, powder, or cream on the incision unless your provider instructed you to. Products can irritate the wound or affect healing.",
+      "urgency_level": "self_care",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "wound_care",
+        "self_care",
+        "post_op_recovery"
+      ]
+    },
+    {
+      "id": "shalom_faq_035",
+      "category": "infection",
+      "patient_question": "What are signs of infection after surgery?",
+      "shalom_response": "Warning signs can include fever, chills, spreading redness, warmth, increasing pain, swelling, pus, bad smell, or drainage from the incision. If you notice these signs, Shalom recommends contacting your care team.",
+      "urgency_level": "contact_provider",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "infection",
+        "contact_provider",
+        "post_op_recovery"
+      ]
+    },
+    {
+      "id": "shalom_faq_036",
+      "category": "infection",
+      "patient_question": "My incision is warm and painful. Is that bad?",
+      "shalom_response": "Warmth and pain can happen during healing, but if it is increasing or comes with redness, fever, swelling, or drainage, it may need medical attention. Shalom recommends contacting your provider.",
+      "urgency_level": "contact_provider",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "infection",
+        "contact_provider",
+        "post_op_recovery"
+      ]
+    },
+    {
+      "id": "shalom_faq_037",
+      "category": "infection",
+      "patient_question": "I am diabetic. Does that matter for healing?",
+      "shalom_response": "Yes. Diabetes can increase the risk of slower healing and infection. Shalom will pay close attention to fever, redness, drainage, swelling, and pain trends, and recommend contacting your provider sooner when symptoms worsen.",
+      "urgency_level": "personalized",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "infection",
+        "personalized",
+        "post_op_recovery"
+      ]
+    },
+    {
+      "id": "shalom_faq_038",
+      "category": "blood_clot",
+      "patient_question": "What are signs of a blood clot?",
+      "shalom_response": "Possible warning signs include new calf pain, swelling, warmth, redness, or tenderness, especially in one leg. If you also have chest pain, shortness of breath, dizziness, or coughing blood, call emergency services immediately.",
+      "urgency_level": "urgent",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "urgent",
+        "blood_clot",
+        "post_op_recovery"
+      ]
+    },
+    {
+      "id": "shalom_faq_039",
+      "category": "blood_clot",
+      "patient_question": "I have shortness of breath after surgery. What should I do?",
+      "shalom_response": "Shortness of breath after surgery can be serious. Shalom recommends calling emergency services immediately, especially if it comes with chest pain, dizziness, or coughing blood.",
+      "urgency_level": "emergency",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "emergency",
+        "blood_clot",
+        "post_op_recovery"
+      ]
+    },
+    {
+      "id": "shalom_faq_040",
+      "category": "blood_clot",
+      "patient_question": "My chest hurts. Should I wait?",
+      "shalom_response": "Do not wait. Chest pain after surgery can be serious. Call emergency services immediately or seek emergency care now.",
+      "urgency_level": "emergency",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "emergency",
+        "blood_clot",
+        "post_op_recovery"
+      ]
+    },
+    {
+      "id": "shalom_faq_041",
+      "category": "daily_checkin",
+      "patient_question": "Why does Shalom ask me daily questions?",
+      "shalom_response": "Shalom asks daily questions to understand how your recovery is changing. One symptom alone may not tell the full story, but trends over several days can show if you are improving or getting worse.",
+      "urgency_level": "feature",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "feature",
+        "daily_checkin",
+        "post_op_recovery"
+      ]
+    },
+    {
+      "id": "shalom_faq_042",
+      "category": "daily_checkin",
+      "patient_question": "What symptoms should I track every day?",
+      "shalom_response": "For the MVP, Shalom tracks pain level, temperature, redness, swelling, drainage, medication adherence, mobility, and any new concerns. These help Shalom notice warning signs early.",
+      "urgency_level": "feature",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "feature",
+        "daily_checkin",
+        "post_op_recovery"
+      ]
+    },
+    {
+      "id": "shalom_faq_043",
+      "category": "daily_checkin",
+      "patient_question": "Why does Shalom compare today with yesterday?",
+      "shalom_response": "Recovery is about patterns. If pain, swelling, redness, or fever gets worse over time, Shalom can flag the trend and recommend the next step before the problem becomes more serious.",
+      "urgency_level": "feature",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "feature",
+        "daily_checkin",
+        "post_op_recovery"
+      ]
+    },
+    {
+      "id": "shalom_faq_044",
+      "category": "daily_checkin",
+      "patient_question": "What if I forget to complete my check-in?",
+      "shalom_response": "Shalom can remind you to complete your check-in. If you miss one, you can still complete the next one, and Shalom will continue tracking your recovery.",
+      "urgency_level": "feature",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "feature",
+        "daily_checkin",
+        "post_op_recovery"
+      ]
+    },
+    {
+      "id": "shalom_faq_045",
+      "category": "emergency",
+      "patient_question": "When should I go to the emergency room?",
+      "shalom_response": "Seek emergency help for chest pain, trouble breathing, fainting, severe confusion, uncontrolled bleeding, signs of stroke, or severe sudden pain. Shalom is not a replacement for emergency care.",
+      "urgency_level": "emergency",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "emergency",
+        "post_op_recovery"
+      ]
+    },
+    {
+      "id": "shalom_faq_046",
+      "category": "emergency",
+      "patient_question": "What symptoms should I not ignore?",
+      "shalom_response": "Do not ignore chest pain, shortness of breath, fainting, heavy bleeding, severe swelling, sudden weakness, high fever, confusion, or worsening infection signs. These need urgent medical attention.",
+      "urgency_level": "urgent",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "emergency",
+        "urgent",
+        "post_op_recovery"
+      ]
+    },
+    {
+      "id": "shalom_faq_047",
+      "category": "emergency",
+      "patient_question": "Can Shalom call 911 for me?",
+      "shalom_response": "In the MVP, Shalom can tell you when symptoms may require emergency help, but it does not automatically call 911. If you think it is an emergency, call 911 immediately.",
+      "urgency_level": "feature",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "emergency",
+        "feature",
+        "post_op_recovery"
+      ]
+    },
+    {
+      "id": "shalom_faq_048",
+      "category": "diet",
+      "patient_question": "What should I eat after surgery?",
+      "shalom_response": "Follow your discharge instructions. In general, recovery often needs fluids, protein, fiber, and balanced meals. If you have diabetes or other conditions, follow the diet plan given by your care team.",
+      "urgency_level": "self_care",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "self_care",
+        "diet",
+        "post_op_recovery"
+      ]
+    },
+    {
+      "id": "shalom_faq_049",
+      "category": "diet",
+      "patient_question": "I do not feel hungry. Is that normal?",
+      "shalom_response": "A lower appetite can happen after surgery, anesthesia, or medication. Try small meals and fluids if allowed. If you cannot eat or drink, keep vomiting, or feel very weak, contact your care team.",
+      "urgency_level": "contact_provider",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "contact_provider",
+        "diet",
+        "post_op_recovery"
+      ]
+    },
+    {
+      "id": "shalom_faq_050",
+      "category": "diet",
+      "patient_question": "What can help constipation after surgery?",
+      "shalom_response": "Constipation can happen from pain medication, less movement, and dehydration. Drink fluids if allowed, eat fiber, and walk as instructed. Ask your provider before taking any laxative or stool softener.",
+      "urgency_level": "self_care",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "self_care",
+        "diet",
+        "post_op_recovery"
+      ]
+    },
+    {
+      "id": "shalom_faq_051",
+      "category": "diet",
+      "patient_question": "Can I drink coffee after surgery?",
+      "shalom_response": "Coffee depends on your instructions, hydration, medications, and stomach comfort. If your discharge instructions do not restrict it, small amounts may be okay, but contact your provider if unsure.",
+      "urgency_level": "refer_to_discharge",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "post_op_recovery",
+        "diet",
+        "refer_to_discharge"
+      ]
+    },
+    {
+      "id": "shalom_faq_052",
+      "category": "sleep",
+      "patient_question": "Why is it hard to sleep after surgery?",
+      "shalom_response": "Pain, swelling, medication, stress, and sleeping position can make rest difficult. Follow your pain plan, keep your incision protected, and use the sleeping position recommended by your care team.",
+      "urgency_level": "self_care",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "sleep",
+        "self_care",
+        "post_op_recovery"
+      ]
+    },
+    {
+      "id": "shalom_faq_053",
+      "category": "sleep",
+      "patient_question": "Can I sleep on my side?",
+      "shalom_response": "Sleeping position depends on your surgery and provider instructions. If your discharge plan gives a specific position, follow it. If not, choose a safe position that does not put pressure on the surgical area.",
+      "urgency_level": "refer_to_discharge",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "sleep",
+        "post_op_recovery",
+        "refer_to_discharge"
+      ]
+    },
+    {
+      "id": "shalom_faq_054",
+      "category": "sleep",
+      "patient_question": "I wake up in pain. What should I do?",
+      "shalom_response": "Track when the pain happens and whether medication timing, swelling, or position may be involved. Do not change medication doses on your own. If pain is severe or worsening, contact your care team.",
+      "urgency_level": "contact_provider",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "sleep",
+        "contact_provider",
+        "post_op_recovery"
+      ]
+    },
+    {
+      "id": "shalom_faq_055",
+      "category": "follow_up",
+      "patient_question": "When is my follow-up appointment?",
+      "shalom_response": "Shalom can show your follow-up appointment if it was added to your patient profile or discharge instructions. If it is not listed, contact your provider’s office to confirm the date and time.",
+      "urgency_level": "feature",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "follow_up",
+        "feature",
+        "post_op_recovery"
+      ]
+    },
+    {
+      "id": "shalom_faq_056",
+      "category": "follow_up",
+      "patient_question": "Do I really need my follow-up appointment?",
+      "shalom_response": "Yes, follow-up visits help your care team check healing, remove or inspect dressings if needed, review pain control, and catch problems early. Do not skip it unless your provider reschedules it.",
+      "urgency_level": "self_care",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "follow_up",
+        "self_care",
+        "post_op_recovery"
+      ]
+    },
+    {
+      "id": "shalom_faq_057",
+      "category": "follow_up",
+      "patient_question": "What should I tell my doctor at follow-up?",
+      "shalom_response": "Tell your doctor about pain levels, swelling, redness, drainage, fever, medication issues, mobility problems, dizziness, appetite, sleep, and any symptoms that worry you. Shalom can summarize your check-ins for the visit.",
+      "urgency_level": "feature",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "follow_up",
+        "feature",
+        "post_op_recovery"
+      ]
+    },
+    {
+      "id": "shalom_faq_058",
+      "category": "shalom",
+      "patient_question": "Are you a doctor?",
+      "shalom_response": "No. Shalom is a post-operative support assistant. It helps you understand instructions, track symptoms, and know when to contact your care team, but it does not diagnose or replace medical professionals.",
+      "urgency_level": "safety",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "safety",
+        "shalom",
+        "post_op_recovery"
+      ]
+    },
+    {
+      "id": "shalom_faq_059",
+      "category": "shalom",
+      "patient_question": "Can Shalom diagnose me?",
+      "shalom_response": "No. Shalom does not diagnose. It looks for patterns and warning signs, then gives safe guidance based on your discharge instructions and recovery data.",
+      "urgency_level": "safety",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "safety",
+        "shalom",
+        "post_op_recovery"
+      ]
+    },
+    {
+      "id": "shalom_faq_060",
+      "category": "shalom",
+      "patient_question": "How does Shalom personalize answers?",
+      "shalom_response": "Shalom uses your surgery type, medical history, medications, discharge instructions, and daily check-ins to give answers that fit your recovery instead of generic advice.",
+      "urgency_level": "feature",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "feature",
+        "shalom",
+        "post_op_recovery"
+      ]
+    },
+    {
+      "id": "shalom_faq_061",
+      "category": "shalom",
+      "patient_question": "What makes Shalom different from a regular chatbot?",
+      "shalom_response": "Shalom is built for post-surgery recovery. It does not just answer random questions; it connects your questions to your medical history, discharge instructions, medication schedule, and symptom trends.",
+      "urgency_level": "feature",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "feature",
+        "shalom",
+        "post_op_recovery"
+      ]
+    },
+    {
+      "id": "shalom_faq_062",
+      "category": "upload",
+      "patient_question": "Why do I need to upload my discharge papers?",
+      "shalom_response": "Your discharge papers tell Shalom what your care team specifically wants you to do. This helps Shalom give safer and more personalized answers instead of general advice.",
+      "urgency_level": "feature",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "upload",
+        "feature",
+        "post_op_recovery"
+      ]
+    },
+    {
+      "id": "shalom_faq_063",
+      "category": "upload",
+      "patient_question": "What documents should I upload?",
+      "shalom_response": "For the MVP, you can upload discharge instructions, medication list, surgery summary, follow-up appointment details, and any wound care instructions. Do not upload anything you are not comfortable sharing.",
+      "urgency_level": "feature",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "upload",
+        "feature",
+        "post_op_recovery"
+      ]
+    },
+    {
+      "id": "shalom_faq_064",
+      "category": "upload",
+      "patient_question": "What if I do not upload my medical history?",
+      "shalom_response": "Shalom can still answer general recovery questions, but the answers will be less personalized. Uploading your information helps Shalom understand your risks and instructions better.",
+      "urgency_level": "feature",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "upload",
+        "feature",
+        "post_op_recovery"
+      ]
+    },
+    {
+      "id": "shalom_faq_065",
+      "category": "mental_health",
+      "patient_question": "I feel anxious after surgery. Is that normal?",
+      "shalom_response": "Feeling anxious after surgery can happen. Recovery can feel stressful, especially when you are home and unsure what is normal. Shalom can help you track symptoms and prepare questions for your care team, but if anxiety feels overwhelming or unsafe, reach out for help immediately.",
+      "urgency_level": "support",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "support",
+        "mental_health",
+        "post_op_recovery"
+      ]
+    },
+    {
+      "id": "shalom_faq_066",
+      "category": "mental_health",
+      "patient_question": "I feel alone during recovery. What can I do?",
+      "shalom_response": "You are not alone. Recovery can feel isolating, especially when symptoms are confusing. Shalom can guide you step by step, remind you what to track, and help you decide when to contact your care team or a trusted person.",
+      "urgency_level": "support",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "support",
+        "mental_health",
+        "post_op_recovery"
+      ]
+    },
+    {
+      "id": "shalom_faq_067",
+      "category": "physical_therapy",
+      "patient_question": "Do I need physical therapy?",
+      "shalom_response": "Physical therapy depends on your surgery and provider plan. If your discharge instructions include therapy, follow that schedule. Shalom can help remind you about approved exercises and appointments.",
+      "urgency_level": "refer_to_discharge",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "post_op_recovery",
+        "physical_therapy",
+        "refer_to_discharge"
+      ]
+    },
+    {
+      "id": "shalom_faq_068",
+      "category": "physical_therapy",
+      "patient_question": "My exercises hurt. Should I stop?",
+      "shalom_response": "Some discomfort can happen, but severe pain, sharp pain, dizziness, or worsening swelling should not be ignored. Stop the activity and contact your care team or physical therapist for guidance.",
+      "urgency_level": "contact_provider",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "contact_provider",
+        "physical_therapy",
+        "post_op_recovery"
+      ]
+    },
+    {
+      "id": "shalom_faq_069",
+      "category": "physical_therapy",
+      "patient_question": "How do I know if I am improving?",
+      "shalom_response": "You may be improving if pain becomes more manageable, swelling decreases, mobility improves, temperature stays normal, and the incision looks stable. Shalom tracks these changes over time.",
+      "urgency_level": "feature",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "feature",
+        "physical_therapy",
+        "post_op_recovery"
+      ]
+    },
+    {
+      "id": "shalom_faq_070",
+      "category": "red_flags",
+      "patient_question": "What if my symptoms are getting worse but I am not sure?",
+      "shalom_response": "When symptoms are getting worse, it is safer to ask for help early. Shalom recommends contacting your care team if pain, fever, redness, swelling, drainage, or mobility problems are increasing.",
+      "urgency_level": "contact_provider",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "red_flags",
+        "contact_provider",
+        "post_op_recovery"
+      ]
+    },
+    {
+      "id": "shalom_faq_071",
+      "category": "red_flags",
+      "patient_question": "Should I wait until tomorrow?",
+      "shalom_response": "If the symptom is mild and stable, monitoring may be okay. But if it is worsening, severe, or connected to fever, drainage, chest pain, shortness of breath, or calf pain, do not wait. Contact your provider or seek urgent care.",
+      "urgency_level": "urgent",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "red_flags",
+        "urgent",
+        "post_op_recovery"
+      ]
+    },
+    {
+      "id": "shalom_faq_072",
+      "category": "red_flags",
+      "patient_question": "What does Shalom consider a warning sign?",
+      "shalom_response": "Shalom flags symptoms like worsening pain, fever, spreading redness, unusual drainage, major swelling, calf pain, missed medications, dizziness, chest pain, or shortness of breath.",
+      "urgency_level": "feature",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "red_flags",
+        "feature",
+        "post_op_recovery"
+      ]
+    },
+    {
+      "id": "shalom_faq_073",
+      "category": "caregiver",
+      "patient_question": "Can my caregiver use Shalom too?",
+      "shalom_response": "Yes. In the MVP, a caregiver can help enter check-ins, review reminders, and see when Shalom recommends contacting the care team. This helps patients who may feel tired, overwhelmed, or unsure.",
+      "urgency_level": "feature",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "feature",
+        "caregiver",
+        "post_op_recovery"
+      ]
+    },
+    {
+      "id": "shalom_faq_074",
+      "category": "caregiver",
+      "patient_question": "Can Shalom explain my symptoms to my family?",
+      "shalom_response": "Shalom can summarize your recovery data in simple language so a caregiver or family member understands what is happening. You should only share health information with people you trust.",
+      "urgency_level": "feature",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "feature",
+        "caregiver",
+        "post_op_recovery"
+      ]
+    },
+    {
+      "id": "shalom_faq_075",
+      "category": "mvp",
+      "patient_question": "What can Shalom do in the MVP?",
+      "shalom_response": "In the MVP, Shalom can answer post-surgery FAQs, use the James patient dataset for context, collect daily check-ins, track recovery trends, flag warning signs, and recommend when to contact a provider.",
+      "urgency_level": "feature",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "feature",
+        "post_op_recovery",
+        "mvp"
+      ]
+    },
+    {
+      "id": "shalom_faq_076",
+      "category": "mvp",
+      "patient_question": "What can Shalom not do yet?",
+      "shalom_response": "In the MVP, Shalom does not diagnose, prescribe medication, replace doctors, call emergency services, or connect directly to hospital systems. It is a support tool for education, tracking, and early guidance.",
+      "urgency_level": "safety",
+      "source_priority": "Use discharge instructions first when available. Use this FAQ as MVP knowledge base support.",
+      "tone": "calm, human, simple, reassuring, safety-first",
+      "tags": [
+        "post_op_recovery",
+        "safety",
+        "mvp"
+      ]
+    }
+  ]
+}

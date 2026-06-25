@@ -327,7 +327,7 @@ export function evaluateSafety(text: string): { isEmergency: boolean; isMedicalA
 }
 
 // Local simulation fallback engine
-export function getSimulatedResponse(text: string, _history: Message[] = [], medicalHistory?: any): string {
+export function getSimulatedResponse(text: string, _history: Message[] = [], medicalHistory?: any, faqDataset?: any): string {
   const { isEmergency } = evaluateSafety(text);
   
   if (isEmergency) {
@@ -335,6 +335,52 @@ export function getSimulatedResponse(text: string, _history: Message[] = [], med
   }
 
   const lower = text.toLowerCase();
+
+  // If FAQ dataset is loaded, search for matching patient questions
+  if (faqDataset && Array.isArray(faqDataset.faq)) {
+    const queryWords = lower.replace(/[?!.,]/g, '').split(/\s+/).filter(w => w.length > 3);
+    
+    let bestMatch: any = null;
+    let maxOverlap = 0;
+    
+    for (const item of faqDataset.faq) {
+      const questionLower = (item.patient_question || '').toLowerCase();
+      // Check exact containment first (very common in testing)
+      if (lower.includes(questionLower) || questionLower.includes(lower)) {
+        bestMatch = item;
+        break;
+      }
+      
+      // Otherwise count keyword overlap
+      let overlap = 0;
+      for (const word of queryWords) {
+        if (questionLower.includes(word)) {
+          overlap++;
+        }
+      }
+      // Give additional weight if the query matches the category or tags
+      if (item.category && lower.includes(item.category.toLowerCase())) {
+        overlap += 1;
+      }
+      if (Array.isArray(item.tags)) {
+        for (const tag of item.tags) {
+          if (lower.includes(tag.toLowerCase())) {
+            overlap += 0.5;
+          }
+        }
+      }
+      
+      if (overlap > maxOverlap) {
+        maxOverlap = overlap;
+        bestMatch = item;
+      }
+    }
+    
+    // If we have a decent match (overlap threshold), return the FAQ response
+    if (bestMatch && (maxOverlap >= 1.5 || lower.includes((bestMatch.patient_question || '').toLowerCase()) || (bestMatch.patient_question || '').toLowerCase().includes(lower))) {
+      return bestMatch.shalom_response;
+    }
+  }
   
   // Normalize patient record for robust local checks
   const normalized = normalizePatientRecord(medicalHistory);
@@ -389,7 +435,8 @@ export async function getGeminiResponse(
   messages: Message[],
   apiKey: string,
   userMessageText: string,
-  medicalHistoryContext?: string
+  medicalHistoryContext?: string,
+  faqDataset?: any
 ): Promise<string> {
   const { isEmergency } = evaluateSafety(userMessageText);
   
@@ -412,6 +459,48 @@ AI Behavior Rules:
 * If a patient asks clinical questions, explain you are an AI assistant and recommend contacting their surgeon, physician, or care team.
 * If the patient reports chest pain, difficulty breathing, uncontrolled bleeding, loss of consciousness, or other life-threatening symptoms, immediately tell them to call 911 or go to the nearest emergency department.
 * If symptoms are concerning but not life-threatening, tell them: "Your symptoms may need review by your healthcare team. Please contact your healthcare provider."`;
+
+  if (faqDataset) {
+    // 1. Add design direction & style rules from FAQ dataset
+    const direction = faqDataset.design_direction || {};
+    let rulesStr = "";
+    if (direction.style_rules) {
+      rulesStr = `\nStyle Rules to strictly follow:\n${direction.style_rules.map((r: string) => `* ${r}`).join('\n')}`;
+    }
+    shalomSystemPrompt += `\n\nDesign Direction from Knowledge Base:
+* Brand Voice: ${direction.brand_voice || 'reassuring'}
+* Personality: ${direction.personality || 'peaceful recovery companion'}
+* Reading Level: ${direction.reading_level || 'simple patient-friendly English'}${rulesStr}`;
+
+    // 2. Add relevant FAQ context (local keyword RAG)
+    if (Array.isArray(faqDataset.faq)) {
+      const queryWords = userMessageText.toLowerCase().replace(/[?!.,]/g, '').split(/\s+/).filter(w => w.length > 3);
+      const matches = faqDataset.faq
+        .map((item: any) => {
+          const questionLower = (item.patient_question || '').toLowerCase();
+          let score = 0;
+          if (userMessageText.toLowerCase().includes(questionLower) || questionLower.includes(userMessageText.toLowerCase())) {
+            score += 10;
+          }
+          for (const word of queryWords) {
+            if (questionLower.includes(word)) score += 2;
+          }
+          if (item.category && userMessageText.toLowerCase().includes(item.category.toLowerCase())) {
+            score += 3;
+          }
+          return { item, score };
+        })
+        .filter((m: any) => m.score > 0)
+        .sort((a: any, b: any) => b.score - a.score)
+        .slice(0, 3)
+        .map((m: any) => m.item);
+
+      if (matches.length > 0) {
+        shalomSystemPrompt += `\n\nRelevant FAQ Knowledge Base Articles for Grounding:
+${matches.map((m: any) => `Q: ${m.patient_question}\nA: ${m.shalom_response}`).join('\n\n')}`;
+      }
+    }
+  }
 
   if (medicalHistoryContext) {
     let normalizedSummary = "";
@@ -494,6 +583,6 @@ Surgeon/Discharge Notes: ${normalized.surgeonNotes}
         parsedHistory = JSON.parse(medicalHistoryContext);
       } catch (e) {}
     }
-    return getSimulatedResponse(userMessageText, messages, parsedHistory) + "\n\n*(Note: Failed to connect to Gemini. Showing simulated response instead.)*";
+    return getSimulatedResponse(userMessageText, messages, parsedHistory, faqDataset) + "\n\n*(Note: Failed to connect to Gemini. Showing simulated response instead.)*";
   }
 }

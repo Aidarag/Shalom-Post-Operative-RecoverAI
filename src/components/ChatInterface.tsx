@@ -43,6 +43,7 @@ interface ChatInterfaceProps {
   setAttachedFile: (file: File | null) => void;
   medicalHistory: any | null;
   setMedicalHistory: (history: any | null) => void;
+  faqDataset: any | null;
 }
 
 export const ChatInterface: React.FC<ChatInterfaceProps> = ({ 
@@ -55,7 +56,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   attachedFile,
   setAttachedFile,
   medicalHistory,
-  setMedicalHistory
+  setMedicalHistory,
+  faqDataset
 }) => {
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -525,9 +527,9 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       const serializedHistory = medicalHistory ? JSON.stringify(medicalHistory, null, 2) : undefined;
       
       if (apiKey.trim() && !isEmergency && !isMedicalAdvice) {
-        responseText = await getGeminiResponse([...messages, userMessage], apiKey, textToSend, serializedHistory);
+        responseText = await getGeminiResponse([...messages, userMessage], apiKey, textToSend, serializedHistory, faqDataset);
       } else {
-        responseText = getSimulatedResponse(textToSend, [...messages, userMessage], medicalHistory);
+        responseText = getSimulatedResponse(textToSend, [...messages, userMessage], medicalHistory, faqDataset);
       }
 
       setMessages(prev => [
