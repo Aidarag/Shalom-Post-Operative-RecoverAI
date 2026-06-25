@@ -148,6 +148,11 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
     const utterance = new SpeechSynthesisUtterance(cleanText);
     
+    // Configure natural, alert, and warm speech parameters
+    utterance.rate = 1.15;  // Slightly faster rate to avoid a slow, monotone cadence
+    utterance.pitch = 1.08; // Slightly higher pitch for a brighter, more supportive medical assistant tone
+    utterance.volume = 1.0;
+    
     const voice = voices.find(v => v.name === selectedVoiceName);
     if (voice) {
       utterance.voice = voice;
