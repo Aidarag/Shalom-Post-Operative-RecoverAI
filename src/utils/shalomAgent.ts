@@ -326,6 +326,69 @@ export function evaluateSafety(text: string): { isEmergency: boolean; isMedicalA
   return { isEmergency, isMedicalAdvice };
 }
 
+export interface FAQMatch {
+  matched: boolean;
+  question?: string;
+  response?: string;
+}
+
+export function searchFAQDataset(text: string, faqDataset: any): FAQMatch {
+  if (!faqDataset || !Array.isArray(faqDataset.faq)) {
+    return { matched: false };
+  }
+  
+  const lower = text.toLowerCase().trim();
+  const queryWords = lower.replace(/[?!.,]/g, '').split(/\s+/).filter(w => w.length > 3);
+  
+  let bestMatch: any = null;
+  let maxOverlap = 0;
+  
+  for (const item of faqDataset.faq) {
+    const questionLower = (item.patient_question || '').toLowerCase().trim();
+    // Check exact containment first (very common in testing)
+    if (lower.includes(questionLower) || questionLower.includes(lower)) {
+      bestMatch = item;
+      maxOverlap = 100; // Force exact match priority
+      break;
+    }
+    
+    // Otherwise count keyword overlap
+    let overlap = 0;
+    for (const word of queryWords) {
+      if (questionLower.includes(word)) {
+        overlap++;
+      }
+    }
+    // Give additional weight if the query matches the category or tags
+    if (item.category && lower.includes(item.category.toLowerCase())) {
+      overlap += 1;
+    }
+    if (Array.isArray(item.tags)) {
+      for (const tag of item.tags) {
+        if (lower.includes(tag.toLowerCase())) {
+          overlap += 0.5;
+        }
+      }
+    }
+    
+    if (overlap > maxOverlap) {
+      maxOverlap = overlap;
+      bestMatch = item;
+    }
+  }
+  
+  // If we have a decent match (overlap threshold), return the FAQ response
+  if (bestMatch && (maxOverlap >= 100 || maxOverlap >= 1.5)) {
+    return {
+      matched: true,
+      question: bestMatch.patient_question,
+      response: bestMatch.shalom_response
+    };
+  }
+  
+  return { matched: false };
+}
+
 // Local simulation fallback engine
 export function getSimulatedResponse(text: string, _history: Message[] = [], medicalHistory?: any, faqDataset?: any): string {
   const { isEmergency } = evaluateSafety(text);
@@ -337,49 +400,9 @@ export function getSimulatedResponse(text: string, _history: Message[] = [], med
   const lower = text.toLowerCase();
 
   // If FAQ dataset is loaded, search for matching patient questions
-  if (faqDataset && Array.isArray(faqDataset.faq)) {
-    const queryWords = lower.replace(/[?!.,]/g, '').split(/\s+/).filter(w => w.length > 3);
-    
-    let bestMatch: any = null;
-    let maxOverlap = 0;
-    
-    for (const item of faqDataset.faq) {
-      const questionLower = (item.patient_question || '').toLowerCase();
-      // Check exact containment first (very common in testing)
-      if (lower.includes(questionLower) || questionLower.includes(lower)) {
-        bestMatch = item;
-        break;
-      }
-      
-      // Otherwise count keyword overlap
-      let overlap = 0;
-      for (const word of queryWords) {
-        if (questionLower.includes(word)) {
-          overlap++;
-        }
-      }
-      // Give additional weight if the query matches the category or tags
-      if (item.category && lower.includes(item.category.toLowerCase())) {
-        overlap += 1;
-      }
-      if (Array.isArray(item.tags)) {
-        for (const tag of item.tags) {
-          if (lower.includes(tag.toLowerCase())) {
-            overlap += 0.5;
-          }
-        }
-      }
-      
-      if (overlap > maxOverlap) {
-        maxOverlap = overlap;
-        bestMatch = item;
-      }
-    }
-    
-    // If we have a decent match (overlap threshold), return the FAQ response
-    if (bestMatch && (maxOverlap >= 1.5 || lower.includes((bestMatch.patient_question || '').toLowerCase()) || (bestMatch.patient_question || '').toLowerCase().includes(lower))) {
-      return bestMatch.shalom_response;
-    }
+  const faqMatch = searchFAQDataset(text, faqDataset);
+  if (faqMatch.matched && faqMatch.response) {
+    return faqMatch.response;
   }
   
   // Normalize patient record for robust local checks
@@ -455,6 +478,7 @@ Tone:
 
 AI Behavior Rules:
 * Classify the patient internally as Green (Stable), Yellow (Needs monitoring), or Red (Needs clinical review). Do not display these classifications directly to patients.
+* Ground all responses strictly in the provided FAQ grounding articles and patient profile/instructions. If a question is outside the provided FAQ dataset or Shalom's recovery scope, politely explain that you cannot answer and recommend contacting their healthcare provider for medical advice. Do not make up answers from general knowledge.
 * NEVER diagnose medical conditions. Never tell a patient: "You have an infection", "You have a blood clot", "You should take this medicine", or "Change your dosage".
 * If a patient asks clinical questions, explain you are an AI assistant and recommend contacting their surgeon, physician, or care team.
 * If the patient reports chest pain, difficulty breathing, uncontrolled bleeding, loss of consciousness, or other life-threatening symptoms, immediately tell them to call 911 or go to the nearest emergency department.
