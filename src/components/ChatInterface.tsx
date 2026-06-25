@@ -200,6 +200,19 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     window.speechSynthesis.speak(utterance);
   };
 
+  // Guided Check-in Steps: 
+  // -1 = Not started, 0 = Pain, 1 = Fever, 2 = Medications, 3 = Incision, 4 = Mobility, 5 = Unusual Symptoms, 6 = Completed
+  const [checkInStep, setCheckInStep] = useState<number>(-1);
+  const [answers, setAnswers] = useState<CheckInAnswers>({
+    painLevel: 3,
+    hasFever: false,
+    temperature: 98.6,
+    medsTaken: true,
+    incisionIssues: ['Normal'],
+    mobility: 'Okay',
+    unusualSymptoms: ['None']
+  });
+
   const getSuggestionChips = () => {
     if (chatMode === 'check-in') {
       if (checkInStep === -1) {
@@ -223,19 +236,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   };
 
   const suggestionChips = getSuggestionChips();
-
-  // Guided Check-in Steps: 
-  // -1 = Not started, 0 = Pain, 1 = Fever, 2 = Medications, 3 = Incision, 4 = Mobility, 5 = Unusual Symptoms, 6 = Completed
-  const [checkInStep, setCheckInStep] = useState<number>(-1);
-  const [answers, setAnswers] = useState<CheckInAnswers>({
-    painLevel: 3,
-    hasFever: false,
-    temperature: 98.6,
-    medsTaken: true,
-    incisionIssues: ['Normal'],
-    mobility: 'Okay',
-    unusualSymptoms: ['None']
-  });
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
