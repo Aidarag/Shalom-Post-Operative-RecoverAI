@@ -81,6 +81,25 @@ function App() {
   const [checkInComplete, setCheckInComplete] = useState<boolean>(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   
+  // Calendar and date-based task states
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date(2026, 7, 28)); // August 28, 2026
+  const [tasksByDate, setTasksByDate] = useState<Record<string, TodayTask[]>>({});
+
+  const getDateKey = (d: Date) => {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+
+  const getCalendarDays = () => {
+    const days: Date[] = [];
+    const baseDate = new Date(2026, 7, 28); // August 28, 2026
+    for (let i = -7; i <= 7; i++) {
+      const d = new Date(baseDate);
+      d.setDate(baseDate.getDate() + i);
+      days.push(d);
+    }
+    return days;
+  };
+  
   // Screen sub-tab toggles
   const [planSubTab, setPlanSubTab] = useState<'schedule' | 'tasks'>('schedule');
   const [tasksFilter, setTasksFilter] = useState<'all' | 'today' | 'upcoming' | 'completed'>('all');
@@ -179,6 +198,7 @@ function App() {
 
   // Initialize tasks
   useEffect(() => {
+    let list: TodayTask[] = [];
     if (medicalHistory) {
       const normalized = normalizePatientRecord(medicalHistory);
       if (normalized) {
@@ -217,18 +237,58 @@ function App() {
           bestTime: 'Morning'
         };
 
-        setTodayTasks([...meds, ...activities, checkInTask]);
+        list = [...meds, ...activities, checkInTask];
       }
     } else {
       // Default fallback matching mock screens
-      setTodayTasks([
+      list = [
         { id: 'med-0', name: 'Medication', dose: 'Ibuprofen 400mg', type: 'medication', timeSlot: 'Ibuprofen 400mg', timeHour: '10:00 AM', completed: false, instructions: 'Take with food', streak: 4, bestTime: 'Morning' },
         { id: 'act-0', name: 'Physical Therapy', dose: 'Knee mobility exercises', type: 'activity', timeSlot: 'Knee mobility exercises', timeHour: '11:00 AM', completed: false, instructions: '10 repetitions', streak: 5, bestTime: 'Afternoon' },
         { id: 'act-1', name: 'Wound Care', dose: 'Clean and inspect incision', type: 'activity', timeSlot: 'Clean and inspect incision', timeHour: '6:00 PM', completed: false, instructions: 'Apply sterile gauze', streak: 6, bestTime: 'Evening' },
         { id: 'act-2', name: 'Hydration', dose: 'Drink water', type: 'activity', timeSlot: 'Drink water', timeHour: '9:00 PM', completed: false, instructions: '8 glasses daily', streak: 3, bestTime: 'All Day' }
-      ]);
+      ];
+    }
+    
+    // Save to tasksByDate for today
+    const todayKey = '2026-08-28';
+    setTasksByDate(prev => ({ ...prev, [todayKey]: list }));
+    
+    // If selectedDate is today, setTodayTasks immediately
+    if (getDateKey(selectedDate) === todayKey) {
+      setTodayTasks(list);
     }
   }, [medicalHistory, checkInComplete]);
+
+  // Observer for selected calendar date
+  useEffect(() => {
+    const key = getDateKey(selectedDate);
+    if (tasksByDate[key]) {
+      setTodayTasks(tasksByDate[key]);
+    } else {
+      // Seed default baseline tasks for this date
+      const base: TodayTask[] = [
+        { id: 'med-0', name: 'Medication', dose: 'Ibuprofen 400mg', type: 'medication', timeSlot: 'Ibuprofen 400mg', timeHour: '10:00 AM', completed: false, instructions: 'Take with food', streak: 4, bestTime: 'Morning' },
+        { id: 'act-0', name: 'Physical Therapy', dose: 'Knee mobility exercises', type: 'activity', timeSlot: 'Knee mobility exercises', timeHour: '11:00 AM', completed: false, instructions: '10 repetitions', streak: 5, bestTime: 'Afternoon' },
+        { id: 'act-1', name: 'Wound Care', dose: 'Clean and inspect incision', type: 'activity', timeSlot: 'Clean and inspect incision', timeHour: '6:00 PM', completed: false, instructions: 'Apply sterile gauze', streak: 6, bestTime: 'Evening' },
+        { id: 'act-2', name: 'Hydration', dose: 'Drink water', type: 'activity', timeSlot: 'Drink water', timeHour: '9:00 PM', completed: false, instructions: '8 glasses daily', streak: 3, bestTime: 'All Day' }
+      ];
+      
+      const today = new Date(2026, 7, 28);
+      const dCopy = new Date(selectedDate);
+      dCopy.setHours(0,0,0,0);
+      const todayCopy = new Date(today);
+      todayCopy.setHours(0,0,0,0);
+      
+      let seeded = base;
+      if (dCopy.getTime() < todayCopy.getTime()) {
+        // Seed past days as completed (mostly) to simulate historical logs
+        seeded = base.map((t, idx) => ({ ...t, completed: idx % 3 !== 0 }));
+      }
+      
+      setTasksByDate(prev => ({ ...prev, [key]: seeded }));
+      setTodayTasks(seeded);
+    }
+  }, [selectedDate]);
 
   // Speech synthesizer voices
   useEffect(() => {
@@ -313,12 +373,17 @@ function App() {
   };
 
   const toggleTaskCompleted = (taskId: string) => {
-    setTodayTasks(prev => prev.map(t => {
-      if (t.id === taskId) {
-        return { ...t, completed: !t.completed };
-      }
-      return t;
-    }));
+    const key = getDateKey(selectedDate);
+    setTodayTasks(prev => {
+      const updated = prev.map(t => {
+        if (t.id === taskId) {
+          return { ...t, completed: !t.completed };
+        }
+        return t;
+      });
+      setTasksByDate(dict => ({ ...dict, [key]: updated }));
+      return updated;
+    });
   };
 
   // Calculate wellness percentage matching Screen 5 Recovery progress
@@ -520,15 +585,28 @@ function App() {
 
         {planSubTab === 'schedule' ? (
           <>
+            {/* Month & Year header */}
+            <div style={{ fontSize: '12.5px', fontWeight: '800', color: 'var(--text-main)', marginBottom: '8px', paddingLeft: '6px' }}>
+              {selectedDate.toLocaleDateString([], { month: 'long', year: 'numeric' })}
+            </div>
+            
             {/* Horizontal Dates row */}
             <div className="date-bar-container">
-              <div className="date-bar-day"><span className="date-day-name">Sun</span><span className="date-day-num">11</span></div>
-              <div className="date-bar-day"><span className="date-day-name">Mon</span><span className="date-day-num">12</span></div>
-              <div className="date-bar-day active"><span className="date-day-name">Tue</span><span className="date-day-num">13</span></div>
-              <div className="date-bar-day"><span className="date-day-name">Wed</span><span className="date-day-num">14</span></div>
-              <div className="date-bar-day"><span className="date-day-name">Thu</span><span className="date-day-num">15</span></div>
-              <div className="date-bar-day"><span className="date-day-name">Fri</span><span className="date-day-num">16</span></div>
-              <div className="date-bar-day"><span className="date-day-name">Sat</span><span className="date-day-num">17</span></div>
+              {getCalendarDays().map((d) => {
+                const isSelected = getDateKey(d) === getDateKey(selectedDate);
+                const dayName = d.toLocaleDateString([], { weekday: 'short' });
+                const dayNum = d.getDate();
+                return (
+                  <div 
+                    key={getDateKey(d)} 
+                    className={`date-bar-day ${isSelected ? 'active' : ''}`}
+                    onClick={() => setSelectedDate(d)}
+                  >
+                    <span className="date-day-name">{dayName}</span>
+                    <span className="date-day-num">{dayNum}</span>
+                  </div>
+                );
+              })}
             </div>
 
             {/* Daily Check-in Card banner */}
@@ -1251,7 +1329,8 @@ function App() {
   // RENDER DETAILED TASK OVERVIEW (Screen 3 detail)
   // ==========================================
   const renderTaskDetailTab = (taskId: string) => {
-    const task = todayTasks.find(t => t.id === taskId);
+    const todayList = tasksByDate['2026-08-28'] || [];
+    const task = todayTasks.find(t => t.id === taskId) || todayList.find(t => t.id === taskId);
     if (!task) return null;
 
     const weeklyDays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
@@ -1344,7 +1423,12 @@ function App() {
   };
 
   const handleDeleteTask = (taskId: string) => {
-    setTodayTasks(prev => prev.filter(t => t.id !== taskId));
+    const key = getDateKey(selectedDate);
+    setTodayTasks(prev => {
+      const updated = prev.filter(t => t.id !== taskId);
+      setTasksByDate(dict => ({ ...dict, [key]: updated }));
+      return updated;
+    });
     if (selectedTaskId === taskId) {
       setSelectedTaskId(null);
     }
