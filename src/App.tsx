@@ -469,6 +469,23 @@ function App() {
   const renderHomeTab = () => {
     const progress = calculateRecoveryProgress();
 
+    // Group tasks dynamically for the Dashboard segments
+    const checkInTasks = todayTasks.filter(t => t.type === 'checkin');
+    const medicationTasks = todayTasks.filter(t => t.type === 'medication');
+    const activityTasks = todayTasks.filter(t => t.type === 'activity');
+
+    const totalMeds = medicationTasks.length;
+    const completedMeds = medicationTasks.filter(t => t.completed).length;
+
+    const totalPT = activityTasks.length;
+    const completedPT = activityTasks.filter(t => t.completed).length;
+
+    // Get current status color for triage widget
+    const latestLog = historyLogs[historyLogs.length - 1];
+    const statusColor = checkInComplete 
+      ? (latestLog?.status === 'Green' ? 'var(--color-green)' : latestLog?.status === 'Yellow' ? 'var(--color-yellow)' : 'var(--color-red)')
+      : 'var(--text-muted)';
+
     return (
       <div className="home-tab-container" style={{ animation: 'fadeIn 0.3s ease-out' }}>
         {/* Header & greeting banner */}
@@ -499,12 +516,67 @@ function App() {
           {/* Good Morning Title */}
           <div style={{ marginBottom: '18px' }}>
             <h2 className="greeting-title">Good morning, Aïda</h2>
-            <span className="greeting-subtitle">You're doing great. Keep going!</span>
+            <span className="greeting-subtitle">Here is your recovery overview for today.</span>
+          </div>
+        </div>
+
+        {/* 4-Card Quick Metrics Dashboard Grid */}
+        <div className="home-metrics-grid" style={{ gridColumn: 'span 2' }}>
+          {/* Card 1: Check-in Status */}
+          <div className="dashboard-metric-card" onClick={() => setShowCheckInForm(true)}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span className="metric-icon-wrap" style={{ color: statusColor, background: 'rgba(0,140,140,0.05)' }}>
+                <Heart size={14} fill={checkInComplete ? statusColor : 'none'} />
+              </span>
+              <span style={{ 
+                width: '6px', height: '6px', borderRadius: '50%', 
+                background: statusColor,
+                boxShadow: checkInComplete ? `0 0 8px ${statusColor}` : 'none'
+              }}></span>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+              <span className="metric-lbl">Daily Log</span>
+              <strong className="metric-val" style={{ fontSize: '12px' }}>{checkInComplete ? 'Logged ✓' : 'Pending'}</strong>
+            </div>
+          </div>
+
+          {/* Card 2: Medications */}
+          <div className="dashboard-metric-card" onClick={() => setActiveTab('plan')}>
+            <span className="metric-icon-wrap" style={{ color: 'var(--primary)', background: 'rgba(0,140,140,0.05)' }}>
+              <Pill size={14} />
+            </span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+              <span className="metric-lbl">Meds Taken</span>
+              <strong className="metric-val">{completedMeds}/{totalMeds}</strong>
+            </div>
+          </div>
+
+          {/* Card 3: PT Exercises */}
+          <div className="dashboard-metric-card" onClick={() => setActiveTab('plan')}>
+            <span className="metric-icon-wrap" style={{ color: 'var(--accent)', background: 'rgba(0, 191, 255, 0.05)' }}>
+              <Activity size={14} />
+            </span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+              <span className="metric-lbl">Exercises</span>
+              <strong className="metric-val">{completedPT}/{totalPT}</strong>
+            </div>
+          </div>
+
+          {/* Card 4: Progress Score */}
+          <div className="dashboard-metric-card" onClick={() => setActiveTab('trends')}>
+            <span className="metric-icon-wrap" style={{ color: 'var(--primary-dark)', background: 'rgba(0, 140, 140, 0.05)' }}>
+              <TrendingUp size={14} />
+            </span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+              <span className="metric-lbl">Score</span>
+              <strong className="metric-val">{progress}%</strong>
+            </div>
           </div>
         </div>
 
         {/* Left Column / Main content */}
         <div className="home-main-col" style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+          
           {/* Day 6 Recovery Card (Sunset hills style) */}
           <div className="recovery-card">
             <div className="recovery-card-mountain"></div>
@@ -532,37 +604,112 @@ function App() {
             </div>
           </div>
 
-          {/* Today's Plan Header */}
-          <div className="section-header-row">
-            <span className="section-title">Today's Plan</span>
-            <button className="section-link" onClick={() => setActiveTab('plan')}>View all</button>
-          </div>
-
-          {/* Checklist rows */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-            {todayTasks.slice(0, 4).map(task => (
-              <div 
-                key={task.id} 
-                className="task-card-row"
-                onClick={() => setSelectedTaskId(task.id)}
-              >
-                <div className="task-card-left">
-                  <div className="task-card-icon-wrap" style={{
-                    backgroundColor: task.type === 'medication' ? 'var(--primary-light)' : 'var(--accent-light)',
-                    color: task.type === 'medication' ? 'var(--primary)' : 'var(--accent)'
-                  }}>
-                    {task.type === 'medication' ? <Pill size={13} /> : <Activity size={13} />}
-                  </div>
-                  <div className="task-card-text">
-                    <span className="task-card-title">{task.name}</span>
-                    <span className="task-card-subtitle">{task.dose || task.instructions}</span>
-                  </div>
-                </div>
-                <span className="task-card-time">{task.timeHour}</span>
+          {/* Grouped Checklist Sections */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            
+            {/* SECTION 1: Daily Logging & Check-Ins */}
+            <div className="dashboard-section-box">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                <Heart size={14} style={{ color: 'var(--primary)' }} />
+                <span style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--text-main)', letterSpacing: '0.5px' }}>
+                  Logging & Check-Ins
+                </span>
               </div>
-            ))}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {checkInTasks.map(task => (
+                  <div key={task.id} className={`task-card-row ${task.completed ? 'completed' : ''}`} onClick={() => setSelectedTaskId(task.id)}>
+                    <div className="task-card-left">
+                      <div className="task-card-icon-wrap" style={{ backgroundColor: 'var(--primary-light)', color: 'var(--primary)' }}>
+                        <Heart size={13} fill={task.completed ? 'var(--primary)' : 'none'} />
+                      </div>
+                      <div className="task-card-text">
+                        <span className="task-card-title">{task.name}</span>
+                        <span className="task-card-subtitle">{task.timeSlot}</span>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <span className="task-card-time">{task.timeHour}</span>
+                      <span className={`task-checkbox-indicator ${task.completed ? 'checked' : ''}`} onClick={(e) => {
+                        e.stopPropagation();
+                        toggleTaskCompleted(task.id);
+                      }}>
+                        {task.completed ? '✓' : ''}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
 
-            {/* Next Appointment static mock matching Screen 1 */}
+            {/* SECTION 2: Scheduled Medications */}
+            <div className="dashboard-section-box">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                <Pill size={14} style={{ color: 'var(--primary)' }} />
+                <span style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--text-main)', letterSpacing: '0.5px' }}>
+                  Scheduled Medications
+                </span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {medicationTasks.map(task => (
+                  <div key={task.id} className={`task-card-row ${task.completed ? 'completed' : ''}`} onClick={() => setSelectedTaskId(task.id)}>
+                    <div className="task-card-left">
+                      <div className="task-card-icon-wrap" style={{ backgroundColor: 'var(--primary-light)', color: 'var(--primary)' }}>
+                        <Pill size={13} />
+                      </div>
+                      <div className="task-card-text">
+                        <span className="task-card-title">{task.name}</span>
+                        <span className="task-card-subtitle">{task.dose}</span>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <span className="task-card-time">{task.timeHour}</span>
+                      <span className={`task-checkbox-indicator ${task.completed ? 'checked' : ''}`} onClick={(e) => {
+                        e.stopPropagation();
+                        toggleTaskCompleted(task.id);
+                      }}>
+                        {task.completed ? '✓' : ''}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* SECTION 3: Physical Exercises */}
+            <div className="dashboard-section-box">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                <Activity size={14} style={{ color: 'var(--accent)' }} />
+                <span style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--text-main)', letterSpacing: '0.5px' }}>
+                  Physical Therapy & Rehabilitation
+                </span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {activityTasks.map(task => (
+                  <div key={task.id} className={`task-card-row ${task.completed ? 'completed' : ''}`} onClick={() => setSelectedTaskId(task.id)}>
+                    <div className="task-card-left">
+                      <div className="task-card-icon-wrap" style={{ backgroundColor: 'var(--accent-light)', color: 'var(--accent)' }}>
+                        <Activity size={13} />
+                      </div>
+                      <div className="task-card-text">
+                        <span className="task-card-title">{task.name}</span>
+                        <span className="task-card-subtitle">{task.dose || task.instructions}</span>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <span className="task-card-time">{task.timeHour}</span>
+                      <span className={`task-checkbox-indicator ${task.completed ? 'checked' : ''}`} onClick={(e) => {
+                        e.stopPropagation();
+                        toggleTaskCompleted(task.id);
+                      }}>
+                        {task.completed ? '✓' : ''}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Next Appointment Card */}
             <div className="task-card-row" onClick={() => setActiveTab('settings')}>
               <div className="task-card-left">
                 <div className="task-card-icon-wrap" style={{ backgroundColor: '#eef8f5', color: 'var(--color-green)' }}>
@@ -575,6 +722,7 @@ function App() {
               </div>
               <ChevronRightIcon size={14} style={{ color: 'var(--text-muted)' }} />
             </div>
+
           </div>
         </div>
 

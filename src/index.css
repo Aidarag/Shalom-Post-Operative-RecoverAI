@@ -1893,4 +1893,89 @@ input, button, select, textarea {
     margin: 0 auto;
     height: calc(100vh - 110px) !important;
   }
+  
+  /* Home desktop grid metrics overrides */
+  .home-metrics-grid {
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 16px !important;
+  }
+}
+
+/* Dashboard Component Styles */
+.home-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.dashboard-metric-card {
+  background: var(--bg-glass-card);
+  border: 1px solid var(--border-glass);
+  border-radius: 18px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.dashboard-metric-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 140, 140, 0.04);
+  border-color: var(--primary);
+}
+.metric-icon-wrap {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.metric-lbl {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.metric-val {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text-main);
+  line-height: 1.1;
+}
+
+.dashboard-section-box {
+  background: var(--bg-glass-card);
+  border: 1px solid var(--border-glass);
+  border-radius: 20px;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.task-checkbox-indicator {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 1.5px solid var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+  background: #ffffff;
+}
+.task-checkbox-indicator.checked {
+  background: var(--primary);
+  color: #ffffff;
+  border-color: var(--primary);
+}
+.task-checkbox-indicator:hover {
+  transform: scale(1.05);
 }
