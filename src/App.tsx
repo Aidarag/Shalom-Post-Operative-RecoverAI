@@ -115,7 +115,6 @@ function App() {
   
   // Screen sub-tab toggles
   const [planSubTab, setPlanSubTab] = useState<'schedule' | 'tasks'>('schedule');
-  const [tasksFilter, setTasksFilter] = useState<'all' | 'today' | 'upcoming' | 'completed'>('all');
   const [progressSubTab, setProgressSubTab] = useState<'overview' | 'checkins' | 'trends'>('overview');
   
   // Sliders Form State (Screen 3)
@@ -852,13 +851,16 @@ function App() {
                   <div key={task.id} className={`timeline-item ${task.completed ? 'completed' : ''}`}>
                     <span className="timeline-hour">{task.timeHour}</span>
                     <div className="timeline-dot-anchor"></div>
-                    <div className="timeline-card-content" onClick={() => toggleTaskCompleted(task.id)}>
+                    <div className="timeline-card-content" onClick={() => setSelectedTaskId(task.id)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div>
                         <span className="timeline-item-title">{task.name}</span>
                         <p className="timeline-item-desc">{task.dose || task.instructions}</p>
                       </div>
-                      <span className="timeline-item-status">
-                        {task.completed ? 'Completed' : 'Upcoming'}
+                      <span className={`task-checkbox-indicator ${task.completed ? 'checked' : ''}`} style={{ flexShrink: 0, marginLeft: '12px' }} onClick={(e) => {
+                        e.stopPropagation();
+                        toggleTaskCompleted(task.id);
+                      }}>
+                        {task.completed ? '✓' : ''}
                       </span>
                     </div>
                   </div>
@@ -868,52 +870,106 @@ function App() {
           </>
         ) : (
           /* Tasks tab (Screen 8) */
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            {/* Filter buttons */}
-            <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '2px' }}>
-              {['all', 'today', 'upcoming', 'completed'].map(f => (
-                <button 
-                  key={f}
-                  onClick={() => setTasksFilter(f as any)}
-                  style={{
-                    border: 'none', padding: '5px 12px', borderRadius: '12px', fontSize: '10.5px', fontWeight: '700',
-                    background: tasksFilter === f ? 'var(--primary)' : 'rgba(0,0,0,0.03)',
-                    color: tasksFilter === f ? 'white' : 'var(--text-muted)',
-                    cursor: 'pointer', textTransform: 'capitalize', transition: 'var(--transition-fluid)'
-                  }}
-                >
-                  {f}
-                </button>
-              ))}
-            </div>
-
-            {/* List with checkboxes */}
-            <div className="task-list-items">
-              {todayTasks
-                .filter(t => {
-                  if (tasksFilter === 'completed') return t.completed;
-                  if (tasksFilter === 'today') return !t.completed;
-                  return true;
-                })
-                .map(task => (
-                  <div 
-                    key={task.id} 
-                    className={`task-item-row ${task.completed ? 'completed' : ''}`}
-                    onClick={() => toggleTaskCompleted(task.id)}
-                  >
-                    <div className="task-item-left">
-                      <div className="task-checkbox-circle">
-                        {task.completed && <CheckCircle2 size={12} fill="var(--primary)" style={{ color: 'white' }} />}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            
+            {/* Medications */}
+            <div className="dashboard-section-box">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                <Pill size={14} style={{ color: 'var(--primary)' }} />
+                <span style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--text-main)', letterSpacing: '0.5px' }}>
+                  Medication Routine
+                </span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {todayTasks.filter(t => t.type === 'medication').map(task => (
+                  <div key={task.id} className={`task-card-row ${task.completed ? 'completed' : ''}`} onClick={() => setSelectedTaskId(task.id)}>
+                    <div className="task-card-left">
+                      <div className="task-checkbox-indicator checked" style={{ 
+                        width: '20px', height: '20px', borderRadius: '50%', border: '1.5px solid var(--primary)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '10px',
+                        background: task.completed ? 'var(--primary)' : 'transparent', color: task.completed ? '#fff' : 'transparent', fontSize: '10px'
+                      }} onClick={(e) => {
+                        e.stopPropagation();
+                        toggleTaskCompleted(task.id);
+                      }}>
+                        ✓
                       </div>
-                      <span className="task-item-label">{task.name}</span>
+                      <span className="task-card-title" style={{ fontSize: '12px' }}>{task.name}</span>
                     </div>
-                    <div className="task-item-right">
-                      <span>{task.timeHour}</span>
-                      <ChevronRightIcon size={12} />
-                    </div>
+                    <span className="task-card-time" style={{ fontSize: '11px' }}>{task.timeHour}</span>
                   </div>
                 ))}
+              </div>
             </div>
+
+            {/* Wound Incision Care */}
+            <div className="dashboard-section-box">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                <ShieldAlert size={14} style={{ color: 'var(--primary)' }} />
+                <span style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--text-main)', letterSpacing: '0.5px' }}>
+                  Wound & Incision Care Checklist
+                </span>
+              </div>
+              <ul style={{ margin: 0, paddingLeft: '16px', fontSize: '12.5px', color: 'var(--text-muted)', lineHeight: '1.6', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <li>✓ Wash hands thoroughly with soap.</li>
+                <li>✓ Inspect wound for redness/swelling (Report to Shalom AI if increased).</li>
+                <li>✓ Clean with sterile water; apply clean gauze.</li>
+                <li>✓ Keep incision dry.</li>
+              </ul>
+            </div>
+
+            {/* Rehabilitation Activity */}
+            <div className="dashboard-section-box">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                <Activity size={14} style={{ color: 'var(--accent)' }} />
+                <span style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--text-main)', letterSpacing: '0.5px' }}>
+                  Activity & Exercises
+                </span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {todayTasks.filter(t => t.type === 'activity').map(task => (
+                  <div key={task.id} className={`task-card-row ${task.completed ? 'completed' : ''}`} onClick={() => setSelectedTaskId(task.id)}>
+                    <div className="task-card-left">
+                      <div className="task-checkbox-indicator checked" style={{ 
+                        width: '20px', height: '20px', borderRadius: '50%', border: '1.5px solid var(--accent)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '10px',
+                        background: task.completed ? 'var(--accent)' : 'transparent', color: task.completed ? '#fff' : 'transparent', fontSize: '10px'
+                      }} onClick={(e) => {
+                        e.stopPropagation();
+                        toggleTaskCompleted(task.id);
+                      }}>
+                        ✓
+                      </div>
+                      <span className="task-card-title" style={{ fontSize: '12px' }}>{task.name}</span>
+                    </div>
+                    <span className="task-card-time" style={{ fontSize: '11px' }}>{task.timeHour}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Diet & Hydration */}
+            <div className="dashboard-section-box">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Clock size={14} style={{ color: 'var(--primary)' }} />
+                  <span style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--text-main)', letterSpacing: '0.5px' }}>
+                    Diet & Hydration
+                  </span>
+                </div>
+                <strong style={{ fontSize: '11px', color: 'var(--primary)' }}>{hydrationGlasses} of 8 glasses logged</strong>
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button 
+                  className="choice-pill-btn" 
+                  style={{ fontSize: '10px', padding: '6px 12px' }}
+                  onClick={() => setHydrationGlasses(prev => Math.min(8, prev + 1))}
+                >
+                  + Log Hydration Glass
+                </button>
+              </div>
+            </div>
+
           </div>
         )}
       </div>
