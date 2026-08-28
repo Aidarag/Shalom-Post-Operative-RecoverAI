@@ -1077,7 +1077,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             }}>
               <Heart size={14} fill="white" />
             </div>
-            <strong style={{ fontSize: '13px', color: 'var(--text-main)' }}>Shalom AI</strong>
+            <strong style={{ fontSize: '13px', color: 'var(--text-main)' }}>Shalom (AI Assistant)</strong>
           </div>
           <button className="detail-menu-btn" onClick={() => setChatMode(chatMode === 'check-in' ? 'faq' : 'check-in')}>
             <span style={{ fontSize: '9px', fontWeight: '700' }}>{chatMode === 'check-in' ? 'FAQ' : 'Checkin'}</span>
@@ -1148,7 +1148,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         <button className="detail-back-btn" onClick={() => setHasChatStarted(false)}>
           <ChevronLeft size={16} />
         </button>
-        <span className="detail-title">Shalom Assistant</span>
+        <span className="detail-title">Shalom (AI Assistant)</span>
         <button className="detail-menu-btn" onClick={handleResetCheckIn} title="Reset chat session">
           <RotateCcw size={14} />
         </button>

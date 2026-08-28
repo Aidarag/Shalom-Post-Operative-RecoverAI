@@ -588,7 +588,7 @@ function App() {
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
               <HeartPulse size={16} style={{ color: 'var(--primary)' }} />
-              <strong style={{ fontSize: '13px', color: 'var(--text-main)' }}>Shalom Check-In (AI Coach)</strong>
+              <strong style={{ fontSize: '13px', color: 'var(--text-main)' }}>Shalom Check-In (AI Assistant)</strong>
             </div>
             <p style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: '1.5', margin: '0 0 12px 0' }}>
               {checkInComplete 
@@ -1945,14 +1945,14 @@ function App() {
             <span>Plan</span>
           </button>
 
-          {/* Floating center sphere AI Coach button */}
+          {/* Floating center sphere AI Assistant button */}
           <button 
             className={`tab-item chat-btn-floating ${activeTab === 'chat' ? 'active' : ''}`} 
             onClick={() => { setShowCheckInForm(false); setSelectedTaskId(null); setActiveTab('chat'); }}
-            title="Shalom AI Recovery Coach"
+            title="Shalom (AI Assistant)"
           >
             <div className="tab-chat-sphere"></div>
-            <span className="sidebar-chat-label" style={{ display: 'none' }}>AI Coach</span>
+            <span className="sidebar-chat-label" style={{ display: 'none' }}>AI Assistant</span>
           </button>
 
           <button 
