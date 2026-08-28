@@ -493,7 +493,7 @@ function App() {
             </div>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Recovery Plan</span>
-              <strong style={{ fontSize: '16px', color: 'var(--text-main)', fontWeight: '800' }}>Aïda Garba</strong>
+              <strong style={{ fontSize: '17px', color: 'var(--text-main)', fontWeight: '800' }}>Good morning Aïda!</strong>
             </div>
           </div>
           <button className="bell-btn" style={{ 
