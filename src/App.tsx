@@ -1452,6 +1452,16 @@ function App() {
       return { x, y, pain: log.painLevel };
     });
 
+    // Compute expected target recovery progression points
+    const targetPoints = historyLogs.map((log, idx) => {
+      const x = padding + (idx / (historyLogs.length - 1 || 1)) * chartWidth;
+      const dayNum = log.day || (idx + 1);
+      // Expected normal curve declines from 6.5 down to 1.5 gradually
+      const expectedPain = Math.max(1.5, 6.5 - (dayNum - 1) * 0.95);
+      const y = padding + chartHeight - ((expectedPain - 1) / 9) * chartHeight;
+      return { x, y };
+    });
+
     let pathD = "";
     if (points.length > 0) {
       pathD = `M ${points[0].x} ${points[0].y}`;
@@ -1460,9 +1470,17 @@ function App() {
       }
     }
 
+    let targetPathD = "";
+    if (targetPoints.length > 0) {
+      targetPathD = `M ${targetPoints[0].x} ${targetPoints[0].y}`;
+      for (let i = 1; i < targetPoints.length; i++) {
+        targetPathD += ` L ${targetPoints[i].x} ${targetPoints[i].y}`;
+      }
+    }
+
     return (
-      <div className="svg-chart-wrapper" style={{ height: '145px' }}>
-        <svg width="100%" height="100%" viewBox={`0 0 ${width} ${height}`} style={{ overflow: 'visible' }}>
+      <div className="svg-chart-wrapper" style={{ height: 'auto' }}>
+        <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} style={{ overflow: 'visible' }}>
           <defs>
             <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.25" />
@@ -1472,6 +1490,7 @@ function App() {
 
           {/* Severity background color zones for older patient triage context */}
           {/* Mild Zone (Green status log) */}
+          <rect x={padding} y={padding} width={chartWidth} height={chartHeight} fill="none" />
           <rect x={padding} y={padding + chartHeight * 0.7} width={chartWidth} height={chartHeight * 0.3} fill="rgba(33, 140, 116, 0.05)" rx="4" />
           {/* Moderate Zone (Yellow status log) */}
           <rect x={padding} y={padding + chartHeight * 0.3} width={chartWidth} height={chartHeight * 0.4} fill="rgba(205, 97, 51, 0.05)" rx="4" />
@@ -1488,6 +1507,19 @@ function App() {
             <path
               d={`${pathD} L ${points[points.length - 1].x} ${padding + chartHeight} L ${points[0].x} ${padding + chartHeight} Z`}
               fill="url(#chartGrad)"
+            />
+          )}
+
+          {/* Expected Normal Recovery Path (dashed baseline) */}
+          {targetPoints.length > 0 && (
+            <path 
+              d={targetPathD} 
+              fill="none" 
+              stroke="rgba(0, 140, 140, 0.45)" 
+              strokeWidth="1.8" 
+              strokeDasharray="4,4" 
+              strokeLinecap="round" 
+              strokeLinejoin="round" 
             />
           )}
 
@@ -1536,6 +1568,18 @@ function App() {
             );
           })}
         </svg>
+
+        {/* Legend */}
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginTop: '16px', borderTop: '1px solid rgba(0,0,0,0.04)', paddingTop: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ width: '12px', height: '3px', background: 'var(--primary)', borderRadius: '1.5px', display: 'inline-block' }}></span>
+            <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Your Pain</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ width: '12px', height: '0px', borderTop: '2px dashed rgba(0, 140, 140, 0.6)', display: 'inline-block' }}></span>
+            <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Expected Curve</span>
+          </div>
+        </div>
       </div>
     );
   };
