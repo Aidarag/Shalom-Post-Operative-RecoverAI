@@ -15,7 +15,6 @@ import {
   ChevronRight as ChevronRightIcon,
   Plus,
   Heart,
-  HeartPulse,
   ShieldAlert,
   Smile,
   Frown,
@@ -471,8 +470,6 @@ function App() {
   // RENDER TAB 1: Today (Home Tab - Screen 1)
   // ==========================================
   const renderHomeTab = () => {
-    const progress = calculateRecoveryProgress();
-
     // Group tasks dynamically for the Dashboard segments
     const medicationTasks = todayTasks.filter(t => t.type === 'medication');
     const activityTasks = todayTasks.filter(t => t.type === 'activity');
@@ -480,141 +477,130 @@ function App() {
     const totalMeds = medicationTasks.length;
     const completedMeds = medicationTasks.filter(t => t.completed).length;
 
-    const totalPT = activityTasks.length;
-    const completedPT = activityTasks.filter(t => t.completed).length;
-
-    // Get current status color for triage widget
-    const statusColor = checkInComplete 
-      ? (activeReport?.status === 'Green' ? 'var(--color-green)' : activeReport?.status === 'Yellow' ? 'var(--color-yellow)' : 'var(--color-red)')
-      : 'var(--text-muted)';
-
     return (
       <div className="home-tab-container" style={{ animation: 'fadeIn 0.3s ease-out' }}>
-        {/* Header & greeting banner */}
-        <div className="home-header-area">
-          {/* Top Header */}
-          <div className="greeting-row">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div style={{
-                width: '32px', height: '32px', borderRadius: '10px',
-                background: 'linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center'
-              }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="white" />
-                  <path d="M12 6.5v5M9.5 9h5" stroke="var(--primary)" strokeWidth="2.2" strokeLinecap="round" />
-                </svg>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <strong style={{ fontSize: '14px', color: 'var(--text-main)', lineHeight: '1.2', fontWeight: 800 }}>Shalom</strong>
-                <span style={{ fontSize: '8px', color: 'var(--text-muted)', fontWeight: 600 }}>Recovery AI</span>
-              </div>
+        {/* Top Greeting Row with Avatar */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{
+              width: '42px', height: '42px', borderRadius: '50%',
+              background: 'linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%)',
+              color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontWeight: 800, fontSize: '15px', border: '2px solid #ffffff',
+              boxShadow: '0 4px 12px rgba(0, 31, 63, 0.1)'
+            }}>
+              AÏ
             </div>
-            <button className="bell-btn" onClick={() => triggerMockCheckInDirect('green')} title="Mock checkin stable">
-              <CheckCircle2 size={16} />
-            </button>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Recovery Plan</span>
+              <strong style={{ fontSize: '16px', color: 'var(--text-main)', fontWeight: '800' }}>Aïda Garba</strong>
+            </div>
+          </div>
+          <button className="bell-btn" style={{ 
+            width: '38px', height: '38px', borderRadius: '50%', background: 'var(--bg-glass-card)', 
+            border: '1px solid var(--border-glass)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', transition: 'var(--transition-fluid)'
+          }} onClick={() => triggerMockCheckInDirect('green')} title="Mock checkin stable">
+            <CheckCircle2 size={16} style={{ color: 'var(--primary)' }} />
+          </button>
+        </div>
+
+        {/* Main Glowing Daily Check-In Card */}
+        <div className="main-checkin-glowing-card" style={{
+          background: 'linear-gradient(135deg, #001F3F 0%, #008C8C 50%, #00BFFF 100%)',
+          borderRadius: '28px',
+          padding: '24px',
+          color: '#ffffff',
+          position: 'relative',
+          overflow: 'hidden',
+          boxShadow: '0 16px 36px rgba(0, 140, 140, 0.15)',
+          marginBottom: '20px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '14px',
+          cursor: 'pointer'
+        }} onClick={() => setShowCheckInForm(true)}>
+          {/* Decorative glossy orbs inside card */}
+          <div style={{ position: 'absolute', top: '-50px', right: '-50px', width: '150px', height: '150px', borderRadius: '50%', background: 'rgba(255,255,255,0.06)', filter: 'blur(20px)' }}></div>
+          
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div style={{ background: 'rgba(255,255,255,0.15)', padding: '6px 12px', borderRadius: '20px', fontSize: '10px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              Monitoring Log
+            </div>
+            <span style={{ fontSize: '11.5px', color: 'rgba(255,255,255,0.8)', fontWeight: '700' }}>Day 6 of Recovery</span>
           </div>
 
-          {/* Good Morning Title */}
-          <div style={{ marginBottom: '18px' }}>
-            <h2 className="greeting-title">Good morning, Aïda</h2>
-            <span className="greeting-subtitle" style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-muted)' }}>
-              Recovery Day 6 &bull; ACL Post-Op
-            </span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px' }}>
+            <h3 style={{ fontSize: '20px', fontWeight: '800', lineHeight: '1.2', margin: 0 }}>How are you feeling today?</h3>
+            <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.85)', lineHeight: '1.5', margin: 0 }}>
+              {checkInComplete 
+                ? 'Your daily vitals and symptoms are successfully recorded. Tap to adjust check-in values.'
+                : 'Take 2 minutes to log your pain level, temperature, and surgical incision status.'}
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px' }}>
+            <button style={{
+              background: '#ffffff', color: '#001F3F', border: 'none', 
+              padding: '10px 22px', borderRadius: '18px', fontWeight: '800', 
+              fontSize: '12px', cursor: 'pointer', boxShadow: '0 4px 10px rgba(0,0,0,0.1)'
+            }}>
+              {checkInComplete ? 'Update Log' : 'Start Check-In'}
+            </button>
+            {checkInComplete && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', fontWeight: '700', color: '#ffffff', marginLeft: '8px' }}>
+                <span style={{ 
+                  width: '6px', height: '6px', borderRadius: '50%', 
+                  background: activeReport?.status === 'Green' ? '#00FF66' : activeReport?.status === 'Yellow' ? '#FFCC00' : '#FF3B30', 
+                  display: 'inline-block', 
+                  boxShadow: activeReport?.status === 'Green' ? '0 0 8px #00FF66' : activeReport?.status === 'Yellow' ? '0 0 8px #FFCC00' : '0 0 8px #FF3B30'
+                }}></span>
+                Report Active ({activeReport?.status || 'Green'})
+              </div>
+            )}
           </div>
         </div>
 
-        {/* 4-Card Quick Metrics Dashboard Grid */}
-        <div className="home-metrics-grid" style={{ gridColumn: 'span 2' }}>
-          {/* Card 1: Check-in Status */}
-          <div className="dashboard-metric-card" onClick={() => setShowCheckInForm(true)}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span className="metric-icon-wrap" style={{ color: statusColor, background: 'rgba(0,140,140,0.05)' }}>
-                <Heart size={14} fill={checkInComplete ? statusColor : 'none'} />
-              </span>
-              <span style={{ 
-                width: '6px', height: '6px', borderRadius: '50%', 
-                background: statusColor,
-                boxShadow: checkInComplete ? `0 0 8px ${statusColor}` : 'none'
-              }}></span>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-              <span className="metric-lbl">Daily Log</span>
-              <strong className="metric-val" style={{ fontSize: '12px' }}>{checkInComplete ? 'Logged ✓' : 'Pending'}</strong>
-            </div>
+        {/* Talk to Shalom AI - Horizontal Link Card */}
+        <div className="glass-card talk-shalom-bar" style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '16px',
+          padding: '16px 20px',
+          borderRadius: '24px',
+          border: '1.5px solid var(--border-glass)',
+          background: 'linear-gradient(135deg, rgba(0, 140, 140, 0.04) 0%, rgba(0, 191, 255, 0.01) 100%)',
+          marginBottom: '24px',
+          cursor: 'pointer',
+          transition: 'all 0.2s ease'
+        }} onClick={() => setActiveTab('chat')}>
+          <div style={{
+            width: '38px', height: '38px', borderRadius: '12px',
+            background: 'linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff'
+          }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="white" />
+              <path d="M12 6.5v5M9.5 9h5" stroke="var(--primary)" strokeWidth="2.2" strokeLinecap="round" />
+            </svg>
           </div>
+          <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, gap: '2px' }}>
+            <strong style={{ fontSize: '13px', color: 'var(--text-main)' }}>Talk to Shalom AI</strong>
+            <span style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.3' }}>Ask anything about recovery instructions or pain limits</span>
+          </div>
+          <ChevronRightIcon size={16} style={{ color: 'var(--primary)' }} />
+        </div>
 
-          {/* Card 2: Medications */}
-          <div className="dashboard-metric-card" onClick={() => setActiveTab('plan')}>
-            <span className="metric-icon-wrap" style={{ color: 'var(--primary)', background: 'rgba(0,140,140,0.05)' }}>
-              <Pill size={14} />
-            </span>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-              <span className="metric-lbl">Meds Taken</span>
-              <strong className="metric-val">{completedMeds}/{totalMeds}</strong>
-            </div>
-          </div>
-
-          {/* Card 3: PT Exercises */}
-          <div className="dashboard-metric-card" onClick={() => setActiveTab('plan')}>
-            <span className="metric-icon-wrap" style={{ color: 'var(--accent)', background: 'rgba(0, 191, 255, 0.05)' }}>
-              <Activity size={14} />
-            </span>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-              <span className="metric-lbl">PT Exercises</span>
-              <strong className="metric-val">{completedPT}/{totalPT}</strong>
-            </div>
-          </div>
-
-          {/* Card 4: Progress Score */}
-          <div className="dashboard-metric-card" onClick={() => setActiveTab('trends')}>
-            <span className="metric-icon-wrap" style={{ color: 'var(--primary-dark)', background: 'rgba(0, 140, 140, 0.05)' }}>
-              <TrendingUp size={14} />
-            </span>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-              <span className="metric-lbl">Adherence</span>
-              <strong className="metric-val">{progress}%</strong>
-            </div>
-          </div>
+        {/* Today's Tasks Section Header */}
+        <div className="section-header-row" style={{ marginBottom: '14px' }}>
+          <span className="section-title">Today's Routine</span>
+          <button className="section-link" onClick={() => setActiveTab('plan')}>View checklist</button>
         </div>
 
         {/* Left Column / Main content */}
         <div className="home-main-col" style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
           
-          {/* Section 1: Shalom AI Monitoring Check-In */}
-          <div className="dashboard-section-box" style={{ 
-            background: 'linear-gradient(135deg, rgba(0, 140, 140, 0.04) 0%, rgba(0, 191, 255, 0.02) 100%)',
-            border: '1.5px solid var(--primary-light)'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-              <HeartPulse size={16} style={{ color: 'var(--primary)' }} />
-              <strong style={{ fontSize: '13px', color: 'var(--text-main)' }}>Shalom Check-In (AI Assistant)</strong>
-            </div>
-            <p style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: '1.5', margin: '0 0 12px 0' }}>
-              {checkInComplete 
-                ? 'Your daily recovery symptoms have been logged and analyzed. Triage report is active.' 
-                : 'Log your pain, temperature, swelling, and surgical incision status to update your care team.'}
-            </p>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button 
-                className="choice-pill-btn" 
-                style={{ padding: '8px 16px', background: 'var(--primary)', color: '#fff', fontWeight: '800' }}
-                onClick={() => setShowCheckInForm(true)}
-              >
-                {checkInComplete ? 'Update Check-In' : 'Start Daily Check-In'}
-              </button>
-              {checkInComplete && (
-                <button 
-                  className="choice-pill-btn"
-                  onClick={() => { setActiveTab('trends'); setProgressSubTab('overview'); }}
-                >
-                  View Care Guide
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Section 2: Medication (Action & Routine) */}
+          {/* Section 1: Scheduled Medications */}
           <div className="dashboard-section-box">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -653,7 +639,7 @@ function App() {
             </div>
           </div>
 
-          {/* Section 3: Wound & Incision Care Checklist */}
+          {/* Section 2: Wound & Incision Care Checklist */}
           <div className="dashboard-section-box">
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
               <ShieldAlert size={14} style={{ color: 'var(--primary)' }} />
@@ -684,7 +670,7 @@ function App() {
         {/* Right Column / Sidebar elements */}
         <div className="home-side-col" style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
           
-          {/* Section 4: Activities & Restrictions */}
+          {/* Section 3: Activities & Restrictions */}
           <div className="glass-card" style={{ padding: '16px', borderRadius: '20px', border: '1px solid var(--border-glass)', background: 'var(--bg-glass-card)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
               <Activity size={15} style={{ color: 'var(--accent)' }} />
@@ -722,7 +708,7 @@ function App() {
             </div>
           </div>
 
-          {/* Section 5: Diet & Hydration */}
+          {/* Section 4: Diet & Hydration */}
           <div className="glass-card" style={{ padding: '16px', borderRadius: '20px', border: '1px solid var(--border-glass)', background: 'var(--bg-glass-card)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -756,7 +742,7 @@ function App() {
             </ul>
           </div>
 
-          {/* Section 6: Follow-Up Appointments */}
+          {/* Section 5: Follow-Up Appointments */}
           <div className="glass-card" style={{ padding: '16px', borderRadius: '20px', border: '1px solid var(--border-glass)', background: 'var(--bg-glass-card)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
               <Calendar size={15} style={{ color: 'var(--primary)' }} />
