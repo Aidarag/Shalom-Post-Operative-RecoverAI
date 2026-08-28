@@ -1707,3 +1707,190 @@ input, button, select, textarea {
   box-shadow: none;
   cursor: not-allowed;
 }
+
+/* ==========================================
+   RESPONSIVE ADAPTIVE LAYOUTS (Desktop/Tablet)
+   ========================================== */
+
+/* Tablet (768px - 1023px) */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .web-app-viewport {
+    max-width: 720px !important;
+    height: 95vh;
+    margin: 2.5vh auto;
+    border-radius: 32px;
+    border: 1.5px solid var(--border-glass);
+    box-shadow: 
+      0 20px 60px rgba(0, 31, 63, 0.08),
+      0 0 1px rgba(0, 140, 140, 0.1);
+  }
+}
+
+/* Desktop (>= 1024px) */
+@media (min-width: 1024px) {
+  .app-container {
+    padding: 0;
+    align-items: stretch;
+  }
+  
+  .web-app-viewport {
+    max-width: 100% !important;
+    width: 100vw;
+    height: 100vh;
+    margin: 0;
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
+    flex-direction: row !important; /* Left Sidebar, Right Main content */
+    background: #ffffff;
+  }
+  
+  /* Sidebar styles override */
+  .viewport-tab-bar {
+    order: 1;
+    position: relative !important;
+    bottom: auto !important;
+    left: auto !important;
+    right: auto !important;
+    width: 280px !important;
+    height: 100vh !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+    align-items: stretch !important;
+    padding: 40px 24px !important;
+    gap: 12px !important;
+    background: var(--bg-glass-card) !important;
+    border-right: 1px solid var(--border-glass) !important;
+    border-top: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+  }
+  
+  /* Sidebar Branding Logo Area */
+  .sidebar-logo-area {
+    display: flex !important;
+  }
+  
+  /* Sidebar buttons */
+  .viewport-tab-bar .tab-item {
+    flex-direction: row !important;
+    width: 100% !important;
+    padding: 14px 20px !important;
+    gap: 14px !important;
+    justify-content: flex-start !important;
+    align-items: center !important;
+    border-radius: 16px !important;
+    background: transparent !important;
+    border: 1px solid transparent !important;
+    height: auto !important;
+  }
+  
+  .viewport-tab-bar .tab-item.active {
+    background: var(--primary-light) !important;
+    border-color: rgba(0, 140, 140, 0.05) !important;
+    color: var(--primary-dark) !important;
+  }
+  
+  .viewport-tab-bar .tab-item span {
+    font-size: 13.5px !important;
+    font-weight: 700 !important;
+    margin: 0 !important;
+    display: inline !important;
+  }
+  
+  /* Sidebar AI Coach button overrides */
+  .viewport-tab-bar .tab-item.chat-btn-floating {
+    position: static !important;
+    transform: none !important;
+    box-shadow: none !important;
+    border-radius: 16px !important;
+    border: 1px solid transparent !important;
+    background: transparent !important;
+    width: 100% !important;
+    height: auto !important;
+    padding: 14px 20px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 14px !important;
+    justify-content: flex-start !important;
+  }
+  
+  .viewport-tab-bar .tab-item.chat-btn-floating.active {
+    background: var(--primary-light) !important;
+    border-color: rgba(0, 140, 140, 0.05) !important;
+  }
+  
+  .viewport-tab-bar .tab-item.chat-btn-floating .tab-chat-sphere {
+    width: 22px !important;
+    height: 22px !important;
+    margin: 0 !important;
+    box-shadow: 0 2px 8px rgba(0, 191, 255, 0.2) !important;
+  }
+  
+  .viewport-tab-bar .tab-item.chat-btn-floating .sidebar-chat-label {
+    display: inline !important;
+    font-size: 13.5px !important;
+    font-weight: 700 !important;
+    color: var(--text-main) !important;
+  }
+  
+  .viewport-tab-bar .tab-item.chat-btn-floating.active .sidebar-chat-label {
+    color: var(--primary-dark) !important;
+  }
+  
+  /* Main Content view */
+  .viewport-screen {
+    order: 2;
+    flex-grow: 1 !important;
+    height: 100vh !important;
+    padding: 50px 60px 60px 60px !important;
+    background: #ffffff !important;
+    border: none !important;
+  }
+  
+  /* Scrollbar override for desktop */
+  .viewport-screen::-webkit-scrollbar {
+    width: 6px;
+  }
+  .viewport-screen::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .viewport-screen::-webkit-scrollbar-thumb {
+    background: rgba(0,0,0,0.06);
+    border-radius: 3px;
+  }
+  
+  /* Home desktop layout grid */
+  .home-tab-container {
+    display: grid !important;
+    grid-template-columns: 1.2fr 0.8fr !important;
+    gap: 40px !important;
+    align-items: start !important;
+  }
+  .home-header-area {
+    grid-column: span 2 !important;
+  }
+  .greeting-row {
+    display: none !important; /* Hide redundant inner header on desktop sidebar layout */
+  }
+  .greeting-title {
+    font-size: 28px !important;
+    margin-bottom: 4px !important;
+  }
+  .greeting-subtitle {
+    font-size: 14px !important;
+  }
+  
+  /* Plan Split view */
+  .plan-desktop-split-layout {
+    height: 100%;
+  }
+  
+  /* Chat window width cap on desktop to avoid long lines */
+  .console-chat-wrapper {
+    max-width: 800px;
+    margin: 0 auto;
+    height: calc(100vh - 110px) !important;
+  }
+}

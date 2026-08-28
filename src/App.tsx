@@ -57,6 +57,14 @@ interface ChartLog {
 
 function App() {
   const [activeTab, setActiveTab] = useState<TabType>('home');
+  const [isDesktop, setIsDesktop] = useState<boolean>(window.innerWidth >= 1024);
+
+  useEffect(() => {
+    const handleResize = () => setIsDesktop(window.innerWidth >= 1024);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const [apiKey] = useState<string>('');
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -71,6 +79,7 @@ function App() {
 
   // Preset check-in triggers
   const [presetScenarioTrigger, setPresetScenarioTrigger] = useState<CheckInAnswers | null>(null);
+  const [activeReport, setActiveReport] = useState<CareTeamReport | null>(null);
 
   // Grounding datasets
   const [medicalHistory, setMedicalHistory] = useState<any | null>(null);
@@ -321,6 +330,7 @@ function App() {
   ) => {
     console.log("Check-in complete report logged:", report);
     setCheckInComplete(true);
+    setActiveReport(report);
 
     // Append to logs
     const nextDay = historyLogs.length + 1;
@@ -456,106 +466,159 @@ function App() {
     const progress = calculateRecoveryProgress();
 
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', animation: 'fadeIn 0.3s ease-out' }}>
-        {/* Top Header */}
-        <div className="greeting-row">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div style={{
-              width: '32px', height: '32px', borderRadius: '10px',
-              background: 'linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center'
-            }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="white" />
-                <path d="M12 6.5v5M9.5 9h5" stroke="var(--primary)" strokeWidth="2.2" strokeLinecap="round" />
+      <div className="home-tab-container" style={{ animation: 'fadeIn 0.3s ease-out' }}>
+        {/* Header & greeting banner */}
+        <div className="home-header-area">
+          {/* Top Header */}
+          <div className="greeting-row">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{
+                width: '32px', height: '32px', borderRadius: '10px',
+                background: 'linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="white" />
+                  <path d="M12 6.5v5M9.5 9h5" stroke="var(--primary)" strokeWidth="2.2" strokeLinecap="round" />
+                </svg>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <strong style={{ fontSize: '14px', color: 'var(--text-main)', lineHeight: '1.2', fontWeight: 800 }}>Shalom</strong>
+                <span style={{ fontSize: '8px', color: 'var(--text-muted)', fontWeight: 600 }}>Recovery AI</span>
+              </div>
+            </div>
+            <button className="bell-btn" onClick={() => triggerMockCheckInDirect('green')} title="Mock checkin stable">
+              <CheckCircle2 size={16} />
+            </button>
+          </div>
+
+          {/* Good Morning Title */}
+          <div style={{ marginBottom: '18px' }}>
+            <h2 className="greeting-title">Good morning, Aïda</h2>
+            <span className="greeting-subtitle">You're doing great. Keep going!</span>
+          </div>
+        </div>
+
+        {/* Left Column / Main content */}
+        <div className="home-main-col" style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+          {/* Day 6 Recovery Card (Sunset hills style) */}
+          <div className="recovery-card">
+            <div className="recovery-card-mountain"></div>
+            <div className="recovery-card-info">
+              <span className="recovery-card-day">Day 6 of Recovery</span>
+              <span className="recovery-card-desc">ACL Reconstruction Surgery</span>
+              <span className="recovery-card-desc">May 6, 2025</span>
+              <span className="recovery-card-quote">"Small steps today, stronger tomorrow."</span>
+            </div>
+
+            <div className="recovery-card-ring">
+              <svg className="recovery-ring-svg" viewBox="0 0 100 100">
+                <circle className="recovery-ring-bg" cx="50" cy="50" r="42" />
+                <circle 
+                  className="recovery-ring-val" 
+                  cx="50" cy="50" r="42" 
+                  strokeDasharray="263.89"
+                  strokeDashoffset={263.89 - (263.89 * progress) / 100}
+                />
               </svg>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <strong style={{ fontSize: '14px', color: 'var(--text-main)', lineHeight: '1.2', fontWeight: 800 }}>Shalom</strong>
-              <span style={{ fontSize: '8px', color: 'var(--text-muted)', fontWeight: 600 }}>Recovery AI</span>
-            </div>
-          </div>
-          <button className="bell-btn" onClick={() => triggerMockCheckInDirect('green')} title="Mock checkin stable">
-            <CheckCircle2 size={16} />
-          </button>
-        </div>
-
-        {/* Good Morning Title */}
-        <div style={{ marginBottom: '18px' }}>
-          <h2 className="greeting-title">Good morning, Aïda</h2>
-          <span className="greeting-subtitle">You're doing great. Keep going!</span>
-        </div>
-
-        {/* Day 6 Recovery Card (Sunset hills style) */}
-        <div className="recovery-card">
-          <div className="recovery-card-mountain"></div>
-          <div className="recovery-card-info">
-            <span className="recovery-card-day">Day 6 of Recovery</span>
-            <span className="recovery-card-desc">ACL Reconstruction Surgery</span>
-            <span className="recovery-card-desc">May 6, 2025</span>
-            <span className="recovery-card-quote">"Small steps today, stronger tomorrow."</span>
-          </div>
-
-          <div className="recovery-card-ring">
-            <svg className="recovery-ring-svg" viewBox="0 0 100 100">
-              <circle className="recovery-ring-bg" cx="50" cy="50" r="42" />
-              <circle 
-                className="recovery-ring-val" 
-                cx="50" cy="50" r="42" 
-                strokeDasharray="263.89"
-                strokeDashoffset={263.89 - (263.89 * progress) / 100}
-              />
-            </svg>
-            <div className="recovery-ring-text">
-              <span className="recovery-ring-percent">{progress}%</span>
-              <span className="recovery-ring-lbl">Recovered</span>
+              <div className="recovery-ring-text">
+                <span className="recovery-ring-percent">{progress}%</span>
+                <span className="recovery-ring-lbl">Recovered</span>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Today's Plan Header */}
-        <div className="section-header-row">
-          <span className="section-title">Today's Plan</span>
-          <button className="section-link" onClick={() => setActiveTab('plan')}>View all</button>
-        </div>
+          {/* Today's Plan Header */}
+          <div className="section-header-row">
+            <span className="section-title">Today's Plan</span>
+            <button className="section-link" onClick={() => setActiveTab('plan')}>View all</button>
+          </div>
 
-        {/* Checklist rows */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-          {todayTasks.slice(0, 4).map(task => (
-            <div 
-              key={task.id} 
-              className="task-card-row"
-              onClick={() => setSelectedTaskId(task.id)}
-            >
+          {/* Checklist rows */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+            {todayTasks.slice(0, 4).map(task => (
+              <div 
+                key={task.id} 
+                className="task-card-row"
+                onClick={() => setSelectedTaskId(task.id)}
+              >
+                <div className="task-card-left">
+                  <div className="task-card-icon-wrap" style={{
+                    backgroundColor: task.type === 'medication' ? 'var(--primary-light)' : 'var(--accent-light)',
+                    color: task.type === 'medication' ? 'var(--primary)' : 'var(--accent)'
+                  }}>
+                    {task.type === 'medication' ? <Pill size={13} /> : <Activity size={13} />}
+                  </div>
+                  <div className="task-card-text">
+                    <span className="task-card-title">{task.name}</span>
+                    <span className="task-card-subtitle">{task.dose || task.instructions}</span>
+                  </div>
+                </div>
+                <span className="task-card-time">{task.timeHour}</span>
+              </div>
+            ))}
+
+            {/* Next Appointment static mock matching Screen 1 */}
+            <div className="task-card-row" onClick={() => setActiveTab('settings')}>
               <div className="task-card-left">
-                <div className="task-card-icon-wrap" style={{
-                  backgroundColor: task.type === 'medication' ? 'var(--primary-light)' : 'var(--accent-light)',
-                  color: task.type === 'medication' ? 'var(--primary)' : 'var(--accent)'
-                }}>
-                  {task.type === 'medication' ? <Pill size={13} /> : <Activity size={13} />}
+                <div className="task-card-icon-wrap" style={{ backgroundColor: '#eef8f5', color: 'var(--color-green)' }}>
+                  <Clock size={13} />
                 </div>
                 <div className="task-card-text">
-                  <span className="task-card-title">{task.name}</span>
-                  <span className="task-card-subtitle">{task.dose || task.instructions}</span>
+                  <span className="task-card-title">Next Appointment</span>
+                  <span className="task-card-subtitle">May 20, 2025 &bull; 10:30 AM &bull; Dr. Carter</span>
                 </div>
               </div>
-              <span className="task-card-time">{task.timeHour}</span>
+              <ChevronRightIcon size={14} style={{ color: 'var(--text-muted)' }} />
             </div>
-          ))}
-
-          {/* Next Appointment static mock matching Screen 1 */}
-          <div className="task-card-row" onClick={() => setActiveTab('settings')}>
-            <div className="task-card-left">
-              <div className="task-card-icon-wrap" style={{ backgroundColor: '#eef8f5', color: 'var(--color-green)' }}>
-                <Clock size={13} />
-              </div>
-              <div className="task-card-text">
-                <span className="task-card-title">Next Appointment</span>
-                <span className="task-card-subtitle">May 20, 2025 &bull; 10:30 AM &bull; Dr. Carter</span>
-              </div>
-            </div>
-            <ChevronRightIcon size={14} style={{ color: 'var(--text-muted)' }} />
           </div>
+        </div>
+
+        {/* Right Column / Sidebar elements */}
+        <div className="home-side-col" style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+          {/* If there's an active report, render it here */}
+          {activeReport && (
+            <div className="report-alert-card" style={{ 
+              background: activeReport.status === 'Green' ? 'var(--bg-green)' : activeReport.status === 'Yellow' ? 'var(--bg-yellow)' : 'var(--bg-red)',
+              border: '1px solid var(--border-glass)',
+              borderRadius: '20px',
+              padding: '16px',
+              animation: 'slideInFade 0.3s ease-out'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                <span className="alert-circle-icon">⚠️</span>
+                <strong style={{ fontSize: '13px', color: 'var(--text-main)' }}>{activeReport.title}</strong>
+              </div>
+              <p style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.4', margin: 0 }}>
+                {activeReport.reportAlertText}
+              </p>
+              <button 
+                className="choice-pill-btn" 
+                style={{ marginTop: '10px', fontSize: '10.5px', padding: '6px 12px' }}
+                onClick={() => {
+                  setActiveTab('trends');
+                  setProgressSubTab('checkins');
+                }}
+              >
+                View History
+              </button>
+            </div>
+          )}
+          
+          {/* On desktop, show a helpful summary widget */}
+          {isDesktop && (
+            <div className="glass-card" style={{ padding: '20px', borderRadius: '24px', border: '1px solid var(--border-glass)', background: 'var(--bg-glass-card)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                <Activity size={18} style={{ color: 'var(--primary)' }} />
+                <strong style={{ fontSize: '14px', color: 'var(--text-main)' }}>Weekly Stats</strong>
+              </div>
+              <ul style={{ paddingLeft: '16px', margin: 0, fontSize: '12px', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '8px', lineHeight: '1.5' }}>
+                <li>Pain level has stabilized around <strong>Moderate (5/10)</strong>.</li>
+                <li>Exercises consistency is currently at <strong>86%</strong>.</li>
+                <li>Adherence to post-op guidelines: <strong>Stable (Green)</strong>.</li>
+              </ul>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -745,6 +808,175 @@ function App() {
 
   const renderTrendsTab = () => {
     const progress = calculateRecoveryProgress();
+
+    if (isDesktop) {
+      return (
+        <div className="progress-desktop-layout" style={{ display: 'grid', gridTemplateColumns: '1fr 1.1fr', gap: '32px', animation: 'fadeIn 0.3s ease-out' }}>
+          {/* Left Column: Progress, Stats and Guide */}
+          <div className="progress-left-col" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {/* Recovery Progress Card */}
+            <div className="recovery-card" style={{ background: 'var(--bg-glass-card)', border: '1px solid var(--border-glass)', margin: 0 }}>
+              <div className="recovery-card-info">
+                <span className="recovery-card-day" style={{ fontSize: '14px' }}>Recovery Progress</span>
+                <span className="recovery-card-desc">You're on the right track! Keep following your plan.</span>
+              </div>
+              <div className="recovery-card-ring">
+                <svg className="recovery-ring-svg" viewBox="0 0 100 100">
+                  <circle className="recovery-ring-bg" cx="50" cy="50" r="42" />
+                  <circle 
+                    className="recovery-ring-val" 
+                    cx="50" cy="50" r="42" 
+                    strokeDasharray="263.89"
+                    strokeDashoffset={263.89 - (263.89 * progress) / 100}
+                  />
+                </svg>
+                <div className="recovery-ring-text">
+                  <span className="recovery-ring-percent">{progress}%</span>
+                  <span className="recovery-ring-lbl">Recovered</span>
+                </div>
+              </div>
+            </div>
+
+            {/* 3 Stats Columns Grid */}
+            <div className="stats-grid-3col">
+              <div className="stat-box-card">
+                <span className="stat-box-lbl">Check-Ins</span>
+                <span className="stat-box-num">6/7</span>
+                <span className="stat-box-tag">Great job!</span>
+              </div>
+              <div className="stat-box-card">
+                <span className="stat-box-lbl">Plan Adherence</span>
+                <span className="stat-box-num">86%</span>
+                <span className="stat-box-tag">Excellent</span>
+              </div>
+              <div className="stat-box-card">
+                <span className="stat-box-lbl">Tasks Completed</span>
+                <span className="stat-box-num">18/22</span>
+                <span className="stat-box-tag">Keep it up!</span>
+              </div>
+            </div>
+
+            {/* Senior Care Guide Card */}
+            {historyLogs[selectedLogIndex] && (() => {
+              const log = historyLogs[selectedLogIndex];
+              const summary = getSeniorFriendlySummary(log);
+              return (
+                <div className="glass-card" style={{ 
+                  padding: '20px', 
+                  borderRadius: '20px', 
+                  border: '1px solid var(--border-glass)',
+                  background: 'linear-gradient(135deg, rgba(0, 140, 140, 0.04) 0%, rgba(255, 255, 255, 0.02) 100%)',
+                  boxShadow: '0 4px 14px rgba(0,31,63,0.01)',
+                  margin: 0
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                    <span style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', color: 'var(--primary-dark)' }}>
+                      Senior Care Guide &bull; {log.date}
+                    </span>
+                    <span style={{ fontSize: '10.5px', color: 'var(--text-muted)' }}>
+                      Logged at {log.time}
+                    </span>
+                  </div>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ 
+                        width: '8px', height: '8px', borderRadius: '50%', 
+                        background: log.status === 'Green' ? 'var(--color-green)' : log.status === 'Yellow' ? 'var(--color-yellow)' : 'var(--color-red)'
+                      }}></span>
+                      <strong style={{ fontSize: '15px', color: 'var(--text-main)' }}>
+                        Status: {summary.painText} ({log.painLevel}/10)
+                      </strong>
+                    </div>
+                    
+                    <p style={{ fontSize: '13px', lineHeight: '1.6', color: 'var(--text-muted)', fontWeight: 500, margin: 0 }}>
+                      {summary.painAdvice}
+                    </p>
+                    
+                    {/* Vitals Summary Grid for Seniors */}
+                    <div style={{ 
+                      display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', 
+                      gap: '8px', marginTop: '8px', 
+                      background: 'rgba(255,255,255,0.4)', 
+                      padding: '12px', borderRadius: '14px',
+                      border: '1px solid rgba(0, 140, 140, 0.05)'
+                    }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                        <span style={{ fontSize: '9px', color: 'var(--text-muted)' }}>Swelling</span>
+                        <strong style={{ fontSize: '12.5px', color: 'var(--text-main)' }}>{log.swellingLevel}/10</strong>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                        <span style={{ fontSize: '9px', color: 'var(--text-muted)' }}>Vitals Temp</span>
+                        <strong style={{ fontSize: '12.5px', color: 'var(--text-main)' }}>{log.temperature.toFixed(1)}°F</strong>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                        <span style={{ fontSize: '9px', color: 'var(--text-muted)' }}>Sleep</span>
+                        <strong style={{ fontSize: '12.5px', color: 'var(--text-main)' }}>{log.sleepLevel}/10</strong>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+
+          {/* Right Column: Trend Chart & Check-In History List */}
+          <div className="progress-right-col" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {/* Pain Trend SVG chart */}
+            <div className="glass-card" style={{ background: 'var(--bg-glass-card)', border: '1px solid var(--border-glass)', padding: '20px', borderRadius: '24px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <span className="section-title" style={{ fontSize: '16px' }}>Pain Trend</span>
+                <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Tap dots to view guide</span>
+              </div>
+              {renderTrendsChart()}
+            </div>
+
+            {/* Check-In History List */}
+            <div className="glass-card" style={{ background: 'var(--bg-glass-card)', border: '1px solid var(--border-glass)', padding: '20px', borderRadius: '24px' }}>
+              <span className="section-title" style={{ display: 'block', marginBottom: '12px', fontSize: '16px' }}>Check-In History</span>
+              <div className="history-list" style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '280px', overflowY: 'auto', paddingRight: '4px' }}>
+                {historyLogs.slice().reverse().map((log, idx) => {
+                  const originalIdx = historyLogs.length - 1 - idx;
+                  const isSelected = originalIdx === selectedLogIndex;
+                  return (
+                    <div 
+                      key={idx} 
+                      className={`history-item-row ${isSelected ? 'selected' : ''}`} 
+                      onClick={() => setSelectedLogIndex(originalIdx)}
+                      style={{
+                        borderColor: isSelected ? 'var(--primary)' : 'var(--border-glass)',
+                        background: isSelected ? 'var(--primary-light)' : 'var(--bg-glass-card)',
+                        cursor: 'pointer',
+                        padding: '12px 16px',
+                        borderRadius: '16px',
+                        borderWidth: '1px',
+                        borderStyle: 'solid',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      <div className="history-item-left">
+                        <span className="history-item-date" style={{ fontWeight: 700, fontSize: '12px' }}>
+                          {log.date} &bull; <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 500 }}>{log.time}</span>
+                        </span>
+                      </div>
+                      <div className="history-item-right" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span className="history-item-status" style={{ fontWeight: 700, fontSize: '12px' }}>Pain {log.painLevel}</span>
+                        <Smile size={16} style={{ 
+                          color: log.status === 'Green' ? 'var(--color-green)' : log.status === 'Yellow' ? 'var(--color-yellow)' : 'var(--color-red)'
+                        }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
 
     return (
       <div className="progress-scroller">
@@ -1440,8 +1672,8 @@ function App() {
       return renderCheckInFormSliders();
     }
 
-    // If a task detail sheet is open on the home tab, override content
-    if (selectedTaskId && activeTab === 'home') {
+    // On mobile, if a task detail sheet is open, show it as full screen overlay
+    if (!isDesktop && selectedTaskId && (activeTab === 'home' || activeTab === 'plan')) {
       return renderTaskDetailTab(selectedTaskId);
     }
 
@@ -1449,6 +1681,44 @@ function App() {
       case 'home':
         return renderHomeTab();
       case 'plan':
+        if (isDesktop) {
+          // Desktop split view for plan tab!
+          return (
+            <div className="plan-desktop-split-layout" style={{ display: 'grid', gridTemplateColumns: '1.1fr 0.9fr', gap: '32px', height: '100%', alignItems: 'start' }}>
+              <div className="plan-split-left-panel">
+                {renderPlanTab()}
+              </div>
+              <div className="plan-split-right-panel" style={{ position: 'sticky', top: '0' }}>
+                {selectedTaskId ? (
+                  renderTaskDetailTab(selectedTaskId)
+                ) : (
+                  <div className="glass-card plan-empty-detail-placeholder" style={{ 
+                    padding: '32px 24px', 
+                    borderRadius: '24px', 
+                    border: '1px dashed var(--border-glass)',
+                    background: 'var(--bg-glass-card)',
+                    textAlign: 'center',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '12px',
+                    minHeight: '280px',
+                    marginTop: '46px'
+                  }}>
+                    <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'var(--primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
+                      <Pill size={20} />
+                    </div>
+                    <strong style={{ fontSize: '14px', color: 'var(--text-main)' }}>Plan Task Details</strong>
+                    <p style={{ fontSize: '11.5px', color: 'var(--text-muted)', lineHeight: '1.5', margin: 0 }}>
+                      Select any medication or exercise to view clinical instructions, weekly adherence stats, and schedule reminders.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        }
         return renderPlanTab();
       case 'chat':
         return renderChatTab();
@@ -1481,6 +1751,26 @@ function App() {
 
         {/* Bottom Floating Navigation bar with signature floating center sphere */}
         <nav className="viewport-tab-bar">
+          {/* Desktop Sidebar Branding Logo */}
+          <div className="sidebar-logo-area" style={{ display: 'none' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '32px' }}>
+              <div style={{
+                width: '36px', height: '36px', borderRadius: '12px',
+                background: 'linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="white" />
+                  <path d="M12 6.5v5M9.5 9h5" stroke="var(--primary)" strokeWidth="2.2" strokeLinecap="round" />
+                </svg>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <strong style={{ fontSize: '16px', color: 'var(--text-main)', lineHeight: '1.2', fontWeight: 800 }}>Shalom</strong>
+                <span style={{ fontSize: '9px', color: 'var(--text-muted)', fontWeight: 600 }}>Recovery AI</span>
+              </div>
+            </div>
+          </div>
+
           <button 
             className={`tab-item ${activeTab === 'home' ? 'active' : ''}`}
             onClick={() => { setShowCheckInForm(false); setSelectedTaskId(null); setActiveTab('home'); }}
@@ -1499,11 +1789,12 @@ function App() {
 
           {/* Floating center sphere AI Coach button */}
           <button 
-            className="tab-item chat-btn-floating" 
+            className={`tab-item chat-btn-floating ${activeTab === 'chat' ? 'active' : ''}`} 
             onClick={() => { setShowCheckInForm(false); setSelectedTaskId(null); setActiveTab('chat'); }}
             title="Shalom AI Recovery Coach"
           >
             <div className="tab-chat-sphere"></div>
+            <span className="sidebar-chat-label" style={{ display: 'none' }}>AI Coach</span>
           </button>
 
           <button 
