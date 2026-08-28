@@ -249,12 +249,14 @@ function App() {
         list = [...meds, ...activities, checkInTask];
       }
     } else {
-      // Default fallback matching mock screens
+      // Default fallback matching user requirements
       list = [
-        { id: 'med-0', name: 'Medication', dose: 'Ibuprofen 400mg', type: 'medication', timeSlot: 'Ibuprofen 400mg', timeHour: '10:00 AM', completed: false, instructions: 'Take with food', streak: 4, bestTime: 'Morning' },
-        { id: 'act-0', name: 'Physical Therapy', dose: 'Knee mobility exercises', type: 'activity', timeSlot: 'Knee mobility exercises', timeHour: '11:00 AM', completed: false, instructions: '10 repetitions', streak: 5, bestTime: 'Afternoon' },
-        { id: 'act-1', name: 'Wound Care', dose: 'Clean and inspect incision', type: 'activity', timeSlot: 'Clean and inspect incision', timeHour: '6:00 PM', completed: false, instructions: 'Apply sterile gauze', streak: 6, bestTime: 'Evening' },
-        { id: 'act-2', name: 'Hydration', dose: 'Drink water', type: 'activity', timeSlot: 'Drink water', timeHour: '9:00 PM', completed: false, instructions: '8 glasses daily', streak: 3, bestTime: 'All Day' }
+        { id: 'task-checkin', name: 'Daily Check-In', type: 'checkin', timeSlot: 'Log pain & vitals', timeHour: '08:30 AM', completed: checkInComplete, streak: historyLogs.length, bestTime: 'Morning' },
+        { id: 'med-1', name: 'Oxycodone (Pain relief)', dose: '5mg - Take 1 tablet', type: 'medication', timeSlot: 'Oxycodone 5mg', timeHour: '10:00 AM', completed: false, instructions: 'Take with water', streak: 4, bestTime: 'Morning' },
+        { id: 'act-1', name: 'Physical Therapy: Knee Exercises', dose: '10 reps, hold 5s', type: 'activity', timeSlot: 'Knee exercises', timeHour: '11:00 AM', completed: false, instructions: 'Do not overextend', streak: 5, bestTime: 'Afternoon' },
+        { id: 'med-2', name: 'Aspirin (Blood thinner)', dose: '81mg - Take 1 tablet', type: 'medication', timeSlot: 'Aspirin 81mg', timeHour: '02:00 PM', completed: false, instructions: 'Take with food', streak: 6, bestTime: 'Afternoon' },
+        { id: 'act-2', name: 'Physical Therapy: Cold Compress', dose: 'Apply ice pack 20 mins', type: 'activity', timeSlot: 'Cold compress', timeHour: '06:00 PM', completed: false, instructions: 'Wrap in towel', streak: 3, bestTime: 'Evening' },
+        { id: 'med-3', name: 'Colace (Stool softener)', dose: '100mg - Take 1 capsule', type: 'medication', timeSlot: 'Colace 100mg', timeHour: '08:00 PM', completed: false, instructions: 'Take with plenty of fluids', streak: 4, bestTime: 'Evening' }
       ];
     }
     
@@ -276,10 +278,12 @@ function App() {
     } else {
       // Seed default baseline tasks for this date
       const base: TodayTask[] = [
-        { id: 'med-0', name: 'Medication', dose: 'Ibuprofen 400mg', type: 'medication', timeSlot: 'Ibuprofen 400mg', timeHour: '10:00 AM', completed: false, instructions: 'Take with food', streak: 4, bestTime: 'Morning' },
-        { id: 'act-0', name: 'Physical Therapy', dose: 'Knee mobility exercises', type: 'activity', timeSlot: 'Knee mobility exercises', timeHour: '11:00 AM', completed: false, instructions: '10 repetitions', streak: 5, bestTime: 'Afternoon' },
-        { id: 'act-1', name: 'Wound Care', dose: 'Clean and inspect incision', type: 'activity', timeSlot: 'Clean and inspect incision', timeHour: '6:00 PM', completed: false, instructions: 'Apply sterile gauze', streak: 6, bestTime: 'Evening' },
-        { id: 'act-2', name: 'Hydration', dose: 'Drink water', type: 'activity', timeSlot: 'Drink water', timeHour: '9:00 PM', completed: false, instructions: '8 glasses daily', streak: 3, bestTime: 'All Day' }
+        { id: 'task-checkin', name: 'Daily Check-In', type: 'checkin', timeSlot: 'Log pain & vitals', timeHour: '08:30 AM', completed: false, streak: historyLogs.length, bestTime: 'Morning' },
+        { id: 'med-1', name: 'Oxycodone (Pain relief)', dose: '5mg - Take 1 tablet', type: 'medication', timeSlot: 'Oxycodone 5mg', timeHour: '10:00 AM', completed: false, instructions: 'Take with water', streak: 4, bestTime: 'Morning' },
+        { id: 'act-1', name: 'Physical Therapy: Knee Exercises', dose: '10 reps, hold 5s', type: 'activity', timeSlot: 'Knee exercises', timeHour: '11:00 AM', completed: false, instructions: 'Do not overextend', streak: 5, bestTime: 'Afternoon' },
+        { id: 'med-2', name: 'Aspirin (Blood thinner)', dose: '81mg - Take 1 tablet', type: 'medication', timeSlot: 'Aspirin 81mg', timeHour: '02:00 PM', completed: false, instructions: 'Take with food', streak: 6, bestTime: 'Afternoon' },
+        { id: 'act-2', name: 'Physical Therapy: Cold Compress', dose: 'Apply ice pack 20 mins', type: 'activity', timeSlot: 'Cold compress', timeHour: '06:00 PM', completed: false, instructions: 'Wrap in towel', streak: 3, bestTime: 'Evening' },
+        { id: 'med-3', name: 'Colace (Stool softener)', dose: '100mg - Take 1 capsule', type: 'medication', timeSlot: 'Colace 100mg', timeHour: '08:00 PM', completed: false, instructions: 'Take with plenty of fluids', streak: 4, bestTime: 'Evening' }
       ];
       
       const today = new Date(2026, 7, 28);
