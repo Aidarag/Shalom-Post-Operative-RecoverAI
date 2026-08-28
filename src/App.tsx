@@ -15,6 +15,8 @@ import {
   ChevronRight as ChevronRightIcon,
   Plus,
   Heart,
+  HeartPulse,
+  ShieldAlert,
   Smile,
   Frown,
   AlertCircle,
@@ -89,6 +91,8 @@ function App() {
   const [todayTasks, setTodayTasks] = useState<TodayTask[]>([]);
   const [checkInComplete, setCheckInComplete] = useState<boolean>(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [hydrationGlasses, setHydrationGlasses] = useState<number>(4);
+  const [showAppointmentSummaryModal, setShowAppointmentSummaryModal] = useState<boolean>(false);
   
   // Calendar and date-based task states
   const [selectedDate, setSelectedDate] = useState<Date>(new Date(2026, 7, 28)); // August 28, 2026
@@ -470,7 +474,6 @@ function App() {
     const progress = calculateRecoveryProgress();
 
     // Group tasks dynamically for the Dashboard segments
-    const checkInTasks = todayTasks.filter(t => t.type === 'checkin');
     const medicationTasks = todayTasks.filter(t => t.type === 'medication');
     const activityTasks = todayTasks.filter(t => t.type === 'activity');
 
@@ -481,9 +484,8 @@ function App() {
     const completedPT = activityTasks.filter(t => t.completed).length;
 
     // Get current status color for triage widget
-    const latestLog = historyLogs[historyLogs.length - 1];
     const statusColor = checkInComplete 
-      ? (latestLog?.status === 'Green' ? 'var(--color-green)' : latestLog?.status === 'Yellow' ? 'var(--color-yellow)' : 'var(--color-red)')
+      ? (activeReport?.status === 'Green' ? 'var(--color-green)' : activeReport?.status === 'Yellow' ? 'var(--color-yellow)' : 'var(--color-red)')
       : 'var(--text-muted)';
 
     return (
@@ -516,7 +518,9 @@ function App() {
           {/* Good Morning Title */}
           <div style={{ marginBottom: '18px' }}>
             <h2 className="greeting-title">Good morning, Aïda</h2>
-            <span className="greeting-subtitle">Here is your recovery overview for today.</span>
+            <span className="greeting-subtitle" style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-muted)' }}>
+              Recovery Day 6 &bull; ACL Post-Op
+            </span>
           </div>
         </div>
 
@@ -557,7 +561,7 @@ function App() {
               <Activity size={14} />
             </span>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-              <span className="metric-lbl">Exercises</span>
+              <span className="metric-lbl">PT Exercises</span>
               <strong className="metric-val">{completedPT}/{totalPT}</strong>
             </div>
           </div>
@@ -568,7 +572,7 @@ function App() {
               <TrendingUp size={14} />
             </span>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-              <span className="metric-lbl">Score</span>
+              <span className="metric-lbl">Adherence</span>
               <strong className="metric-val">{progress}%</strong>
             </div>
           </div>
@@ -577,200 +581,202 @@ function App() {
         {/* Left Column / Main content */}
         <div className="home-main-col" style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
           
-          {/* Day 6 Recovery Card (Sunset hills style) */}
-          <div className="recovery-card">
-            <div className="recovery-card-mountain"></div>
-            <div className="recovery-card-info">
-              <span className="recovery-card-day">Day 6 of Recovery</span>
-              <span className="recovery-card-desc">ACL Reconstruction Surgery</span>
-              <span className="recovery-card-desc">May 6, 2025</span>
-              <span className="recovery-card-quote">"Small steps today, stronger tomorrow."</span>
+          {/* Section 1: Shalom AI Monitoring Check-In */}
+          <div className="dashboard-section-box" style={{ 
+            background: 'linear-gradient(135deg, rgba(0, 140, 140, 0.04) 0%, rgba(0, 191, 255, 0.02) 100%)',
+            border: '1.5px solid var(--primary-light)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+              <HeartPulse size={16} style={{ color: 'var(--primary)' }} />
+              <strong style={{ fontSize: '13px', color: 'var(--text-main)' }}>Shalom Check-In (AI Coach)</strong>
             </div>
-
-            <div className="recovery-card-ring">
-              <svg className="recovery-ring-svg" viewBox="0 0 100 100">
-                <circle className="recovery-ring-bg" cx="50" cy="50" r="42" />
-                <circle 
-                  className="recovery-ring-val" 
-                  cx="50" cy="50" r="42" 
-                  strokeDasharray="263.89"
-                  strokeDashoffset={263.89 - (263.89 * progress) / 100}
-                />
-              </svg>
-              <div className="recovery-ring-text">
-                <span className="recovery-ring-percent">{progress}%</span>
-                <span className="recovery-ring-lbl">Recovered</span>
-              </div>
+            <p style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: '1.5', margin: '0 0 12px 0' }}>
+              {checkInComplete 
+                ? 'Your daily recovery symptoms have been logged and analyzed. Triage report is active.' 
+                : 'Log your pain, temperature, swelling, and surgical incision status to update your care team.'}
+            </p>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button 
+                className="choice-pill-btn" 
+                style={{ padding: '8px 16px', background: 'var(--primary)', color: '#fff', fontWeight: '800' }}
+                onClick={() => setShowCheckInForm(true)}
+              >
+                {checkInComplete ? 'Update Check-In' : 'Start Daily Check-In'}
+              </button>
+              {checkInComplete && (
+                <button 
+                  className="choice-pill-btn"
+                  onClick={() => { setActiveTab('trends'); setProgressSubTab('overview'); }}
+                >
+                  View Care Guide
+                </button>
+              )}
             </div>
           </div>
 
-          {/* Grouped Checklist Sections */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            
-            {/* SECTION 1: Daily Logging & Check-Ins */}
-            <div className="dashboard-section-box">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-                <Heart size={14} style={{ color: 'var(--primary)' }} />
-                <span style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--text-main)', letterSpacing: '0.5px' }}>
-                  Logging & Check-Ins
-                </span>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {checkInTasks.map(task => (
-                  <div key={task.id} className={`task-card-row ${task.completed ? 'completed' : ''}`} onClick={() => setSelectedTaskId(task.id)}>
-                    <div className="task-card-left">
-                      <div className="task-card-icon-wrap" style={{ backgroundColor: 'var(--primary-light)', color: 'var(--primary)' }}>
-                        <Heart size={13} fill={task.completed ? 'var(--primary)' : 'none'} />
-                      </div>
-                      <div className="task-card-text">
-                        <span className="task-card-title">{task.name}</span>
-                        <span className="task-card-subtitle">{task.timeSlot}</span>
-                      </div>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <span className="task-card-time">{task.timeHour}</span>
-                      <span className={`task-checkbox-indicator ${task.completed ? 'checked' : ''}`} onClick={(e) => {
-                        e.stopPropagation();
-                        toggleTaskCompleted(task.id);
-                      }}>
-                        {task.completed ? '✓' : ''}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* SECTION 2: Scheduled Medications */}
-            <div className="dashboard-section-box">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+          {/* Section 2: Medication (Action & Routine) */}
+          <div className="dashboard-section-box">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Pill size={14} style={{ color: 'var(--primary)' }} />
                 <span style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--text-main)', letterSpacing: '0.5px' }}>
                   Scheduled Medications
                 </span>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {medicationTasks.map(task => (
-                  <div key={task.id} className={`task-card-row ${task.completed ? 'completed' : ''}`} onClick={() => setSelectedTaskId(task.id)}>
-                    <div className="task-card-left">
-                      <div className="task-card-icon-wrap" style={{ backgroundColor: 'var(--primary-light)', color: 'var(--primary)' }}>
-                        <Pill size={13} />
-                      </div>
-                      <div className="task-card-text">
-                        <span className="task-card-title">{task.name}</span>
-                        <span className="task-card-subtitle">{task.dose}</span>
-                      </div>
+              <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--primary)' }}>
+                {completedMeds} of {totalMeds} completed
+              </span>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {medicationTasks.map(task => (
+                <div key={task.id} className={`task-card-row ${task.completed ? 'completed' : ''}`} onClick={() => setSelectedTaskId(task.id)}>
+                  <div className="task-card-left">
+                    <div className="task-card-icon-wrap" style={{ backgroundColor: 'var(--primary-light)', color: 'var(--primary)' }}>
+                      <Pill size={13} />
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <span className="task-card-time">{task.timeHour}</span>
-                      <span className={`task-checkbox-indicator ${task.completed ? 'checked' : ''}`} onClick={(e) => {
-                        e.stopPropagation();
-                        toggleTaskCompleted(task.id);
-                      }}>
-                        {task.completed ? '✓' : ''}
-                      </span>
+                    <div className="task-card-text">
+                      <span className="task-card-title">{task.name}</span>
+                      <span className="task-card-subtitle">{task.dose}</span>
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
-
-            {/* SECTION 3: Physical Exercises */}
-            <div className="dashboard-section-box">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-                <Activity size={14} style={{ color: 'var(--accent)' }} />
-                <span style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--text-main)', letterSpacing: '0.5px' }}>
-                  Physical Therapy & Rehabilitation
-                </span>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {activityTasks.map(task => (
-                  <div key={task.id} className={`task-card-row ${task.completed ? 'completed' : ''}`} onClick={() => setSelectedTaskId(task.id)}>
-                    <div className="task-card-left">
-                      <div className="task-card-icon-wrap" style={{ backgroundColor: 'var(--accent-light)', color: 'var(--accent)' }}>
-                        <Activity size={13} />
-                      </div>
-                      <div className="task-card-text">
-                        <span className="task-card-title">{task.name}</span>
-                        <span className="task-card-subtitle">{task.dose || task.instructions}</span>
-                      </div>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <span className="task-card-time">{task.timeHour}</span>
-                      <span className={`task-checkbox-indicator ${task.completed ? 'checked' : ''}`} onClick={(e) => {
-                        e.stopPropagation();
-                        toggleTaskCompleted(task.id);
-                      }}>
-                        {task.completed ? '✓' : ''}
-                      </span>
-                    </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span className="task-card-time">{task.timeHour}</span>
+                    <span className={`task-checkbox-indicator ${task.completed ? 'checked' : ''}`} onClick={(e) => {
+                      e.stopPropagation();
+                      toggleTaskCompleted(task.id);
+                    }}>
+                      {task.completed ? '✓' : ''}
+                    </span>
                   </div>
-                ))}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Section 3: Wound & Incision Care Checklist */}
+          <div className="dashboard-section-box">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+              <ShieldAlert size={14} style={{ color: 'var(--primary)' }} />
+              <span style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--text-main)', letterSpacing: '0.5px' }}>
+                Incision Care & Dressing
+              </span>
+            </div>
+            <p style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.4', margin: '0 0 10px 0' }}>
+              Dressing change due at <strong>6:00 PM</strong>. Follow steps carefully:
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div className="task-card-row" style={{ padding: '8px 12px' }}>
+                <span style={{ fontSize: '11.5px', color: 'var(--text-main)', fontWeight: '600' }}>1. Wash hands thoroughly with soap & warm water</span>
+              </div>
+              <div className="task-card-row" style={{ padding: '8px 12px' }}>
+                <span style={{ fontSize: '11.5px', color: 'var(--text-main)', fontWeight: '600' }}>2. Remove old dressing & inspect wound condition</span>
+              </div>
+              <div className="task-card-row" style={{ padding: '8px 12px' }}>
+                <span style={{ fontSize: '11.5px', color: 'var(--text-main)', fontWeight: '600' }}>3. Clean with sterile water; apply clean gauze dressing</span>
+              </div>
+              <div className="task-card-row" style={{ padding: '8px 12px' }}>
+                <span style={{ fontSize: '11.5px', color: 'var(--text-main)', fontWeight: '600' }}>4. Keep incision completely dry during bathing</span>
               </div>
             </div>
-
-            {/* Next Appointment Card */}
-            <div className="task-card-row" onClick={() => setActiveTab('settings')}>
-              <div className="task-card-left">
-                <div className="task-card-icon-wrap" style={{ backgroundColor: '#eef8f5', color: 'var(--color-green)' }}>
-                  <Clock size={13} />
-                </div>
-                <div className="task-card-text">
-                  <span className="task-card-title">Next Appointment</span>
-                  <span className="task-card-subtitle">May 20, 2025 &bull; 10:30 AM &bull; Dr. Carter</span>
-                </div>
-              </div>
-              <ChevronRightIcon size={14} style={{ color: 'var(--text-muted)' }} />
-            </div>
-
           </div>
         </div>
 
         {/* Right Column / Sidebar elements */}
         <div className="home-side-col" style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-          {/* If there's an active report, render it here */}
-          {activeReport && (
-            <div className="report-alert-card" style={{ 
-              background: activeReport.status === 'Green' ? 'var(--bg-green)' : activeReport.status === 'Yellow' ? 'var(--bg-yellow)' : 'var(--bg-red)',
-              border: '1px solid var(--border-glass)',
-              borderRadius: '20px',
-              padding: '16px',
-              animation: 'slideInFade 0.3s ease-out'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                <span className="alert-circle-icon">⚠️</span>
-                <strong style={{ fontSize: '13px', color: 'var(--text-main)' }}>{activeReport.title}</strong>
-              </div>
-              <p style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.4', margin: 0 }}>
-                {activeReport.reportAlertText}
-              </p>
-              <button 
-                className="choice-pill-btn" 
-                style={{ marginTop: '10px', fontSize: '10.5px', padding: '6px 12px' }}
-                onClick={() => {
-                  setActiveTab('trends');
-                  setProgressSubTab('checkins');
-                }}
-              >
-                View History
-              </button>
-            </div>
-          )}
           
-          {/* On desktop, show a helpful summary widget */}
-          {isDesktop && (
-            <div className="glass-card" style={{ padding: '20px', borderRadius: '24px', border: '1px solid var(--border-glass)', background: 'var(--bg-glass-card)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                <Activity size={18} style={{ color: 'var(--primary)' }} />
-                <strong style={{ fontSize: '14px', color: 'var(--text-main)' }}>Weekly Stats</strong>
-              </div>
-              <ul style={{ paddingLeft: '16px', margin: 0, fontSize: '12px', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '8px', lineHeight: '1.5' }}>
-                <li>Pain level has stabilized around <strong>Moderate (5/10)</strong>.</li>
-                <li>Exercises consistency is currently at <strong>86%</strong>.</li>
-                <li>Adherence to post-op guidelines: <strong>Stable (Green)</strong>.</li>
+          {/* Section 4: Activities & Restrictions */}
+          <div className="glass-card" style={{ padding: '16px', borderRadius: '20px', border: '1px solid var(--border-glass)', background: 'var(--bg-glass-card)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+              <Activity size={15} style={{ color: 'var(--accent)' }} />
+              <strong style={{ fontSize: '12px', textTransform: 'uppercase', color: 'var(--text-main)', letterSpacing: '0.3px' }}>Activities & Limits</strong>
+            </div>
+            
+            {/* Exercises items */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}>
+              {activityTasks.map(task => (
+                <div key={task.id} className={`task-card-row ${task.completed ? 'completed' : ''}`} onClick={() => setSelectedTaskId(task.id)} style={{ padding: '10px' }}>
+                  <div className="task-card-left">
+                    <span className={`task-checkbox-indicator ${task.completed ? 'checked' : ''}`} style={{ marginRight: '8px' }} onClick={(e) => {
+                      e.stopPropagation();
+                      toggleTaskCompleted(task.id);
+                    }}>
+                      {task.completed ? '✓' : ''}
+                    </span>
+                    <div className="task-card-text">
+                      <span className="task-card-title" style={{ fontSize: '11.5px' }}>{task.name}</span>
+                    </div>
+                  </div>
+                  <span className="task-card-time" style={{ fontSize: '10px' }}>{task.timeHour}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Restrictions list */}
+            <div style={{ background: 'rgba(205,97,51,0.03)', padding: '10px', borderRadius: '12px', border: '1px solid rgba(205,97,51,0.05)' }}>
+              <strong style={{ fontSize: '10.5px', color: 'var(--color-yellow)', display: 'block', marginBottom: '4px' }}>⚠️ Active Restrictions</strong>
+              <ul style={{ paddingLeft: '14px', margin: 0, fontSize: '10.5px', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                <li>Do not lift objects heavier than 10 lbs.</li>
+                <li>Do not drive while taking pain medication.</li>
+                <li>Keep walking to flat surfaces. No running.</li>
               </ul>
             </div>
-          )}
+          </div>
+
+          {/* Section 5: Diet & Hydration */}
+          <div className="glass-card" style={{ padding: '16px', borderRadius: '20px', border: '1px solid var(--border-glass)', background: 'var(--bg-glass-card)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Clock size={15} style={{ color: 'var(--primary)' }} />
+                <strong style={{ fontSize: '12px', textTransform: 'uppercase', color: 'var(--text-main)', letterSpacing: '0.3px' }}>Diet & Hydration</strong>
+              </div>
+              <strong style={{ fontSize: '12px', color: 'var(--primary)' }}>{hydrationGlasses} / 8 Glasses</strong>
+            </div>
+
+            {/* Hydration quick log panel */}
+            <div style={{ 
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px',
+              background: 'rgba(255,255,255,0.4)', padding: '8px 12px', borderRadius: '14px', marginBottom: '12px',
+              border: '1px solid rgba(0, 140, 140, 0.05)'
+            }}>
+              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Hydration Goal</span>
+              <button 
+                className="choice-pill-btn" 
+                style={{ padding: '4px 10px', fontSize: '10px', marginLeft: 'auto', background: 'var(--primary)', color: '#fff' }}
+                onClick={() => setHydrationGlasses(prev => Math.min(8, prev + 1))}
+              >
+                + Log 1 Glass
+              </button>
+            </div>
+
+            {/* Nutrition Guidelines */}
+            <ul style={{ paddingLeft: '14px', margin: 0, fontSize: '10.5px', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <li>High-fiber foods recommended for digestion.</li>
+              <li>Avoid alcohol intake during recovery.</li>
+              <li>Take your medications with a light meal.</li>
+            </ul>
+          </div>
+
+          {/* Section 6: Follow-Up Appointments */}
+          <div className="glass-card" style={{ padding: '16px', borderRadius: '20px', border: '1px solid var(--border-glass)', background: 'var(--bg-glass-card)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+              <Calendar size={15} style={{ color: 'var(--primary)' }} />
+              <strong style={{ fontSize: '12px', textTransform: 'uppercase', color: 'var(--text-main)', letterSpacing: '0.3px' }}>Follow-Up Surgical Visit</strong>
+            </div>
+
+            <div style={{ background: 'rgba(0,140,140,0.03)', padding: '10px', borderRadius: '12px', border: '1px solid rgba(0,140,140,0.05)', marginBottom: '10px' }}>
+              <strong style={{ fontSize: '11.5px', color: 'var(--text-main)' }}>Dr. Smith &bull; Sept 5</strong>
+              <span style={{ fontSize: '10.5px', color: 'var(--text-muted)', display: 'block', marginTop: '2px' }}>Post-op evaluation in 6 days at 10:30 AM</span>
+            </div>
+
+            <button 
+              className="meds-action-btn"
+              style={{ fontSize: '11px', padding: '8px 12px', width: '100%', textTransform: 'none' }}
+              onClick={() => setShowAppointmentSummaryModal(true)}
+            >
+              Prep Instructions & Pre-Visit Report
+            </button>
+          </div>
+
         </div>
       </div>
     );
@@ -1966,6 +1972,102 @@ function App() {
           </button>
         </nav>
       </div>
+
+      {showAppointmentSummaryModal && (
+        <div className="glass-modal-overlay" style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(8px)',
+          zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          animation: 'fadeIn 0.2s ease-out', padding: '20px'
+        }}>
+          <div className="glass-card" style={{
+            background: 'rgba(255, 255, 255, 0.96)',
+            border: '1.5px solid var(--border-glass)',
+            borderRadius: '28px',
+            width: '100%',
+            maxWidth: '520px',
+            padding: '24px',
+            boxShadow: '0 24px 60px rgba(0, 31, 63, 0.15)',
+            maxHeight: '85vh',
+            overflowY: 'auto'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
+              <span style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--primary)', letterSpacing: '0.5px' }}>Pre-Visit Recovery Report</span>
+              <button 
+                onClick={() => setShowAppointmentSummaryModal(false)}
+                style={{ border: 'none', background: 'rgba(0,0,0,0.04)', width: '28px', height: '28px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <h3 style={{ fontSize: '18px', color: 'var(--text-main)', marginBottom: '8px', fontWeight: 800 }}>Dr. Carter &bull; Post-Op Follow-Up</h3>
+            <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '20px', lineHeight: '1.5', margin: 0 }}>
+              Scheduled for <strong>September 5, 2026 at 10:30 AM</strong>. Please review the clinical preparation instructions and share your recovery history below.
+            </p>
+
+            {/* Before Appointment Instructions */}
+            <div style={{ background: 'rgba(0,140,140,0.03)', padding: '14px', borderRadius: '16px', border: '1px solid rgba(0,140,140,0.05)', marginBottom: '18px', marginTop: '16px' }}>
+              <strong style={{ fontSize: '12px', color: 'var(--text-main)', display: 'block', marginBottom: '8px' }}>📋 Preparation Guidelines</strong>
+              <ul style={{ paddingLeft: '16px', margin: 0, fontSize: '11.5px', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '6px', lineHeight: '1.5' }}>
+                <li>Bring your current active medications list.</li>
+                <li>Be prepared to review symptom logs from Days 3–5.</li>
+                <li>Do not eat after midnight if instructed by surgical team.</li>
+              </ul>
+            </div>
+
+            {/* Print-ready summary */}
+            <div style={{ background: '#ffffff', padding: '16px', borderRadius: '18px', border: '1px solid var(--border-glass)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.01)', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(0,0,0,0.05)', paddingBottom: '8px', marginBottom: '12px' }}>
+                <span style={{ fontSize: '9px', fontWeight: '800', color: 'var(--text-muted)' }}>SHALOM AI PATIENT DISCHARGE REPORT</span>
+                <span style={{ fontSize: '9px', color: 'var(--text-muted)' }}>Date: Aug 28, 2026</span>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12px', color: 'var(--text-main)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Days Since Surgery:</span>
+                  <strong>{historyLogs.length} days</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Average Pain Level:</span>
+                  <strong>{(historyLogs.reduce((acc, log) => acc + log.painLevel, 0) / historyLogs.length).toFixed(1)}/10</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Highest Recorded Pain:</span>
+                  <strong>{Math.max(...historyLogs.map(log => log.painLevel))}/10</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Fever Episodes:</span>
+                  <strong>{historyLogs.some(log => log.temperature >= 100) ? "1 episode (100.2°F)" : "None"}</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Medication Adherence:</span>
+                  <strong>{Math.round(historyLogs.reduce((acc, log) => acc + log.medsAdherence, 0) / historyLogs.length)}%</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Incision Redness / Swelling:</span>
+                  <strong>Reported on Days 3–5</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Current Status:</span>
+                  <strong style={{ color: 'var(--color-green)' }}>Mild Swelling (Stable)</strong>
+                </div>
+              </div>
+            </div>
+
+            <button 
+              className="meds-action-btn"
+              style={{ marginTop: '10px', width: '100%', textTransform: 'none' }}
+              onClick={() => {
+                alert("Summary copied to clipboard! You can share this report with Dr. Carter.");
+                setShowAppointmentSummaryModal(false);
+              }}
+            >
+              Copy Report Summary
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
