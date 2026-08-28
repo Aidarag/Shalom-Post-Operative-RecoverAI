@@ -116,6 +116,7 @@ function App() {
   // Screen sub-tab toggles
   const [planSubTab, setPlanSubTab] = useState<'schedule' | 'tasks'>('schedule');
   const [progressSubTab, setProgressSubTab] = useState<'overview' | 'checkins' | 'trends'>('overview');
+  const [checklistSpaceFilter, setChecklistSpaceFilter] = useState<'all' | 'medication' | 'wound' | 'exercise' | 'hydration'>('all');
   
   // Sliders Form State (Screen 3)
   const [showCheckInForm, setShowCheckInForm] = useState<boolean>(false);
@@ -872,103 +873,135 @@ function App() {
           /* Tasks tab (Screen 8) */
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             
-            {/* Medications */}
-            <div className="dashboard-section-box">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-                <Pill size={14} style={{ color: 'var(--primary)' }} />
-                <span style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--text-main)', letterSpacing: '0.5px' }}>
-                  Medication Routine
-                </span>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {todayTasks.filter(t => t.type === 'medication').map(task => (
-                  <div key={task.id} className={`task-card-row ${task.completed ? 'completed' : ''}`} onClick={() => setSelectedTaskId(task.id)}>
-                    <div className="task-card-left">
-                      <div className="task-checkbox-indicator checked" style={{ 
-                        width: '20px', height: '20px', borderRadius: '50%', border: '1.5px solid var(--primary)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '10px',
-                        background: task.completed ? 'var(--primary)' : 'transparent', color: task.completed ? '#fff' : 'transparent', fontSize: '10px'
-                      }} onClick={(e) => {
-                        e.stopPropagation();
-                        toggleTaskCompleted(task.id);
-                      }}>
-                        ✓
-                      </div>
-                      <span className="task-card-title" style={{ fontSize: '12px' }}>{task.name}</span>
-                    </div>
-                    <span className="task-card-time" style={{ fontSize: '11px' }}>{task.timeHour}</span>
-                  </div>
-                ))}
-              </div>
+            {/* Space Filters Bar */}
+            <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '6px', marginBottom: '4px' }}>
+              {[
+                { id: 'all', label: 'All Spaces' },
+                { id: 'medication', label: 'Medications' },
+                { id: 'wound', label: 'Wound Care' },
+                { id: 'exercise', label: 'PT Exercises' },
+                { id: 'hydration', label: 'Hydration' }
+              ].map(f => (
+                <button 
+                  key={f.id}
+                  onClick={() => setChecklistSpaceFilter(f.id as any)}
+                  style={{
+                    border: 'none', padding: '6px 14px', borderRadius: '12px', fontSize: '10.5px', fontWeight: '700',
+                    background: checklistSpaceFilter === f.id ? 'var(--primary)' : 'rgba(0,0,0,0.03)',
+                    color: checklistSpaceFilter === f.id ? 'white' : 'var(--text-muted)',
+                    cursor: 'pointer', transition: 'var(--transition-fluid)', flexShrink: 0
+                  }}
+                >
+                  {f.label}
+                </button>
+              ))}
             </div>
 
-            {/* Wound Incision Care */}
-            <div className="dashboard-section-box">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-                <ShieldAlert size={14} style={{ color: 'var(--primary)' }} />
-                <span style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--text-main)', letterSpacing: '0.5px' }}>
-                  Wound & Incision Care Checklist
-                </span>
-              </div>
-              <ul style={{ margin: 0, paddingLeft: '16px', fontSize: '12.5px', color: 'var(--text-muted)', lineHeight: '1.6', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <li>✓ Wash hands thoroughly with soap.</li>
-                <li>✓ Inspect wound for redness/swelling (Report to Shalom AI if increased).</li>
-                <li>✓ Clean with sterile water; apply clean gauze.</li>
-                <li>✓ Keep incision dry.</li>
-              </ul>
-            </div>
-
-            {/* Rehabilitation Activity */}
-            <div className="dashboard-section-box">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-                <Activity size={14} style={{ color: 'var(--accent)' }} />
-                <span style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--text-main)', letterSpacing: '0.5px' }}>
-                  Activity & Exercises
-                </span>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {todayTasks.filter(t => t.type === 'activity').map(task => (
-                  <div key={task.id} className={`task-card-row ${task.completed ? 'completed' : ''}`} onClick={() => setSelectedTaskId(task.id)}>
-                    <div className="task-card-left">
-                      <div className="task-checkbox-indicator checked" style={{ 
-                        width: '20px', height: '20px', borderRadius: '50%', border: '1.5px solid var(--accent)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '10px',
-                        background: task.completed ? 'var(--accent)' : 'transparent', color: task.completed ? '#fff' : 'transparent', fontSize: '10px'
-                      }} onClick={(e) => {
-                        e.stopPropagation();
-                        toggleTaskCompleted(task.id);
-                      }}>
-                        ✓
-                      </div>
-                      <span className="task-card-title" style={{ fontSize: '12px' }}>{task.name}</span>
-                    </div>
-                    <span className="task-card-time" style={{ fontSize: '11px' }}>{task.timeHour}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Diet & Hydration */}
-            <div className="dashboard-section-box">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Clock size={14} style={{ color: 'var(--primary)' }} />
+            {/* Medications Space */}
+            {(checklistSpaceFilter === 'all' || checklistSpaceFilter === 'medication') && (
+              <div className="dashboard-section-box">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                  <Pill size={14} style={{ color: 'var(--primary)' }} />
                   <span style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--text-main)', letterSpacing: '0.5px' }}>
-                    Diet & Hydration
+                    Medication Routine
                   </span>
                 </div>
-                <strong style={{ fontSize: '11px', color: 'var(--primary)' }}>{hydrationGlasses} of 8 glasses logged</strong>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {todayTasks.filter(t => t.type === 'medication').map(task => (
+                    <div key={task.id} className={`task-card-row ${task.completed ? 'completed' : ''}`} onClick={() => setSelectedTaskId(task.id)}>
+                      <div className="task-card-left">
+                        <div className="task-checkbox-indicator checked" style={{ 
+                          width: '20px', height: '20px', borderRadius: '50%', border: '1.5px solid var(--primary)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '10px',
+                          background: task.completed ? 'var(--primary)' : 'transparent', color: task.completed ? '#fff' : 'transparent', fontSize: '10px'
+                        }} onClick={(e) => {
+                          e.stopPropagation();
+                          toggleTaskCompleted(task.id);
+                        }}>
+                          ✓
+                        </div>
+                        <span className="task-card-title" style={{ fontSize: '12px' }}>{task.name}</span>
+                      </div>
+                      <span className="task-card-time" style={{ fontSize: '11px' }}>{task.timeHour}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <button 
-                  className="choice-pill-btn" 
-                  style={{ fontSize: '10px', padding: '6px 12px' }}
-                  onClick={() => setHydrationGlasses(prev => Math.min(8, prev + 1))}
-                >
-                  + Log Hydration Glass
-                </button>
+            )}
+
+            {/* Wound Incision Care Space */}
+            {(checklistSpaceFilter === 'all' || checklistSpaceFilter === 'wound') && (
+              <div className="dashboard-section-box">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                  <ShieldAlert size={14} style={{ color: 'var(--primary)' }} />
+                  <span style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--text-main)', letterSpacing: '0.5px' }}>
+                    Wound & Incision Care Checklist
+                  </span>
+                </div>
+                <ul style={{ margin: 0, paddingLeft: '16px', fontSize: '12.5px', color: 'var(--text-muted)', lineHeight: '1.6', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <li>✓ Wash hands thoroughly with soap.</li>
+                  <li>✓ Inspect wound for redness/swelling (Report to Shalom AI if increased).</li>
+                  <li>✓ Clean with sterile water; apply clean gauze.</li>
+                  <li>✓ Keep incision dry.</li>
+                </ul>
               </div>
-            </div>
+            )}
+
+            {/* Rehabilitation Activity Space */}
+            {(checklistSpaceFilter === 'all' || checklistSpaceFilter === 'exercise') && (
+              <div className="dashboard-section-box">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                  <Activity size={14} style={{ color: 'var(--accent)' }} />
+                  <span style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--text-main)', letterSpacing: '0.5px' }}>
+                    Activity & Exercises
+                  </span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {todayTasks.filter(t => t.type === 'activity').map(task => (
+                    <div key={task.id} className={`task-card-row ${task.completed ? 'completed' : ''}`} onClick={() => setSelectedTaskId(task.id)}>
+                      <div className="task-card-left">
+                        <div className="task-checkbox-indicator checked" style={{ 
+                          width: '20px', height: '20px', borderRadius: '50%', border: '1.5px solid var(--accent)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '10px',
+                          background: task.completed ? 'var(--accent)' : 'transparent', color: task.completed ? '#fff' : 'transparent', fontSize: '10px'
+                        }} onClick={(e) => {
+                          e.stopPropagation();
+                          toggleTaskCompleted(task.id);
+                        }}>
+                          ✓
+                        </div>
+                        <span className="task-card-title" style={{ fontSize: '12px' }}>{task.name}</span>
+                      </div>
+                      <span className="task-card-time" style={{ fontSize: '11px' }}>{task.timeHour}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Diet & Hydration Space */}
+            {(checklistSpaceFilter === 'all' || checklistSpaceFilter === 'hydration') && (
+              <div className="dashboard-section-box">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Clock size={14} style={{ color: 'var(--primary)' }} />
+                    <span style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--text-main)', letterSpacing: '0.5px' }}>
+                      Diet & Hydration
+                    </span>
+                  </div>
+                  <strong style={{ fontSize: '11px', color: 'var(--primary)' }}>{hydrationGlasses} of 8 glasses logged</strong>
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button 
+                    className="choice-pill-btn" 
+                    style={{ fontSize: '10px', padding: '6px 12px' }}
+                    onClick={() => setHydrationGlasses(prev => Math.min(8, prev + 1))}
+                  >
+                    + Log Hydration Glass
+                  </button>
+                </div>
+              </div>
+            )}
 
           </div>
         )}
