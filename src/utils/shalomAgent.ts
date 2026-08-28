@@ -48,7 +48,104 @@ export interface NormalizedPatientRecord {
 
 export function normalizePatientRecord(raw: any): NormalizedPatientRecord | null {
   if (!raw) return null;
-  
+
+  // If raw has pdfText, parse it dynamically!
+  if (raw.pdfText) {
+    const text = raw.pdfText;
+    
+    // Heuristics for Patient Name
+    let patientName = 'Patient';
+    const nameMatch = text.match(/(?:Patient Name|Patient|Name):\s*([^\n\r]+)/i);
+    if (nameMatch) patientName = nameMatch[1].trim();
+
+    // Heuristics for Surgery Type
+    let surgeryType = 'Post-operative Recovery';
+    const surgeryMatch = text.match(/(?:Procedure|Surgery|Operation):\s*([^\n\r]+)/i);
+    if (surgeryMatch) surgeryType = surgeryMatch[1].trim();
+
+    // Heuristics for Discharge Date
+    let dischargeDate = '';
+    const dateMatch = text.match(/(?:Discharge Date|Discharge|Date):\s*([^\n\r]+)/i);
+    if (dateMatch) dischargeDate = dateMatch[1].trim();
+
+    // Heuristics for Allergies
+    let allergies: string[] = [];
+    const allergyMatch = text.match(/(?:Allergies|Allergy):\s*([^\n\r]+)/i);
+    if (allergyMatch) {
+      allergies = allergyMatch[1].split(',').map((s: string) => s.trim()).filter(Boolean);
+    }
+
+    // Heuristics for Medications
+    const activeMedications: { name: string; dose: string; frequency?: string }[] = [];
+    
+    // List of common recovery meds to search for
+    const commonMeds = [
+      'Aspirin', 'Oxycodone', 'Cephalexin', 'Senna', 'Gabapentin', 'Tramadol', 
+      'Colace', 'Lovenox', 'Coumadin', 'Ibuprofen', 'Acetaminophen', 'Tylenol',
+      'Norco', 'Vicodin', 'Percocet', 'Xarelto', 'Eliquis', 'Keflex'
+    ];
+
+    commonMeds.forEach(med => {
+      const medRegex = new RegExp(`(${med})\\s+(\\d+\\s*(?:mg|g|ml|capsule|tablet|tab|cap)s?)(?:\\s+[^\\n\\r]*?(twice daily|once daily|every\\s+\\d+\\s*hours|at bedtime|daily|daily at bedtime|three times daily|four times daily))?`, 'i');
+      const match = text.match(medRegex);
+      if (match) {
+        activeMedications.push({
+          name: match[1],
+          dose: match[2],
+          frequency: match[3] || 'As directed'
+        });
+      }
+    });
+
+    // Heuristics for Activities
+    const activityList: string[] = [];
+    const activityMatches = text.matchAll(/(?:walk|ice|elevate|exercise|compress|movement|therapy|physiotherapy)[^\n\r.]{10,80}/gi);
+    for (const match of activityMatches) {
+      const phrase = match[0].trim();
+      if (phrase && !activityList.includes(phrase) && activityList.length < 5) {
+        activityList.push(phrase.charAt(0).toUpperCase() + phrase.slice(1));
+      }
+    }
+    if (activityList.length === 0) {
+      activityList.push('Walk 5-10 minutes every hour');
+      activityList.push('Ice knee for swelling prevention');
+      activityList.push('Perform physical therapy drills');
+    }
+
+    // Heuristics for Warning Signs
+    const warningSigns: string[] = [];
+    const warningMatches = text.matchAll(/(?:fever|redness|drainage|swelling|bleeding|pain|shortness|chest pain)[^\n\r.]{10,80}/gi);
+    for (const match of warningMatches) {
+      const phrase = match[0].trim();
+      if (phrase && !warningSigns.includes(phrase) && warningSigns.length < 5) {
+        warningSigns.push(phrase.charAt(0).toUpperCase() + phrase.slice(1));
+      }
+    }
+    if (warningSigns.length === 0) {
+      warningSigns.push('Fever of 101.5 F or higher');
+      warningSigns.push('Severe redness or warmth at knee site');
+      warningSigns.push('Incision drainage that gets worse');
+    }
+
+    return {
+      patientName,
+      age: 65,
+      sex: 'Male',
+      surgeryType,
+      dischargeDate,
+      allergies,
+      preExistingConditions: [],
+      activeMedications,
+      dischargeInstructions: {
+        activity: activityList,
+        warningSigns,
+        emergencySymptoms: ['Chest pain', 'Shortness of breath']
+      },
+      surgeonNotes: `Discharge summary text dynamically parsed: ${raw.fileName}`,
+      raw: raw
+    };
+  }
+
   // If it's already normalized or in the old format:
   if (raw.patientName && !raw.patient_profile) {
     return {

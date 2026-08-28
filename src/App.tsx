@@ -1,51 +1,113 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { 
-  MessageSquare,
-  User,
-  Settings,
-  Compass,
-  Hospital,
-  ClipboardList,
   Pill,
-  Key,
-  Mic2,
-  FlaskConical,
   CheckCircle2,
-  Phone,
   Home,
   UploadCloud,
-  FileText,
   Loader2,
-  ArrowRight
+  TrendingUp,
+  Clock,
+  Trash2,
+  ChevronLeft,
+  Calendar,
+  User,
+  Activity,
+  ChevronRight as ChevronRightIcon,
+  Plus,
+  Heart,
+  Smile,
+  Frown,
+  AlertCircle,
+  Thermometer,
+  Moon,
+  Info
 } from 'lucide-react';
 import { ChatInterface } from './components/ChatInterface';
-import { type CheckInAnswers, type CareTeamReport } from './utils/shalomAgent';
+import { type CheckInAnswers, type CareTeamReport, normalizePatientRecord } from './utils/shalomAgent';
 import { extractTextFromPdf } from './utils/pdfParser';
 
-type TabType = 'home' | 'chat' | 'profile' | 'settings';
+type TabType = 'home' | 'plan' | 'chat' | 'trends' | 'settings';
+
+interface TodayTask {
+  id: string;
+  name: string;
+  dose?: string;
+  type: 'medication' | 'activity' | 'checkin';
+  timeSlot?: string;
+  timeHour?: string;
+  completed: boolean;
+  instructions?: string;
+  streak?: number;
+  bestTime?: string;
+}
+
+interface ChartLog {
+  day: number;
+  date: string;
+  time: string;
+  painLevel: number;
+  swellingLevel: number;
+  temperature: number;
+  mobilityLevel: number;
+  sleepLevel: number;
+  moodLevel: number;
+  medsAdherence: number;
+  status: 'Green' | 'Yellow' | 'Red' | 'Emergency';
+}
 
 function App() {
   const [activeTab, setActiveTab] = useState<TabType>('home');
-  const [apiKey, setApiKey] = useState<string>('');
+  const [apiKey] = useState<string>('');
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [pdfUploading, setPdfUploading] = useState(false);
   const [pdfUploadedName, setPdfUploadedName] = useState<string | null>(null);
   const [pdfError, setPdfError] = useState<string | null>(null);
   
-  // Speech synthesis hoisted states
-  const [isTtsEnabled, setIsTtsEnabled] = useState<boolean>(true);
+  // Speech synthesis states
+  const [isTtsEnabled] = useState<boolean>(true);
   const [selectedVoiceName, setSelectedVoiceName] = useState<string>('');
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
 
-  // State to trigger a preset scenario programmatically
+  // Preset check-in triggers
   const [presetScenarioTrigger, setPresetScenarioTrigger] = useState<CheckInAnswers | null>(null);
 
-  // Grounding Dataset state
+  // Grounding datasets
   const [medicalHistory, setMedicalHistory] = useState<any | null>(null);
   const [faqDataset, setFaqDataset] = useState<any | null>(null);
 
-  // Preset Scenario Data Definitions for testing
+  // Unified State for Redesign
+  const [todayTasks, setTodayTasks] = useState<TodayTask[]>([]);
+  const [checkInComplete, setCheckInComplete] = useState<boolean>(false);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  
+  // Screen sub-tab toggles
+  const [planSubTab, setPlanSubTab] = useState<'schedule' | 'tasks'>('schedule');
+  const [tasksFilter, setTasksFilter] = useState<'all' | 'today' | 'upcoming' | 'completed'>('all');
+  const [progressSubTab, setProgressSubTab] = useState<'overview' | 'checkins' | 'trends'>('overview');
+  
+  // Sliders Form State (Screen 3)
+  const [showCheckInForm, setShowCheckInForm] = useState<boolean>(false);
+  const [sliderPain, setSliderPain] = useState<number>(4);
+  const [sliderSwelling, setSliderSwelling] = useState<number>(3);
+  const [sliderTemp, setSliderTemp] = useState<number>(98.6);
+  const [sliderMobility, setSliderMobility] = useState<number>(4);
+  const [sliderSleep, setSliderSleep] = useState<number>(7);
+  const [sliderMood, setSliderMood] = useState<number>(6);
+  const [selectedLogIndex, setSelectedLogIndex] = useState<number>(6);
+
+  // History seed logs matching screen 9 with times
+  const [historyLogs, setHistoryLogs] = useState<ChartLog[]>([
+    { day: 1, date: 'Wed, May 7', time: '09:30 AM', painLevel: 4, swellingLevel: 3, temperature: 98.6, mobilityLevel: 6, sleepLevel: 8, moodLevel: 7, medsAdherence: 100, status: 'Green' },
+    { day: 2, date: 'Thu, May 8', time: '10:15 AM', painLevel: 5, swellingLevel: 4, temperature: 98.8, mobilityLevel: 5, sleepLevel: 7, moodLevel: 6, medsAdherence: 100, status: 'Green' },
+    { day: 3, date: 'Fri, May 9', time: '08:45 AM', painLevel: 6, swellingLevel: 4, temperature: 99.0, mobilityLevel: 5, sleepLevel: 6, moodLevel: 6, medsAdherence: 80, status: 'Green' },
+    { day: 4, date: 'Sat, May 10', time: '11:00 AM', painLevel: 7, swellingLevel: 6, temperature: 100.2, mobilityLevel: 3, sleepLevel: 4, moodLevel: 4, medsAdherence: 60, status: 'Yellow' },
+    { day: 5, date: 'Sun, May 11', time: '02:15 PM', painLevel: 6, swellingLevel: 5, temperature: 99.4, mobilityLevel: 4, sleepLevel: 6, moodLevel: 5, medsAdherence: 100, status: 'Green' },
+    { day: 6, date: 'Mon, May 12', time: '09:00 AM', painLevel: 5, swellingLevel: 3, temperature: 98.7, mobilityLevel: 5, sleepLevel: 7, moodLevel: 6, medsAdherence: 100, status: 'Green' },
+    { day: 7, date: 'Tue, May 13', time: '10:30 AM', painLevel: 6, swellingLevel: 4, temperature: 98.9, mobilityLevel: 4, sleepLevel: 6, moodLevel: 6, medsAdherence: 100, status: 'Green' }
+  ]);
+
+  // Seeding scenarios
   const PRESET_SCENARIOS = {
     green: {
       painLevel: 2,
@@ -85,7 +147,7 @@ function App() {
     }
   };
 
-  // Automatically load default FAQ dataset and patient record on mount
+  // Load default datasets
   useEffect(() => {
     const loadDefaultFaq = async () => {
       try {
@@ -95,7 +157,7 @@ function App() {
           setFaqDataset(data);
         }
       } catch (e) {
-        console.error("Failed to load default FAQ dataset on mount", e);
+        console.error("Failed to load default FAQ dataset", e);
       }
     };
     
@@ -107,7 +169,7 @@ function App() {
           setMedicalHistory(data);
         }
       } catch (e) {
-        console.error("Failed to load default patient record on mount", e);
+        console.error("Failed to load default patient record", e);
       }
     };
 
@@ -115,7 +177,60 @@ function App() {
     loadDefaultPatient();
   }, []);
 
-  // Load English speech synthesis voices on mount
+  // Initialize tasks
+  useEffect(() => {
+    if (medicalHistory) {
+      const normalized = normalizePatientRecord(medicalHistory);
+      if (normalized) {
+        const meds: TodayTask[] = normalized.activeMedications.map((m, idx) => ({
+          id: `med-${idx}-${m.name}`,
+          name: m.name,
+          dose: m.dose,
+          type: 'medication',
+          timeSlot: m.frequency || 'Upcoming',
+          timeHour: idx === 0 ? '10:00 AM' : idx === 1 ? '2:00 PM' : '8:00 PM',
+          completed: false,
+          instructions: m.frequency,
+          streak: 4 + idx,
+          bestTime: 'Morning'
+        }));
+
+        const activities: TodayTask[] = (normalized.dischargeInstructions?.activity || []).map((act, idx) => ({
+          id: `act-${idx}`,
+          name: act,
+          type: 'activity',
+          timeSlot: 'Upcoming',
+          timeHour: idx === 0 ? '11:00 AM' : '6:00 PM',
+          completed: false,
+          streak: 3 + idx,
+          bestTime: 'Afternoon'
+        }));
+
+        const checkInTask: TodayTask = {
+          id: 'task-checkin',
+          name: 'Daily Check-In',
+          type: 'checkin',
+          timeSlot: 'Log pain & vitals',
+          timeHour: 'Morning',
+          completed: checkInComplete,
+          streak: historyLogs.length,
+          bestTime: 'Morning'
+        };
+
+        setTodayTasks([...meds, ...activities, checkInTask]);
+      }
+    } else {
+      // Default fallback matching mock screens
+      setTodayTasks([
+        { id: 'med-0', name: 'Medication', dose: 'Ibuprofen 400mg', type: 'medication', timeSlot: 'Ibuprofen 400mg', timeHour: '10:00 AM', completed: false, instructions: 'Take with food', streak: 4, bestTime: 'Morning' },
+        { id: 'act-0', name: 'Physical Therapy', dose: 'Knee mobility exercises', type: 'activity', timeSlot: 'Knee mobility exercises', timeHour: '11:00 AM', completed: false, instructions: '10 repetitions', streak: 5, bestTime: 'Afternoon' },
+        { id: 'act-1', name: 'Wound Care', dose: 'Clean and inspect incision', type: 'activity', timeSlot: 'Clean and inspect incision', timeHour: '6:00 PM', completed: false, instructions: 'Apply sterile gauze', streak: 6, bestTime: 'Evening' },
+        { id: 'act-2', name: 'Hydration', dose: 'Drink water', type: 'activity', timeSlot: 'Drink water', timeHour: '9:00 PM', completed: false, instructions: '8 glasses daily', streak: 3, bestTime: 'All Day' }
+      ]);
+    }
+  }, [medicalHistory, checkInComplete]);
+
+  // Speech synthesizer voices
   useEffect(() => {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       const loadVoices = () => {
@@ -144,7 +259,30 @@ function App() {
     status: 'Green' | 'Yellow' | 'Red' | 'Emergency',
     report: CareTeamReport
   ) => {
-    console.log("Check-in complete:", status, report, submittedAnswers);
+    console.log("Check-in complete report logged:", report);
+    setCheckInComplete(true);
+
+    // Append to logs
+    const nextDay = historyLogs.length + 1;
+    const medChecked = todayTasks.filter(t => t.type === 'medication' && t.completed).length;
+    const medTotal = todayTasks.filter(t => t.type === 'medication').length;
+    const adherencePercent = medTotal > 0 ? Math.round((medChecked / medTotal) * 100) : 100;
+
+    const newLog: ChartLog = {
+      day: nextDay,
+      date: new Date().toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' }),
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      painLevel: submittedAnswers.painLevel,
+      swellingLevel: sliderSwelling,
+      temperature: submittedAnswers.temperature || 98.6,
+      mobilityLevel: sliderMobility,
+      sleepLevel: sliderSleep,
+      moodLevel: sliderMood,
+      medsAdherence: adherencePercent,
+      status: status
+    };
+    setHistoryLogs(prev => [...prev, newLog]);
+    setSelectedLogIndex(historyLogs.length);
   };
 
   const handleTriggerPreset = (type: 'green' | 'yellow' | 'red' | 'emergency') => {
@@ -153,23 +291,42 @@ function App() {
     setActiveTab('chat');
   };
 
-  const handleResetStatus = () => {
-    console.log("Reset check-in status");
+  const triggerMockCheckInDirect = (type: 'green' | 'yellow' | 'red' | 'emergency') => {
+    const answers: CheckInAnswers = PRESET_SCENARIOS[type];
+    const reportTitle = type === 'green' ? 'Stable Progress' : type === 'yellow' ? 'Monitoring Alert' : type === 'red' ? 'Urgent Alert' : 'Emergency Triage';
+    const reportAlert = type === 'green' ? 'Daily summary shared' : type === 'yellow' ? 'Report sent to your care team' : 'Urgent alert sent';
+    
+    const mockReport: CareTeamReport = {
+      title: reportTitle,
+      status: type === 'green' ? 'Green' : type === 'yellow' ? 'Yellow' : type === 'red' ? 'Red' : 'Emergency',
+      reportAlertText: reportAlert,
+      painLevel: answers.painLevel,
+      keySymptoms: answers.incisionIssues.concat(answers.unusualSymptoms).filter(s => s !== 'Normal' && s !== 'None'),
+      aiSummary: `Mock checkin triggered: status ${type.toUpperCase()}`,
+      generatedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+    handleCheckInComplete(answers, mockReport.status, mockReport);
   };
 
-  const renderActiveTabContent = () => {
-    switch (activeTab) {
-      case 'home':
-        return renderHomePage();
-      case 'chat':
-        return renderChatPage();
-      case 'profile':
-        return renderPatientProfilePage();
-      case 'settings':
-        return renderSettingsPage();
-      default:
-        return renderHomePage();
-    }
+  const handleResetCheckIn = () => {
+    setCheckInComplete(false);
+  };
+
+  const toggleTaskCompleted = (taskId: string) => {
+    setTodayTasks(prev => prev.map(t => {
+      if (t.id === taskId) {
+        return { ...t, completed: !t.completed };
+      }
+      return t;
+    }));
+  };
+
+  // Calculate wellness percentage matching Screen 5 Recovery progress
+  const calculateRecoveryProgress = () => {
+    const total = todayTasks.length;
+    if (total === 0) return 28; // Default fallback from Screen 1
+    const completed = todayTasks.filter(t => t.completed).length;
+    return Math.round((completed / total) * 100) || 28;
   };
 
   const handlePdfFile = useCallback(async (file: File) => {
@@ -181,13 +338,11 @@ function App() {
     setPdfUploading(true);
     try {
       const text = await extractTextFromPdf(file);
-      // Store extracted text as medicalHistory context
       setMedicalHistory({ pdfText: text, fileName: file.name, uploadedAt: new Date().toISOString() });
       setPdfUploadedName(file.name);
-      // Auto-navigate to Chat after 800ms to let the user see the success state
-      setTimeout(() => setActiveTab('chat'), 900);
+      setTimeout(() => setActiveTab('home'), 900);
     } catch (err: any) {
-      setPdfError(err?.message || 'Failed to parse PDF. Please try another file.');
+      setPdfError(err?.message || 'Failed to parse PDF.');
     } finally {
       setPdfUploading(false);
     }
@@ -200,137 +355,284 @@ function App() {
     if (file) handlePdfFile(file);
   }, [handlePdfFile]);
 
-  const renderHomePage = () => {
-    const isSuccess = !!pdfUploadedName && !pdfUploading;
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 'calc(100vh - 120px)', width: '100%', maxWidth: '760px', margin: '0 auto', textAlign: 'center', animation: 'fadeIn 0.5s ease-out', gap: '0px' }}>
-        
-        {/* Hero headline */}
-        <h1 style={{ fontSize: '34px', fontWeight: '700', lineHeight: '1.2', fontFamily: 'var(--font-body)', background: 'linear-gradient(90deg, #c07ab0 0%, #5e9ecb 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '6px' }}>
-          Welcome to Shalom
-        </h1>
-        <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '0px', maxWidth: '480px', lineHeight: '1.6' }}>
-          Your AI post-operative recovery assistant. Upload your discharge summary or medical records to get personalized guidance.
-        </p>
+  // Save Sliders Form check-in (Screen 3)
+  const saveCheckInFormSliders = () => {
+    const answers: CheckInAnswers = {
+      painLevel: sliderPain,
+      hasFever: sliderTemp >= 100,
+      temperature: sliderTemp,
+      medsTaken: true,
+      incisionIssues: sliderSwelling > 5 ? ['Swelling'] : ['Normal'],
+      mobility: sliderMobility > 6 ? 'Okay' : sliderMobility > 3 ? 'Getting harder' : 'Restricted',
+      unusualSymptoms: ['None']
+    };
 
-        {/* Floating Liquid Glass Orb */}
-        <div className="liquid-orb-container" style={{ marginTop: '4px', marginBottom: '-10px' }}>
-          <div className="liquid-orb"></div>
-          <div className="liquid-orb-reflection"></div>
+    const status = answers.painLevel > 7 || answers.hasFever ? 'Red' : answers.painLevel > 4 ? 'Yellow' : 'Green';
+    const report: CareTeamReport = {
+      title: 'Daily Patient Summary',
+      status: status,
+      reportAlertText: status === 'Green' ? 'Daily summary shared' : 'Report sent to your care team',
+      painLevel: answers.painLevel,
+      keySymptoms: answers.incisionIssues,
+      aiSummary: 'Patient logged symptoms through check-in sliders form.',
+      generatedAt: new Date().toLocaleTimeString()
+    };
+
+    handleCheckInComplete(answers, status, report);
+    setShowCheckInForm(false);
+    setActiveTab('trends');
+    setProgressSubTab('checkins');
+  };
+
+  // ==========================================
+  // RENDER TAB 1: Today (Home Tab - Screen 1)
+  // ==========================================
+  const renderHomeTab = () => {
+    const progress = calculateRecoveryProgress();
+
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', animation: 'fadeIn 0.3s ease-out' }}>
+        {/* Top Header */}
+        <div className="greeting-row">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{
+              width: '32px', height: '32px', borderRadius: '10px',
+              background: 'linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center'
+            }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="white" />
+                <path d="M12 6.5v5M9.5 9h5" stroke="var(--primary)" strokeWidth="2.2" strokeLinecap="round" />
+              </svg>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <strong style={{ fontSize: '14px', color: 'var(--text-main)', lineHeight: '1.2', fontWeight: 800 }}>Shalom</strong>
+              <span style={{ fontSize: '8px', color: 'var(--text-muted)', fontWeight: 600 }}>Recovery AI</span>
+            </div>
+          </div>
+          <button className="bell-btn" onClick={() => triggerMockCheckInDirect('green')} title="Mock checkin stable">
+            <CheckCircle2 size={16} />
+          </button>
         </div>
 
-        {/* PDF Upload Card */}
-        <div
-          onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-          onDragLeave={() => setIsDragging(false)}
-          onDrop={handleDrop}
-          onClick={() => !pdfUploading && pdfInputRef.current?.click()}
-          style={{
-            width: '100%',
-            maxWidth: '520px',
-            borderRadius: '24px',
-            border: `2px dashed ${isDragging ? 'var(--primary)' : isSuccess ? 'var(--success)' : 'rgba(192, 122, 176, 0.35)'}`,
-            background: isDragging
-              ? 'rgba(192, 122, 176, 0.06)'
-              : isSuccess
-              ? 'rgba(33, 140, 116, 0.04)'
-              : 'rgba(255, 255, 255, 0.6)',
-            backdropFilter: 'blur(20px)',
-            padding: '32px 36px',
-            cursor: pdfUploading ? 'wait' : 'pointer',
-            transition: 'all 0.3s ease',
-            boxShadow: isDragging
-              ? '0 8px 32px rgba(192, 122, 176, 0.14)'
-              : '0 4px 24px rgba(0,0,0,0.03)',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '14px',
-            marginTop: '8px'
-          }}
-        >
-          <input
-            ref={pdfInputRef}
-            type="file"
-            accept=".pdf"
-            style={{ display: 'none' }}
-            onChange={(e) => { const f = e.target.files?.[0]; if (f) handlePdfFile(f); }}
-          />
+        {/* Good Morning Title */}
+        <div style={{ marginBottom: '18px' }}>
+          <h2 className="greeting-title">Good morning, Aïda</h2>
+          <span className="greeting-subtitle">You're doing great. Keep going!</span>
+        </div>
 
-          {/* Icon state */}
-          <div style={{
-            width: '56px', height: '56px', borderRadius: '16px',
-            background: isSuccess ? 'var(--success-bg)' : 'rgba(192, 122, 176, 0.08)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            transition: 'all 0.3s ease'
-          }}>
-            {pdfUploading
-              ? <Loader2 size={26} style={{ color: 'var(--primary)', animation: 'spin 1s linear infinite' }} />
-              : isSuccess
-              ? <CheckCircle2 size={26} style={{ color: 'var(--success)' }} />
-              : <UploadCloud size={26} style={{ color: 'var(--primary)' }} />
-            }
+        {/* Day 6 Recovery Card (Sunset hills style) */}
+        <div className="recovery-card">
+          <div className="recovery-card-mountain"></div>
+          <div className="recovery-card-info">
+            <span className="recovery-card-day">Day 6 of Recovery</span>
+            <span className="recovery-card-desc">ACL Reconstruction Surgery</span>
+            <span className="recovery-card-desc">May 6, 2025</span>
+            <span className="recovery-card-quote">"Small steps today, stronger tomorrow."</span>
           </div>
 
-          {/* Text states */}
-          {pdfUploading && (
-            <>
-              <p style={{ fontWeight: '600', fontSize: '15px', color: 'var(--primary-dark)', margin: 0 }}>Parsing your document...</p>
-              <p style={{ fontSize: '12.5px', color: 'var(--text-muted)', margin: 0 }}>Extracting medical history from PDF</p>
-            </>
-          )}
-
-          {isSuccess && (
-            <>
-              <p style={{ fontWeight: '700', fontSize: '15px', color: 'var(--success)', margin: 0 }}>Document uploaded successfully</p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(33,140,116,0.06)', padding: '6px 14px', borderRadius: '20px', fontSize: '12.5px', color: 'var(--success)' }}>
-                <FileText size={13} /> {pdfUploadedName}
-              </div>
-              <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: 0 }}>Redirecting you to your assistant...</p>
-            </>
-          )}
-
-          {!pdfUploading && !isSuccess && (
-            <>
-              <div>
-                <p style={{ fontWeight: '600', fontSize: '15px', color: 'var(--primary-dark)', margin: '0 0 4px 0' }}>Drop your medical PDF here</p>
-                <p style={{ fontSize: '12.5px', color: 'var(--text-muted)', margin: 0 }}>Discharge summary, surgical report, or care plan</p>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-muted)' }}>
-                <span style={{ padding: '3px 10px', borderRadius: '20px', border: '1px solid rgba(0,0,0,0.07)', background: 'rgba(255,255,255,0.8)', fontSize: '11.5px' }}>PDF</span>
-                <span>· Max 20 MB · Click or drag</span>
-              </div>
-            </>
-          )}
-
-          {pdfError && (
-            <p style={{ fontSize: '12px', color: 'var(--emergency)', margin: 0, background: 'var(--emergency-bg)', padding: '6px 14px', borderRadius: '8px' }}>{pdfError}</p>
-          )}
+          <div className="recovery-card-ring">
+            <svg className="recovery-ring-svg" viewBox="0 0 100 100">
+              <circle className="recovery-ring-bg" cx="50" cy="50" r="42" />
+              <circle 
+                className="recovery-ring-val" 
+                cx="50" cy="50" r="42" 
+                strokeDasharray="263.89"
+                strokeDashoffset={263.89 - (263.89 * progress) / 100}
+              />
+            </svg>
+            <div className="recovery-ring-text">
+              <span className="recovery-ring-percent">{progress}%</span>
+              <span className="recovery-ring-lbl">Recovered</span>
+            </div>
+          </div>
         </div>
 
-        {/* Skip / Continue without upload */}
-        <button
-          onClick={() => setActiveTab('chat')}
-          style={{ marginTop: '18px', display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '13px', cursor: 'pointer', padding: '6px 12px', borderRadius: '8px', transition: 'color 0.2s' }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--primary-dark)')}
-          onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
-        >
-          Continue without uploading <ArrowRight size={14} />
-        </button>
+        {/* Today's Plan Header */}
+        <div className="section-header-row">
+          <span className="section-title">Today's Plan</span>
+          <button className="section-link" onClick={() => setActiveTab('plan')}>View all</button>
+        </div>
 
+        {/* Checklist rows */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+          {todayTasks.slice(0, 4).map(task => (
+            <div 
+              key={task.id} 
+              className="task-card-row"
+              onClick={() => setSelectedTaskId(task.id)}
+            >
+              <div className="task-card-left">
+                <div className="task-card-icon-wrap" style={{
+                  backgroundColor: task.type === 'medication' ? 'var(--primary-light)' : 'var(--accent-light)',
+                  color: task.type === 'medication' ? 'var(--primary)' : 'var(--accent)'
+                }}>
+                  {task.type === 'medication' ? <Pill size={13} /> : <Activity size={13} />}
+                </div>
+                <div className="task-card-text">
+                  <span className="task-card-title">{task.name}</span>
+                  <span className="task-card-subtitle">{task.dose || task.instructions}</span>
+                </div>
+              </div>
+              <span className="task-card-time">{task.timeHour}</span>
+            </div>
+          ))}
+
+          {/* Next Appointment static mock matching Screen 1 */}
+          <div className="task-card-row" onClick={() => setActiveTab('settings')}>
+            <div className="task-card-left">
+              <div className="task-card-icon-wrap" style={{ backgroundColor: '#eef8f5', color: 'var(--color-green)' }}>
+                <Clock size={13} />
+              </div>
+              <div className="task-card-text">
+                <span className="task-card-title">Next Appointment</span>
+                <span className="task-card-subtitle">May 20, 2025 &bull; 10:30 AM &bull; Dr. Carter</span>
+              </div>
+            </div>
+            <ChevronRightIcon size={14} style={{ color: 'var(--text-muted)' }} />
+          </div>
+        </div>
       </div>
     );
   };
 
-  const renderChatPage = () => {
+  // ==========================================
+  // RENDER TAB 2: Plan (Timeline & Tasks list - Screen 2 & 8)
+  // ==========================================
+  const renderPlanTab = () => {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', width: '100%', animation: 'fadeIn 0.3s ease-out' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', animation: 'fadeIn 0.3s ease-out' }}>
+        {/* Sub-tabs header */}
+        <div className="tabs-header-row">
+          <button 
+            className={`tab-header-btn ${planSubTab === 'schedule' ? 'active' : ''}`}
+            onClick={() => setPlanSubTab('schedule')}
+          >
+            Today's Plan
+          </button>
+          <button 
+            className={`tab-header-btn ${planSubTab === 'tasks' ? 'active' : ''}`}
+            onClick={() => setPlanSubTab('tasks')}
+          >
+            Checklist Tasks
+          </button>
+        </div>
+
+        {planSubTab === 'schedule' ? (
+          <>
+            {/* Horizontal Dates row */}
+            <div className="date-bar-container">
+              <div className="date-bar-day"><span className="date-day-name">Sun</span><span className="date-day-num">11</span></div>
+              <div className="date-bar-day"><span className="date-day-name">Mon</span><span className="date-day-num">12</span></div>
+              <div className="date-bar-day active"><span className="date-day-name">Tue</span><span className="date-day-num">13</span></div>
+              <div className="date-bar-day"><span className="date-day-name">Wed</span><span className="date-day-num">14</span></div>
+              <div className="date-bar-day"><span className="date-day-name">Thu</span><span className="date-day-num">15</span></div>
+              <div className="date-bar-day"><span className="date-day-name">Fri</span><span className="date-day-num">16</span></div>
+              <div className="date-bar-day"><span className="date-day-name">Sat</span><span className="date-day-num">17</span></div>
+            </div>
+
+            {/* Daily Check-in Card banner */}
+            <div className="plan-checkin-prompt">
+              <div className="checkin-prompt-icon-wrap">
+                <Heart size={20} fill="var(--primary)" />
+              </div>
+              <div className="checkin-prompt-info">
+                <span className="checkin-prompt-title">Daily Check-In</span>
+                <span className="checkin-prompt-desc">How are you feeling today?</span>
+                <button className="checkin-prompt-btn" onClick={() => setShowCheckInForm(true)}>Check in now</button>
+              </div>
+            </div>
+
+            {/* Today's Schedule timeline */}
+            <div style={{ marginBottom: '8px' }}>
+              <span className="section-title" style={{ display: 'block', marginBottom: '14px' }}>Today's Schedule</span>
+              
+              <div className="timeline-list">
+                <div className="timeline-vertical-line"></div>
+                {todayTasks.map((task) => (
+                  <div key={task.id} className={`timeline-item ${task.completed ? 'completed' : ''}`}>
+                    <span className="timeline-hour">{task.timeHour}</span>
+                    <div className="timeline-dot-anchor"></div>
+                    <div className="timeline-card-content" onClick={() => toggleTaskCompleted(task.id)}>
+                      <div>
+                        <span className="timeline-item-title">{task.name}</span>
+                        <p className="timeline-item-desc">{task.dose || task.instructions}</p>
+                      </div>
+                      <span className="timeline-item-status">
+                        {task.completed ? 'Completed' : 'Upcoming'}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        ) : (
+          /* Tasks tab (Screen 8) */
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            {/* Filter buttons */}
+            <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '2px' }}>
+              {['all', 'today', 'upcoming', 'completed'].map(f => (
+                <button 
+                  key={f}
+                  onClick={() => setTasksFilter(f as any)}
+                  style={{
+                    border: 'none', padding: '5px 12px', borderRadius: '12px', fontSize: '10.5px', fontWeight: '700',
+                    background: tasksFilter === f ? 'var(--primary)' : 'rgba(0,0,0,0.03)',
+                    color: tasksFilter === f ? 'white' : 'var(--text-muted)',
+                    cursor: 'pointer', textTransform: 'capitalize', transition: 'var(--transition-fluid)'
+                  }}
+                >
+                  {f}
+                </button>
+              ))}
+            </div>
+
+            {/* List with checkboxes */}
+            <div className="task-list-items">
+              {todayTasks
+                .filter(t => {
+                  if (tasksFilter === 'completed') return t.completed;
+                  if (tasksFilter === 'today') return !t.completed;
+                  return true;
+                })
+                .map(task => (
+                  <div 
+                    key={task.id} 
+                    className={`task-item-row ${task.completed ? 'completed' : ''}`}
+                    onClick={() => toggleTaskCompleted(task.id)}
+                  >
+                    <div className="task-item-left">
+                      <div className="task-checkbox-circle">
+                        {task.completed && <CheckCircle2 size={12} fill="var(--primary)" style={{ color: 'white' }} />}
+                      </div>
+                      <span className="task-item-label">{task.name}</span>
+                    </div>
+                    <div className="task-item-right">
+                      <span>{task.timeHour}</span>
+                      <ChevronRightIcon size={12} />
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // ==========================================
+  // RENDER TAB 3: AI Coach (Sparkles - Screen 6 & 7)
+  // ==========================================
+  const renderChatTab = () => {
+    return (
+      <div className="chat-tab-container">
         <ChatInterface 
           apiKey={apiKey} 
           onCheckInComplete={handleCheckInComplete}
           presetScenarioTrigger={presetScenarioTrigger}
           clearPresetScenarioTrigger={() => setPresetScenarioTrigger(null)}
-          onResetStatus={handleResetStatus}
+          onResetStatus={handleResetCheckIn}
           medicalHistory={medicalHistory}
           faqDataset={faqDataset}
           isTtsEnabled={isTtsEnabled}
@@ -341,361 +643,802 @@ function App() {
     );
   };
 
-  const renderPatientProfilePage = () => {
-    if (!medicalHistory) {
-      return (
-        <div className="glass-panel" style={{ padding: '20px', textAlign: 'center', margin: '40px auto', maxWidth: '600px' }}>
-          <h3>Loading Patient Profile...</h3>
-        </div>
-      );
+  // ==========================================
+  // RENDER TAB 4: Progress (Trends - Screen 5 & 9)
+  // ==========================================
+  const getSeniorFriendlySummary = (log: ChartLog) => {
+    if (!log) return { painText: "", painAdvice: "" };
+    let painText = "";
+    let painAdvice = "";
+    
+    if (log.painLevel >= 8) {
+      painText = "Severe Pain";
+      painAdvice = "Your pain is high. Please rest immediately, elevate your knee, and check if you have taken your scheduled pain medication. If pain persists or you feel warm, contact your caregiver or doctor.";
+    } else if (log.painLevel >= 4) {
+      painText = "Moderate Pain";
+      painAdvice = "Your pain is moderate. This is a normal part of healing! Keep doing your gentle leg stretches, apply ice packs to reduce swelling, and get plenty of rest today.";
+    } else {
+      painText = "Mild Pain";
+      painAdvice = "Wonderful! Your pain is very low and you are recovering nicely. Continue with short, light walks around the house and stay on schedule with your standard medications.";
     }
+    
+    return { painText, painAdvice };
+  };
 
-    const { patient_profile, medical_history, hospital_discharge, discharge_instructions } = medicalHistory;
+  const renderTrendsTab = () => {
+    const progress = calculateRecoveryProgress();
 
     return (
-      <div className="patient-profile-container" style={{ display: 'flex', flexDirection: 'column', gap: '24px', maxWidth: '900px', margin: '0 auto', animation: 'fadeIn 0.3s ease-out', paddingBottom: '40px' }}>
-        
-        {/* Header Hero Card */}
-        <div className="glass-panel" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifySelf: 'stretch', gap: '24px', padding: '24px', borderRadius: '24px', background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.4) 100%)', border: '1px solid rgba(255, 255, 255, 0.8)', boxShadow: '0 8px 32px rgba(0, 0, 0, 0.03)' }}>
-          <div style={{ width: '70px', height: '70px', borderRadius: '50%', background: 'linear-gradient(135deg, #c07ab0 0%, #5e9ecb 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '28px', fontWeight: 'bold' }}>
-            {patient_profile.first_name[0]}{patient_profile.last_name[0]}
-          </div>
-          <div style={{ flex: 1 }}>
-            <h2 style={{ fontSize: '22px', fontWeight: '700', color: 'var(--primary-dark)', margin: 0 }}>
-              {patient_profile.first_name} {patient_profile.last_name}
-            </h2>
-            <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginTop: '6px', fontSize: '13px', color: 'var(--text-muted)' }}>
-              <span><strong>ID:</strong> {patient_profile.patient_id}</span>
-              <span>•</span>
-              <span><strong>Age:</strong> {patient_profile.age}</span>
-              <span>•</span>
-              <span><strong>Sex:</strong> {patient_profile.sex}</span>
-              <span>•</span>
-              <span><strong>Blood Type:</strong> {patient_profile.blood_type}</span>
-            </div>
-          </div>
-          <div style={{ background: 'var(--success-bg)', color: 'var(--success)', padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '600', border: '1px solid rgba(46, 204, 113, 0.2)' }}>
-            Active Patient
-          </div>
+      <div className="progress-scroller">
+        {/* Sub-tabs progress */}
+        <div className="tabs-header-row">
+          <button 
+            className={`tab-header-btn ${progressSubTab === 'overview' ? 'active' : ''}`}
+            onClick={() => setProgressSubTab('overview')}
+          >
+            Overview
+          </button>
+          <button 
+            className={`tab-header-btn ${progressSubTab === 'checkins' ? 'active' : ''}`}
+            onClick={() => setProgressSubTab('checkins')}
+          >
+            Check-Ins
+          </button>
+          <button 
+            className={`tab-header-btn ${progressSubTab === 'trends' ? 'active' : ''}`}
+            onClick={() => setProgressSubTab('trends')}
+          >
+            Trends Chart
+          </button>
         </div>
 
-        {/* Dashboard Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
-          
-          {/* Post-Op / Discharge Details */}
-          <div className="glass-panel" style={{ padding: '20px', borderRadius: '18px', display: 'flex', flexDirection: 'column', gap: '14px', background: 'rgba(255, 255, 255, 0.65)', border: '1px solid rgba(255,255,255,0.7)' }}>
-            <h3 style={{ fontSize: '15px', fontWeight: '700', color: 'var(--primary-dark)', margin: 0, borderBottom: '1px solid rgba(0,0,0,0.05)', paddingBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Hospital size={15} style={{ color: 'var(--primary)' }} /> Surgery &amp; Discharge Details
-            </h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '13px' }}>
-              <div>
-                <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '11px' }}>PROCEDURE</span>
-                <strong>{hospital_discharge.procedure}</strong>
+        {progressSubTab === 'overview' ? (
+          <>
+            {/* Recovery Progress Card */}
+            <div className="recovery-card" style={{ background: 'var(--bg-glass-card)', border: '1px solid var(--border-glass)' }}>
+              <div className="recovery-card-info">
+                <span className="recovery-card-day" style={{ fontSize: '14px' }}>Recovery Progress</span>
+                <span className="recovery-card-desc">You're on the right track! Keep following your plan.</span>
               </div>
-              <div>
-                <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '11px' }}>SURGEON</span>
-                <strong>{hospital_discharge.surgeon}</strong>
-              </div>
-              <div>
-                <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '11px' }}>SURGERY DATE</span>
-                <strong>{hospital_discharge.surgery_date}</strong>
-              </div>
-              <div>
-                <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '11px' }}>DISCHARGE DATE</span>
-                <strong>{hospital_discharge.discharge_date}</strong>
-              </div>
-              <div>
-                <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '11px' }}>FOLLOW-UP DATE</span>
-                <strong>{hospital_discharge.follow_up_date}</strong>
-              </div>
-              <div>
-                <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '11px' }}>MOBILITY AID</span>
-                <strong>{hospital_discharge.mobility_aid}</strong>
-              </div>
-            </div>
-          </div>
-
-          {/* Clinical History */}
-          <div className="glass-panel" style={{ padding: '20px', borderRadius: '18px', display: 'flex', flexDirection: 'column', gap: '14px', background: 'rgba(255, 255, 255, 0.65)', border: '1px solid rgba(255,255,255,0.7)' }}>
-            <h3 style={{ fontSize: '15px', fontWeight: '700', color: 'var(--primary-dark)', margin: 0, borderBottom: '1px solid rgba(0,0,0,0.05)', paddingBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <ClipboardList size={15} style={{ color: 'var(--primary)' }} /> Medical History &amp; Vitals
-            </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '13px' }}>
-              <div>
-                <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '11px' }}>CHRONIC CONDITIONS</span>
-                <span style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '4px' }}>
-                  {medical_history.chronic_conditions.map((c: string) => (
-                    <span key={c} style={{ background: 'rgba(0,0,0,0.04)', padding: '2px 8px', borderRadius: '4px', fontSize: '11.5px' }}>{c}</span>
-                  ))}
-                </span>
-              </div>
-              <div>
-                <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '11px' }}>ALLERGIES</span>
-                <span style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '4px' }}>
-                  {medical_history.allergies.map((a: string) => (
-                    <span key={a} style={{ background: 'var(--emergency-bg)', color: 'var(--emergency)', padding: '2px 8px', borderRadius: '4px', fontSize: '11.5px', fontWeight: '600' }}>{a}</span>
-                  ))}
-                </span>
-              </div>
-              <div>
-                <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '11px' }}>CURRENT HOME MEDICATIONS</span>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '4px' }}>
-                  {medical_history.current_medications.map((m: any) => (
-                    <div key={m.name} style={{ fontSize: '12px' }}>
-                      • <strong>{m.name}</strong> - {m.dose}
-                    </div>
-                  ))}
+              <div className="recovery-card-ring">
+                <svg className="recovery-ring-svg" viewBox="0 0 100 100">
+                  <circle className="recovery-ring-bg" cx="50" cy="50" r="42" />
+                  <circle 
+                    className="recovery-ring-val" 
+                    cx="50" cy="50" r="42" 
+                    strokeDasharray="263.89"
+                    strokeDashoffset={263.89 - (263.89 * progress) / 100}
+                  />
+                </svg>
+                <div className="recovery-ring-text">
+                  <span className="recovery-ring-percent">{progress}%</span>
+                  <span className="recovery-ring-lbl">Recovered</span>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* Discharge Care Plan */}
-        <div className="glass-panel" style={{ padding: '24px', borderRadius: '20px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'rgba(255, 255, 255, 0.65)', border: '1px solid rgba(255,255,255,0.7)' }}>
-          <h3 style={{ fontSize: '16px', fontWeight: '700', color: 'var(--primary-dark)', margin: 0, borderBottom: '1px solid rgba(0,0,0,0.05)', paddingBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Pill size={16} style={{ color: 'var(--primary)' }} /> Discharge Instructions &amp; Recovery Care Plan
-          </h3>
-          
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
-            <div>
-              <h4 style={{ fontSize: '13px', fontWeight: 'bold', margin: '0 0 8px 0', color: 'var(--primary)' }}>Post-Op Medications</h4>
-              <ul style={{ paddingLeft: '16px', margin: 0, fontSize: '12.5px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                {discharge_instructions.medications.map((med: any) => (
-                  <li key={med.name}>
-                    <strong>{med.name}</strong> ({med.dose}) - <span style={{ color: 'var(--text-muted)' }}>{med.frequency}</span>
-                  </li>
-                ))}
-              </ul>
+            {/* 3 Stats Columns Grid */}
+            <div className="stats-grid-3col">
+              <div className="stat-box-card">
+                <span className="stat-box-lbl">Check-Ins</span>
+                <span className="stat-box-num">6/7</span>
+                <span className="stat-box-tag">Great job!</span>
+              </div>
+              <div className="stat-box-card">
+                <span className="stat-box-lbl">Plan Adherence</span>
+                <span className="stat-box-num">86%</span>
+                <span className="stat-box-tag">Excellent</span>
+              </div>
+              <div className="stat-box-card">
+                <span className="stat-box-lbl">Tasks Completed</span>
+                <span className="stat-box-num">18/22</span>
+                <span className="stat-box-tag">Keep it up!</span>
+              </div>
             </div>
 
-            <div>
-              <h4 style={{ fontSize: '13px', fontWeight: 'bold', margin: '0 0 8px 0', color: 'var(--primary)' }}>Prescribed Activities</h4>
-              <ul style={{ paddingLeft: '16px', margin: 0, fontSize: '12.5px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                {discharge_instructions.activity.map((act: string, idx: number) => (
-                  <li key={idx}>{act}</li>
-                ))}
-              </ul>
+            {/* Pain Trend SVG chart */}
+            <div className="glass-card" style={{ background: 'var(--bg-glass-card)', border: '1px solid var(--border-glass)', padding: '16px', borderRadius: '24px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <span className="section-title">Pain Trend</span>
+                <span style={{ fontSize: '9.5px', color: 'var(--text-muted)' }}>Tap dots to view guide</span>
+              </div>
+              {renderTrendsChart()}
             </div>
 
-            <div>
-              <h4 style={{ fontSize: '13px', fontWeight: 'bold', margin: '0 0 8px 0', color: 'var(--emergency)' }}>Warning Signs to Report</h4>
-              <ul style={{ paddingLeft: '16px', margin: 0, fontSize: '12.5px', display: 'flex', flexDirection: 'column', gap: '6px', color: 'var(--emergency)' }}>
-                {discharge_instructions.warning_signs.map((sign: string, idx: number) => (
-                  <li key={idx}><strong>{sign}</strong></li>
-                ))}
-              </ul>
+            {/* Senior Care Guide Card */}
+            {historyLogs[selectedLogIndex] && (() => {
+              const log = historyLogs[selectedLogIndex];
+              const summary = getSeniorFriendlySummary(log);
+              return (
+                <div className="glass-card" style={{ 
+                  marginTop: '14px', 
+                  padding: '16px', 
+                  borderRadius: '20px', 
+                  border: '1px solid var(--border-glass)',
+                  background: 'linear-gradient(135deg, rgba(0, 140, 140, 0.04) 0%, rgba(255, 255, 255, 0.02) 100%)',
+                  boxShadow: '0 4px 14px rgba(0,31,63,0.01)'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <span style={{ fontSize: '10.5px', fontWeight: '700', textTransform: 'uppercase', color: 'var(--primary-dark)' }}>
+                      Senior Care Guide &bull; {log.date}
+                    </span>
+                    <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
+                      Logged at {log.time}
+                    </span>
+                  </div>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ 
+                        width: '8px', height: '8px', borderRadius: '50%', 
+                        background: log.status === 'Green' ? 'var(--color-green)' : log.status === 'Yellow' ? 'var(--color-yellow)' : 'var(--color-red)'
+                      }}></span>
+                      <strong style={{ fontSize: '14px', color: 'var(--text-main)' }}>
+                        Status: {summary.painText} ({log.painLevel}/10)
+                      </strong>
+                    </div>
+                    
+                    <p style={{ fontSize: '12px', lineHeight: '1.5', color: 'var(--text-muted)', fontWeight: 500 }}>
+                      {summary.painAdvice}
+                    </p>
+                    
+                    {/* Vitals Summary Grid for Seniors */}
+                    <div style={{ 
+                      display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', 
+                      gap: '8px', marginTop: '6px', 
+                      background: 'rgba(255,255,255,0.4)', 
+                      padding: '8px', borderRadius: '12px',
+                      border: '1px solid rgba(0, 140, 140, 0.05)'
+                    }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                        <span style={{ fontSize: '8.5px', color: 'var(--text-muted)' }}>Swelling</span>
+                        <strong style={{ fontSize: '11.5px', color: 'var(--text-main)' }}>{log.swellingLevel}/10</strong>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                        <span style={{ fontSize: '8.5px', color: 'var(--text-muted)' }}>Vitals Temp</span>
+                        <strong style={{ fontSize: '11.5px', color: 'var(--text-main)' }}>{log.temperature.toFixed(1)}°F</strong>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                        <span style={{ fontSize: '8.5px', color: 'var(--text-muted)' }}>Sleep</span>
+                        <strong style={{ fontSize: '11.5px', color: 'var(--text-main)' }}>{log.sleepLevel}/10</strong>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+          </>
+        ) : progressSubTab === 'checkins' ? (
+          /* Check-In History List (Screen 9) */
+          <div className="history-list">
+            <span className="section-title" style={{ display: 'block', marginBottom: '8px' }}>Check-In History</span>
+            {historyLogs.slice().reverse().map((log, idx) => {
+              const originalIdx = historyLogs.length - 1 - idx;
+              const isSelected = originalIdx === selectedLogIndex;
+              return (
+                <div 
+                  key={idx} 
+                  className={`history-item-row ${isSelected ? 'selected' : ''}`} 
+                  onClick={() => {
+                    setSelectedLogIndex(originalIdx);
+                    setProgressSubTab('overview');
+                  }}
+                  style={{
+                    borderColor: isSelected ? 'var(--primary)' : 'var(--border-glass)',
+                    background: isSelected ? 'var(--primary-light)' : 'var(--bg-glass-card)',
+                    animation: 'slideInFade 0.2s ease-out'
+                  }}
+                >
+                  <div className="history-item-left">
+                    <span className="history-item-date" style={{ fontWeight: 700 }}>
+                      {log.date} &bull; <span style={{ fontSize: '10.5px', color: 'var(--text-muted)', fontWeight: 500 }}>{log.time}</span>
+                    </span>
+                  </div>
+                  <div className="history-item-right">
+                    <span className="history-item-status" style={{ fontWeight: 700 }}>Pain {log.painLevel}</span>
+                    <Smile size={16} style={{ 
+                      color: log.status === 'Green' ? 'var(--color-green)' : log.status === 'Yellow' ? 'var(--color-yellow)' : 'var(--color-red)'
+                    }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          /* Trends chart details */
+          <>
+            <div className="glass-card" style={{ background: 'var(--bg-glass-card)', border: '1px solid var(--border-glass)', padding: '16px', borderRadius: '24px' }}>
+              <span className="section-title" style={{ display: 'block', marginBottom: '14px' }}>Recovery Adherence Timeline</span>
+              {renderTrendsChart()}
             </div>
-          </div>
-
-          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '12px', background: 'rgba(255,255,255,0.7)', padding: '14px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.03)', fontSize: '13px' }}>
-            <Phone size={13} style={{ color: 'var(--primary)' }} />
-            <span style={{ fontWeight: 'bold', color: 'var(--text-main)' }}>Emergency Contact:</span>
-            <span>{patient_profile.emergency_contact.name} ({patient_profile.emergency_contact.relationship})</span>
-            <span>•</span>
-            <span style={{ fontWeight: '600', color: 'var(--primary)' }}>{patient_profile.emergency_contact.phone}</span>
-          </div>
-        </div>
-
+            {/* Senior Care Guide Card */}
+            {historyLogs[selectedLogIndex] && (() => {
+              const log = historyLogs[selectedLogIndex];
+              const summary = getSeniorFriendlySummary(log);
+              return (
+                <div className="glass-card" style={{ 
+                  marginTop: '14px', 
+                  padding: '16px', 
+                  borderRadius: '20px', 
+                  border: '1px solid var(--border-glass)',
+                  background: 'linear-gradient(135deg, rgba(0, 140, 140, 0.04) 0%, rgba(255, 255, 255, 0.02) 100%)',
+                  boxShadow: '0 4px 14px rgba(0,31,63,0.01)'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <span style={{ fontSize: '10.5px', fontWeight: '700', textTransform: 'uppercase', color: 'var(--primary-dark)' }}>
+                      Senior Care Guide &bull; {log.date}
+                    </span>
+                    <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
+                      Logged at {log.time}
+                    </span>
+                  </div>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ 
+                        width: '8px', height: '8px', borderRadius: '50%', 
+                        background: log.status === 'Green' ? 'var(--color-green)' : log.status === 'Yellow' ? 'var(--color-yellow)' : 'var(--color-red)'
+                      }}></span>
+                      <strong style={{ fontSize: '14px', color: 'var(--text-main)' }}>
+                        Status: {summary.painText} ({log.painLevel}/10)
+                      </strong>
+                    </div>
+                    <p style={{ fontSize: '12px', lineHeight: '1.5', color: 'var(--text-muted)', fontWeight: 500 }}>
+                      {summary.painAdvice}
+                    </p>
+                  </div>
+                </div>
+              );
+            })()}
+          </>
+        )}
       </div>
     );
   };
 
-  const renderSettingsPage = () => {
+  const renderTrendsChart = () => {
+    const width = 340;
+    const height = 135;
+    const padding = 20;
+    const chartWidth = width - padding * 2;
+    const chartHeight = height - padding * 2.5;
+
+    const points = historyLogs.map((log, idx) => {
+      const x = padding + (idx / (historyLogs.length - 1 || 1)) * chartWidth;
+      const y = padding + chartHeight - ((log.painLevel - 1) / 9) * chartHeight;
+      return { x, y, pain: log.painLevel };
+    });
+
+    let pathD = "";
+    if (points.length > 0) {
+      pathD = `M ${points[0].x} ${points[0].y}`;
+      for (let i = 1; i < points.length; i++) {
+        pathD += ` L ${points[i].x} ${points[i].y}`;
+      }
+    }
+
     return (
-      <div className="settings-container" style={{ display: 'flex', flexDirection: 'column', gap: '24px', maxWidth: '600px', margin: '0 auto', animation: 'fadeIn 0.3s ease-out' }}>
+      <div className="svg-chart-wrapper" style={{ height: '145px' }}>
+        <svg width="100%" height="100%" viewBox={`0 0 ${width} ${height}`} style={{ overflow: 'visible' }}>
+          <defs>
+            <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.25" />
+              <stop offset="100%" stopColor="var(--primary)" stopOpacity="0" />
+            </linearGradient>
+          </defs>
+
+          {/* Severity background color zones for older patient triage context */}
+          {/* Mild Zone (Green status log) */}
+          <rect x={padding} y={padding + chartHeight * 0.7} width={chartWidth} height={chartHeight * 0.3} fill="rgba(33, 140, 116, 0.05)" rx="4" />
+          {/* Moderate Zone (Yellow status log) */}
+          <rect x={padding} y={padding + chartHeight * 0.3} width={chartWidth} height={chartHeight * 0.4} fill="rgba(205, 97, 51, 0.05)" rx="4" />
+          {/* Severe Zone (Red status log) */}
+          <rect x={padding} y={padding} width={chartWidth} height={chartHeight * 0.3} fill="rgba(179, 57, 57, 0.05)" rx="4" />
+
+          {/* Grid lines */}
+          <line x1={padding} y1={padding} x2={width - padding} y2={padding} stroke="rgba(0,0,0,0.03)" strokeWidth="1" />
+          <line x1={padding} y1={padding + chartHeight * 0.3} x2={width - padding} y2={padding + chartHeight * 0.3} stroke="rgba(0,0,0,0.03)" strokeWidth="1" />
+          <line x1={padding} y1={padding + chartHeight * 0.7} x2={width - padding} y2={padding + chartHeight * 0.7} stroke="rgba(0,0,0,0.03)" strokeWidth="1" />
+          <line x1={padding} y1={padding + chartHeight} x2={width - padding} y2={padding + chartHeight} stroke="rgba(0,0,0,0.06)" strokeWidth="1.5" />
+          
+          {points.length > 1 && (
+            <path
+              d={`${pathD} L ${points[points.length - 1].x} ${padding + chartHeight} L ${points[0].x} ${padding + chartHeight} Z`}
+              fill="url(#chartGrad)"
+            />
+          )}
+
+          <path d={pathD} fill="none" stroke="var(--primary)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+
+          {/* Interactive node points with labels */}
+          {points.map((pt, idx) => {
+            const isSelected = idx === selectedLogIndex;
+            const log = historyLogs[idx];
+            const dateNum = log.date.split(',').pop()?.trim().split(' ').pop() || log.date;
+            
+            return (
+              <g key={idx} onClick={() => setSelectedLogIndex(idx)} style={{ cursor: 'pointer' }}>
+                {/* Large clickable overlay */}
+                <circle cx={pt.x} cy={pt.y} r="12" fill="transparent" />
+                
+                {/* Selection ring */}
+                {isSelected && (
+                  <circle cx={pt.x} cy={pt.y} r="8" fill="none" stroke="var(--primary)" strokeWidth="1.5" strokeDasharray="3,3" />
+                )}
+                
+                <circle 
+                  cx={pt.x} cy={pt.y} 
+                  r={isSelected ? "5" : "4"} 
+                  fill={isSelected ? "var(--primary)" : "#fff"} 
+                  stroke="var(--primary)" 
+                  strokeWidth="2" 
+                />
+                
+                {/* Pain value indicator */}
+                <text x={pt.x} y={pt.y - 8} textAnchor="middle" fontSize="9" fontWeight="800" fill="var(--text-main)">
+                  {pt.pain}
+                </text>
+                
+                {/* Date/day indicator */}
+                <text 
+                  x={pt.x} y={height - 2} 
+                  textAnchor="middle" 
+                  fontSize="8.5" 
+                  fontWeight={isSelected ? "800" : "600"} 
+                  fill={isSelected ? "var(--primary-dark)" : "var(--text-muted)"}
+                >
+                  {dateNum}
+                </text>
+              </g>
+            );
+          })}
+        </svg>
+      </div>
+    );
+  };
+
+  // ==========================================
+  // RENDER TAB 5: Profile (Settings - Screen 10)
+  // ==========================================
+  const renderSettingsTab = () => {
+    const isSuccess = !!pdfUploadedName && !pdfUploading;
+    const normalized = normalizePatientRecord(medicalHistory);
+
+    return (
+      <div className="profile-scroller" style={{ animation: 'fadeIn 0.3s ease-out' }}>
         
-        <div>
-          <h2 style={{ fontSize: '20px', fontWeight: '700', color: 'var(--primary-dark)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Settings size={18} style={{ color: 'var(--primary)' }} /> Shalom Assistant Settings
-          </h2>
-          <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '4px' }}>
-            Configure voice synthesis preferences and clinical intelligence modules.
-          </p>
+        {/* Profile Card Header */}
+        <div className="profile-card">
+          <div className="profile-card-left">
+            <div className="profile-avatar-circle">
+              {/* Fallback gradient avatar initials */}
+              <div style={{
+                width: '100%', height: '100%',
+                background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 'bold'
+              }}>
+                AG
+              </div>
+            </div>
+            <div className="profile-info">
+              <span className="profile-name">Aïda Garba</span>
+              <span className="profile-email">aidagarba@gmail.com</span>
+            </div>
+          </div>
+          <button className="profile-edit-btn" onClick={() => pdfInputRef.current?.click()}>
+            <Plus size={16} />
+          </button>
         </div>
 
-        {/* Voice and Speech Synthesis Card */}
-        <div className="glass-panel" style={{ padding: '20px', borderRadius: '18px', background: 'rgba(255, 255, 255, 0.65)', border: '1px solid rgba(255,255,255,0.7)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <h3 style={{ fontSize: '15px', fontWeight: '700', color: 'var(--primary-dark)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Mic2 size={15} style={{ color: 'var(--primary)' }} /> Speech &amp; Audio Controls
-          </h3>
-
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(0,0,0,0.04)', paddingBottom: '12px' }}>
-            <div>
-              <strong style={{ fontSize: '13.5px', display: 'block' }}>Voice Responses (TTS)</strong>
-              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Enable or disable speech synthesis for assistant answers.</span>
+        {/* My Recovery details section */}
+        <div className="profile-menu-section">
+          <span className="profile-menu-title">My Recovery</span>
+          <div className="profile-menu-card">
+            <div className="profile-menu-row">
+              <span className="profile-menu-left">Surgery Details</span>
+              <span className="profile-menu-value">{normalized?.surgeryType || 'ACL Reconstruction'}</span>
             </div>
-            <label className="switch" style={{ position: 'relative', display: 'inline-block', width: '44px', height: '24px' }}>
-              <input 
-                type="checkbox" 
-                checked={isTtsEnabled} 
-                onChange={(e) => {
-                  const newValue = e.target.checked;
-                  setIsTtsEnabled(newValue);
-                  if (!newValue && typeof window !== 'undefined' && 'speechSynthesis' in window) {
-                    window.speechSynthesis.cancel();
-                  }
-                }}
-                style={{ opacity: 0, width: 0, height: 0 }}
-              />
-              <span className="slider" style={{ position: 'absolute', cursor: 'pointer', inset: 0, backgroundColor: isTtsEnabled ? 'var(--primary)' : '#ccc', transition: '.4s', borderRadius: '24px' }}>
-                <span className="slider-thumb" style={{ position: 'absolute', height: '18px', width: '18px', left: isTtsEnabled ? '22px' : '4px', bottom: '3px', backgroundColor: 'white', transition: '.4s', borderRadius: '50%' }}></span>
-              </span>
-            </label>
+            <div className="profile-menu-row">
+              <span className="profile-menu-left">Surgeon</span>
+              <span className="profile-menu-value">Dr. James Carter</span>
+            </div>
+            <div className="profile-menu-row">
+              <span className="profile-menu-left">Surgery Date</span>
+              <span className="profile-menu-value">May 6, 2025</span>
+            </div>
           </div>
+        </div>
 
-          {isTtsEnabled && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label style={{ fontSize: '12.5px', fontWeight: '600', color: 'var(--text-main)' }}>Select Synthesis Voice</label>
-              {voices.length > 0 ? (
-                <select
-                  value={selectedVoiceName}
-                  onChange={(e) => {
-                    setSelectedVoiceName(e.target.value);
-                    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-                      window.speechSynthesis.cancel();
-                    }
-                  }}
-                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', fontSize: '13px', background: '#fff', outline: 'none' }}
-                >
-                  {voices.map(voice => (
-                    <option key={voice.name} value={voice.name}>
-                      {voice.name} ({voice.lang})
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>No English voices detected. Using system default.</span>
-              )}
+        {/* PDF discharge instructions uploading */}
+        <div className="profile-menu-section">
+          <span className="profile-menu-title">Discharge Summary</span>
+          <div
+            onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+            onDragLeave={() => setIsDragging(false)}
+            onDrop={handleDrop}
+            onClick={() => !pdfUploading && pdfInputRef.current?.click()}
+            className="pdf-drop-box"
+            style={{
+              borderColor: isDragging ? 'var(--primary)' : isSuccess ? 'var(--color-green)' : 'rgba(192, 122, 176, 0.35)',
+              background: isDragging ? 'rgba(192, 122, 176, 0.05)' : isSuccess ? 'rgba(33, 140, 116, 0.02)' : '#ffffff',
+            }}
+          >
+            <input
+              ref={pdfInputRef}
+              type="file"
+              accept=".pdf"
+              style={{ display: 'none' }}
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) handlePdfFile(f); }}
+            />
+            {pdfUploading ? (
+              <Loader2 size={18} style={{ color: 'var(--primary)', animation: 'spin 1s linear infinite' }} />
+            ) : isSuccess ? (
+              <CheckCircle2 size={18} style={{ color: 'var(--color-green)' }} />
+            ) : (
+              <UploadCloud size={18} style={{ color: 'var(--primary)' }} />
+            )}
+            <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-main)' }}>
+              {isSuccess ? 'Discharge Guidelines Loaded' : 'Upload Discharge Instructions PDF'}
+            </span>
+          </div>
+          {pdfError && (
+            <div style={{ fontSize: '10.5px', color: 'var(--color-red)', marginTop: '6px', textAlign: 'center' }}>
+              {pdfError}
             </div>
           )}
         </div>
 
-        {/* Clinical RAG / API Configuration Card */}
-        <div className="glass-panel" style={{ padding: '20px', borderRadius: '18px', background: 'rgba(255, 255, 255, 0.65)', border: '1px solid rgba(255,255,255,0.7)', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          <h3 style={{ fontSize: '15px', fontWeight: '700', color: 'var(--primary-dark)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Key size={15} style={{ color: 'var(--primary)' }} /> Clinical Intelligence Engine (Gemini RAG)
-          </h3>
-          <p style={{ fontSize: '12.5px', color: 'var(--text-muted)', margin: 0, lineHeight: '1.4' }}>
-            Provide a Google Gemini API key to activate advanced clinical reasoning, permitting natural follow-up conversation grounded strictly on James Carter's profile and FAQ dataset.
-          </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '6px' }}>
-            <label style={{ fontSize: '12.5px', fontWeight: '600', color: 'var(--text-main)' }}>Gemini API Key (Optional)</label>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <input
-                type="password"
-                placeholder="Enter Gemini API key (AIzaSy...)"
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                style={{ flex: 1, padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', fontSize: '13px', outline: 'none', background: '#fff' }}
-              />
-              {apiKey && (
-                <button 
-                  onClick={() => setApiKey('')}
-                  style={{ padding: '10px 14px', borderRadius: '8px', border: '1px solid #ffc5c5', background: 'var(--emergency-bg)', color: 'var(--emergency)', fontSize: '12.5px', fontWeight: '600', cursor: 'pointer' }}
-                >
-                  Clear Key
-                </button>
-              )}
+        {/* Triage Simulator triggers */}
+        <div className="profile-menu-section">
+          <span className="profile-menu-title">Simulation triggers</span>
+          <div className="profile-menu-card" style={{ padding: '14px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Status Log Trigger:</span>
+            <div className="sim-btn-group">
+              <button className="sim-pill green" onClick={() => triggerMockCheckInDirect('green')}>Stable</button>
+              <button className="sim-pill yellow" onClick={() => triggerMockCheckInDirect('yellow')}>Warning</button>
+              <button className="sim-pill red" onClick={() => triggerMockCheckInDirect('red')}>Urgent</button>
+              <button className="sim-pill emergency" onClick={() => triggerMockCheckInDirect('emergency')}>Emergency</button>
             </div>
-            {apiKey && (
-              <span style={{ fontSize: '11px', color: 'var(--success)', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
-                <CheckCircle2 size={12} /> API key saved. Advanced grounding is fully active.
-              </span>
-            )}
+            <span style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '4px' }}>AI Chat Flow Trigger:</span>
+            <div className="sim-btn-group">
+              <button className="sim-pill green" onClick={() => handleTriggerPreset('green')}>Stable Chat</button>
+              <button className="sim-pill yellow" onClick={() => handleTriggerPreset('yellow')}>Warning Chat</button>
+              <button className="sim-pill red" onClick={() => handleTriggerPreset('red')}>Urgent Chat</button>
+              <button className="sim-pill emergency" onClick={() => handleTriggerPreset('emergency')}>Emergency Chat</button>
+            </div>
           </div>
         </div>
 
-        {/* Demo Fast Triggers for Testing */}
-        <div className="glass-panel" style={{ padding: '20px', borderRadius: '18px', background: 'rgba(255, 255, 255, 0.65)', border: '1px solid rgba(255,255,255,0.7)', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          <h3 style={{ fontSize: '15px', fontWeight: '700', color: 'var(--primary-dark)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <FlaskConical size={15} style={{ color: 'var(--primary)' }} /> Quick Triage Scenarios (Demo &amp; Evaluation)
-          </h3>
-          <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: 0 }}>
-            Quickly trigger predefined clinical responses to test Shalom's triage categorization (Stable, Yellow Monitor, Red Urgent, Emergency).
-          </p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '6px' }}>
-            <button className="pill-chip" onClick={() => handleTriggerPreset('green')} style={{ border: '1px solid var(--success)', background: 'var(--success-bg)', color: 'var(--success)', padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}>
-              Stable Progress
-            </button>
-            <button className="pill-chip" onClick={() => handleTriggerPreset('yellow')} style={{ border: '1px solid var(--warning)', background: 'var(--warning-bg)', color: 'var(--warning)', padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}>
-              Monitor Status
-            </button>
-            <button className="pill-chip" onClick={() => handleTriggerPreset('red')} style={{ border: '1px solid var(--emergency)', background: 'var(--emergency-bg)', color: 'var(--emergency)', padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}>
-              Urgent Review
-            </button>
-            <button className="pill-chip" onClick={() => handleTriggerPreset('emergency')} style={{ border: '1px solid #b33939', background: 'rgba(179, 57, 57, 0.05)', color: '#b33939', padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}>
-              Emergency Alert
-            </button>
+        {/* Preferences section */}
+        <div className="profile-menu-section">
+          <span className="profile-menu-title">Preferences</span>
+          <div className="profile-menu-card">
+            <div className="profile-menu-row">
+              <span className="profile-menu-left">Reminders</span>
+              <ChevronRightIcon size={14} style={{ color: 'var(--text-muted)' }} />
+            </div>
+            <div className="profile-menu-row">
+              <span className="profile-menu-left">Notifications</span>
+              <ChevronRightIcon size={14} style={{ color: 'var(--text-muted)' }} />
+            </div>
+            <div className="profile-menu-row">
+              <span className="profile-menu-left">Privacy &amp; Security</span>
+              <ChevronRightIcon size={14} style={{ color: 'var(--text-muted)' }} />
+            </div>
           </div>
         </div>
 
+        <div className="safety-disclaimer-text">
+          Shalom Recovery AI supports clinical guidance but does not replace professional emergency care triage.
+        </div>
       </div>
     );
   };
 
-  return (
-    <div className="app-container">
-      {/* Sidebar Navigation */}
-      <nav className="sidebar">
-        <div className="brand-section">
-          {/* Circular letter C concentric-like logo */}
-          <div className="logo-icon" onClick={() => setActiveTab('chat')}>
-            <Compass size={20} />
+  // ==========================================
+  // RENDER SLIDERS FORM VIEW (Screen 3)
+  // ==========================================
+  const renderCheckInFormSliders = () => {
+    return (
+      <div className="detail-scroller" style={{ animation: 'fadeIn 0.28s ease-out' }}>
+        {/* Header bar */}
+        <div className="detail-header-row" style={{ marginBottom: '10px' }}>
+          <button className="detail-back-btn" onClick={() => setShowCheckInForm(false)}>
+            <ChevronLeft size={16} />
+          </button>
+          <span className="detail-title">Daily Check-In</span>
+          <button className="detail-menu-btn" title="Information dialog">
+            <Info size={16} />
+          </button>
+        </div>
+
+        {/* Titles info */}
+        <div>
+          <h3 style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text-main)' }}>How are you feeling today?</h3>
+          <p style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '2px' }}>Your answers help Shalom personalize your care.</p>
+        </div>
+
+        {/* Sliders list */}
+        <div className="checkin-sliders-list">
+          {/* Pain Level */}
+          <div className="checkin-slider-card">
+            <div className="slider-card-header">
+              <span className="slider-card-label"><Frown size={14} style={{ color: 'var(--primary)' }} /> Pain Level</span>
+              <span className="slider-value-badge">{sliderPain} &bull; {sliderPain > 7 ? 'Severe' : sliderPain > 4 ? 'Moderate' : 'Mild'}</span>
+            </div>
+            <input 
+              type="range" min="1" max="10" className="custom-range-slider"
+              value={sliderPain} onChange={e => setSliderPain(Number(e.target.value))}
+            />
+            <div className="slider-ticks-row"><span>1</span><span>10</span></div>
+          </div>
+
+          {/* Swelling */}
+          <div className="checkin-slider-card">
+            <div className="slider-card-header">
+              <span className="slider-card-label"><AlertCircle size={14} style={{ color: 'var(--primary)' }} /> Swelling</span>
+              <span className="slider-value-badge">{sliderSwelling} &bull; {sliderSwelling > 7 ? 'Severe' : sliderSwelling > 4 ? 'Moderate' : 'Mild'}</span>
+            </div>
+            <input 
+              type="range" min="1" max="10" className="custom-range-slider"
+              value={sliderSwelling} onChange={e => setSliderSwelling(Number(e.target.value))}
+            />
+            <div className="slider-ticks-row"><span>1</span><span>10</span></div>
+          </div>
+
+          {/* Temperature */}
+          <div className="checkin-slider-card">
+            <div className="slider-card-header">
+              <span className="slider-card-label"><Thermometer size={14} style={{ color: 'var(--primary)' }} /> Temperature</span>
+              <span className="slider-value-badge">{sliderTemp.toFixed(1)} °F &bull; {sliderTemp >= 100 ? 'Fever' : 'Normal'}</span>
+            </div>
+            <input 
+              type="range" min="97.0" max="103.0" step="0.1" className="custom-range-slider"
+              value={sliderTemp} onChange={e => setSliderTemp(Number(e.target.value))}
+            />
+            <div className="slider-ticks-row"><span>97.0</span><span>103.0</span></div>
+          </div>
+
+          {/* Mobility */}
+          <div className="checkin-slider-card">
+            <div className="slider-card-header">
+              <span className="slider-card-label"><Activity size={14} style={{ color: 'var(--primary)' }} /> Mobility</span>
+              <span className="slider-value-badge">{sliderMobility} &bull; {sliderMobility > 7 ? 'Good' : sliderMobility > 4 ? 'Moderate' : 'Restricted'}</span>
+            </div>
+            <input 
+              type="range" min="1" max="10" className="custom-range-slider"
+              value={sliderMobility} onChange={e => setSliderMobility(Number(e.target.value))}
+            />
+            <div className="slider-ticks-row"><span>1</span><span>10</span></div>
+          </div>
+
+          {/* Sleep Quality */}
+          <div className="checkin-slider-card">
+            <div className="slider-card-header">
+              <span className="slider-card-label"><Moon size={14} style={{ color: 'var(--primary)' }} /> Sleep Quality</span>
+              <span className="slider-value-badge">{sliderSleep} &bull; {sliderSleep > 7 ? 'Excellent' : 'Moderate'}</span>
+            </div>
+            <input 
+              type="range" min="1" max="10" className="custom-range-slider"
+              value={sliderSleep} onChange={e => setSliderSleep(Number(e.target.value))}
+            />
+            <div className="slider-ticks-row"><span>1</span><span>10</span></div>
+          </div>
+
+          {/* Mood */}
+          <div className="checkin-slider-card">
+            <div className="slider-card-header">
+              <span className="slider-card-label"><Smile size={14} style={{ color: 'var(--primary)' }} /> Mood</span>
+              <span className="slider-value-badge">{sliderMood} &bull; {sliderMood > 7 ? 'Excellent' : sliderMood > 4 ? 'Good' : 'Poor'}</span>
+            </div>
+            <input 
+              type="range" min="1" max="10" className="custom-range-slider"
+              value={sliderMood} onChange={e => setSliderMood(Number(e.target.value))}
+            />
+            <div className="slider-ticks-row"><span>1</span><span>10</span></div>
           </div>
         </div>
 
-        <ul className="nav-links">
-          <li>
-            <button 
-              className={`nav-btn ${activeTab === 'home' ? 'active' : ''}`}
-              onClick={() => setActiveTab('home')}
-              title="Home"
-            >
-              <Home size={18} />
-            </button>
-          </li>
-          <li>
-            <button 
-              className={`nav-btn ${activeTab === 'chat' ? 'active' : ''}`}
-              onClick={() => setActiveTab('chat')}
-              title="Chat & Check-In"
-            >
-              <MessageSquare size={18} />
-            </button>
-          </li>
-          <li>
-            <button 
-              className={`nav-btn ${activeTab === 'profile' ? 'active' : ''}`}
-              onClick={() => setActiveTab('profile')}
-              title="Patient Profile"
-            >
-              <User size={18} />
-            </button>
-          </li>
-          <li>
-            <button 
-              className={`nav-btn ${activeTab === 'settings' ? 'active' : ''}`}
-              onClick={() => setActiveTab('settings')}
-              title="Settings"
-            >
-              <Settings size={18} />
-            </button>
-          </li>
-        </ul>
-      </nav>
+        {/* Submit */}
+        <button className="meds-action-btn" onClick={saveCheckInFormSliders}>
+          Save Check-In
+        </button>
+      </div>
+    );
+  };
 
-      {/* Main Viewport */}
-      <main className="main-viewport">
-        {renderActiveTabContent()}
-        
-        {/* Sticky footer disclaimer matching user requests */}
-        <footer style={{ marginTop: 'auto', paddingTop: '32px', borderTop: '1px solid rgba(0,0,0,0.04)', fontSize: '11.5px', color: 'var(--text-muted)', textAlign: 'center', lineHeight: '1.5' }}>
-          <p>
-            <strong>Safety Disclaimer:</strong> Shalom is a demo AI assistant. It does not diagnose, treat, prescribe medication, or replace doctors or nurses. For medical questions, contact a healthcare professional. For emergencies, call 911.
+  // ==========================================
+  // RENDER DETAILED TASK OVERVIEW (Screen 3 detail)
+  // ==========================================
+  const renderTaskDetailTab = (taskId: string) => {
+    const task = todayTasks.find(t => t.id === taskId);
+    if (!task) return null;
+
+    const weeklyDays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+
+    return (
+      <div className="detail-scroller" style={{ animation: 'slideInFade 0.28s var(--ease-out) both' }}>
+        <div className="detail-header-row">
+          <button className="detail-back-btn" onClick={() => setSelectedTaskId(null)}>
+            <ChevronLeft size={16} />
+          </button>
+          <span className="detail-title">Plan Detail</span>
+          <button className="detail-menu-btn" onClick={() => handleDeleteTask(task.id)} title="Delete action">
+            <Trash2 size={16} style={{ color: 'var(--color-red)' }} />
+          </button>
+        </div>
+
+        {/* Hero Card */}
+        <div className="detail-hero-card">
+          <div className="detail-hero-pill" style={{ color: task.completed ? 'var(--color-green)' : 'var(--color-yellow)' }}>
+            {task.completed ? 'Today: Taken ✓' : 'Today: Pending'}
+          </div>
+          <h2 className="detail-hero-name">{task.name}</h2>
+          <p className="detail-hero-desc">
+            {task.instructions || `Scheduled recovery ${task.type} to support clinical rehabilitation guidelines.`}
           </p>
-        </footer>
-      </main>
+        </div>
+
+        {/* Parameters Grid */}
+        <div className="detail-grid">
+          <div className="detail-grid-box">
+            <span className="detail-box-lbl">Daily Dose</span>
+            <span className="detail-box-val">{task.dose || '1 session'}</span>
+          </div>
+          <div className="detail-grid-box">
+            <span className="detail-box-lbl">Best Time</span>
+            <span className="detail-box-val">{task.bestTime || task.timeHour || 'Anytime'}</span>
+          </div>
+          <div className="detail-grid-box">
+            <span className="detail-box-lbl">Streak</span>
+            <span className="detail-box-val">{task.streak || 0} days</span>
+          </div>
+          <div className="detail-grid-box">
+            <span className="detail-box-lbl">This Week</span>
+            <span className="detail-box-val">{task.completed ? '6/7' : '5/7'}</span>
+          </div>
+        </div>
+
+        {/* Consistency */}
+        <div className="consistency-card">
+          <div className="consistency-header">
+            <span className="consistency-title">Weekly Consistency</span>
+            <span className="consistency-percentage">71%</span>
+          </div>
+          <div className="consistency-grid">
+            {weeklyDays.map((day, idx) => {
+              const checked = idx < (task.streak || 4);
+              return (
+                <div key={idx} className="consistency-day">
+                  <span className="consistency-day-lbl">{day}</span>
+                  <div 
+                    className={`consistency-day-bubble ${checked ? 'success' : ''}`}
+                    onClick={() => toggleTaskCompleted(task.id)}
+                  >
+                    {checked ? '✓' : '-'}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Reminder bottom box */}
+        <div className="reminder-footer-card">
+          <Clock size={14} style={{ color: 'var(--primary)' }} />
+          <span>REMINDER: <strong>{task.timeHour || '8:30 AM'} &bull; Daily</strong></span>
+        </div>
+
+        <button 
+          className="meds-action-btn"
+          style={{ background: task.completed ? 'var(--text-muted)' : 'var(--primary-dark)', marginTop: '4px' }}
+          onClick={() => {
+            toggleTaskCompleted(task.id);
+            setTimeout(() => setSelectedTaskId(null), 300);
+          }}
+        >
+          {task.completed ? 'Mark as Pending' : 'Mark as Completed'}
+        </button>
+      </div>
+    );
+  };
+
+  const handleDeleteTask = (taskId: string) => {
+    setTodayTasks(prev => prev.filter(t => t.id !== taskId));
+    if (selectedTaskId === taskId) {
+      setSelectedTaskId(null);
+    }
+  };
+
+  const renderActiveTabContent = () => {
+    // If Daily Check-In sliders form is active
+    if (showCheckInForm) {
+      return renderCheckInFormSliders();
+    }
+
+    // If a task detail sheet is open on the home tab, override content
+    if (selectedTaskId && activeTab === 'home') {
+      return renderTaskDetailTab(selectedTaskId);
+    }
+
+    switch (activeTab) {
+      case 'home':
+        return renderHomeTab();
+      case 'plan':
+        return renderPlanTab();
+      case 'chat':
+        return renderChatTab();
+      case 'trends':
+        return renderTrendsTab();
+      case 'settings':
+        return renderSettingsTab();
+      default:
+        return renderHomeTab();
+    }
+  };
+
+  return (
+    <div className="desktop-layout">
+      {/* Decorative ambient gradients */}
+      <div className="decor-orb pink"></div>
+      <div className="decor-orb blue"></div>
+      <div className="decor-orb green"></div>
+
+      {/* Centered Mobile Web Viewport matching Aïda mockup */}
+      <div className="web-app-viewport">
+        {/* Viewport-level animated background orbs */}
+        <div className="screen-orb teal"></div>
+        <div className="screen-orb blue"></div>
+
+        {/* Core Screen */}
+        <div className="viewport-screen">
+          {renderActiveTabContent()}
+        </div>
+
+        {/* Bottom Floating Navigation bar with signature floating center sphere */}
+        <nav className="viewport-tab-bar">
+          <button 
+            className={`tab-item ${activeTab === 'home' ? 'active' : ''}`}
+            onClick={() => { setShowCheckInForm(false); setSelectedTaskId(null); setActiveTab('home'); }}
+          >
+            <Home size={18} />
+            <span>Today</span>
+          </button>
+
+          <button 
+            className={`tab-item ${activeTab === 'plan' ? 'active' : ''}`}
+            onClick={() => { setShowCheckInForm(false); setSelectedTaskId(null); setActiveTab('plan'); }}
+          >
+            <Calendar size={18} />
+            <span>Plan</span>
+          </button>
+
+          {/* Floating center sphere AI Coach button */}
+          <button 
+            className="tab-item chat-btn-floating" 
+            onClick={() => { setShowCheckInForm(false); setSelectedTaskId(null); setActiveTab('chat'); }}
+            title="Shalom AI Recovery Coach"
+          >
+            <div className="tab-chat-sphere"></div>
+          </button>
+
+          <button 
+            className={`tab-item ${activeTab === 'trends' ? 'active' : ''}`}
+            onClick={() => { setShowCheckInForm(false); setSelectedTaskId(null); setActiveTab('trends'); }}
+          >
+            <TrendingUp size={18} />
+            <span>Progress</span>
+          </button>
+
+          <button 
+            className={`tab-item ${activeTab === 'settings' ? 'active' : ''}`}
+            onClick={() => { setShowCheckInForm(false); setSelectedTaskId(null); setActiveTab('settings'); }}
+          >
+            <User size={18} />
+            <span>Profile</span>
+          </button>
+        </nav>
+      </div>
     </div>
   );
 }

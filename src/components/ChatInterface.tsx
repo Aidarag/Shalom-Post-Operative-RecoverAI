@@ -8,14 +8,16 @@ import {
   CheckCircle, 
   RotateCcw,
   Volume2,
-  ClipboardCheck,
-  MessageCircle,
   HelpCircle,
   X,
   Droplets,
   Car,
   TrendingUp,
-  Scissors
+  Scissors,
+  Heart,
+  Sparkles,
+  Mic,
+  ChevronLeft
 } from 'lucide-react';
 import { 
   type Message, 
@@ -159,6 +161,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       timestamp: new Date(),
     }
   ]);
+  const [hasChatStarted, setHasChatStarted] = useState<boolean>(false);
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [chatMode, setChatMode] = useState<'check-in' | 'faq'>('check-in');
@@ -254,6 +257,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   // Handle preset scenarios triggered from outside (Home screen)
   useEffect(() => {
     if (presetScenarioTrigger) {
+      setHasChatStarted(true);
       const answersCopy = { ...presetScenarioTrigger };
       setAnswers(answersCopy);
       
@@ -434,6 +438,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   ];
 
   const handleStartCheckIn = () => {
+    setHasChatStarted(true);
     setCheckInStep(0);
     onResetStatus();
     
@@ -466,6 +471,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   };
 
   const handleResetCheckIn = () => {
+    setHasChatStarted(false);
     setCheckInStep(-1);
     onResetStatus();
     setMessages([
@@ -556,6 +562,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   const handleSendMessage = async (textToSend: string) => {
     if (!textToSend.trim()) return;
+    setHasChatStarted(true);
 
     const lower = textToSend.toLowerCase().trim();
     const faqMatch = searchFAQDataset(textToSend, faqDataset);
@@ -759,10 +766,10 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const renderInteractiveControls = () => {
     if (checkInStep === -1) {
       return (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '20px 0', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
-          <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Ready to log your vitals and recovery status?</p>
-          <button className="btn-primary" onClick={handleStartCheckIn} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px', fontSize: '14px', borderRadius: '30px' }}>
-            <Play size={16} /> Start Daily Recovery Check-In
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '16px', flexDirection: 'column', alignItems: 'center', gap: '8px', textAlign: 'center' }}>
+          <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Ready to log your vitals and recovery status?</p>
+          <button className="checkin-submit-btn" onClick={handleStartCheckIn} style={{ padding: '10px 20px', borderRadius: '20px', fontSize: '13px' }}>
+            <Play size={14} /> Start Recovery Check-In
           </button>
         </div>
       );
@@ -770,28 +777,32 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
     if (checkInStep === 0) { // Pain (1-10)
       return (
-        <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', maxWidth: '400px' }}>
-            <span style={{ fontSize: '12px', color: 'var(--success)', fontWeight: 'bold' }}>1 (Mild)</span>
-            <strong style={{ fontSize: '18px', color: answers.painLevel >= 8 ? 'var(--emergency)' : answers.painLevel >= 5 ? 'var(--warning)' : 'var(--success)' }}>
-              Pain Level: {answers.painLevel} / 10
-            </strong>
-            <span style={{ fontSize: '12px', color: 'var(--emergency)', fontWeight: 'bold' }}>10 (Severe)</span>
+        <div className="checkin-options-panel" style={{ padding: '14px' }}>
+          <div className="pain-level-slider-wrap">
+            <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', fontSize: '11px', fontWeight: 'bold' }}>
+              <span style={{ color: 'var(--color-green)' }}>Mild (1)</span>
+              <span style={{ fontSize: '13px', color: answers.painLevel >= 8 ? 'var(--color-red)' : answers.painLevel >= 5 ? 'var(--color-yellow)' : 'var(--color-green)' }}>
+                Pain: {answers.painLevel} / 10
+              </span>
+              <span style={{ color: 'var(--color-red)' }}>Severe (10)</span>
+            </div>
+            <input
+              type="range"
+              min="1"
+              max="10"
+              value={answers.painLevel}
+              onChange={(e) => setAnswers({ ...answers, painLevel: parseInt(e.target.value) })}
+              style={{ width: '100%', accentColor: 'var(--primary)', height: '6px', borderRadius: '4px', cursor: 'pointer' }}
+            />
+            <div className="pain-ticks">
+              {[1,2,3,4,5,6,7,8,9,10].map(n => <span key={n}>{n}</span>)}
+            </div>
           </div>
-          <input
-            type="range"
-            min="1"
-            max="10"
-            value={answers.painLevel}
-            onChange={(e) => setAnswers({ ...answers, painLevel: parseInt(e.target.value) })}
-            style={{ width: '100%', maxWidth: '400px', accentColor: 'var(--primary)', height: '8px', borderRadius: '4px', cursor: 'pointer' }}
-          />
           <button 
-            className="btn-primary" 
+            className="checkin-submit-btn" 
             onClick={() => handleInteractiveSubmit(`My pain level is ${answers.painLevel} out of 10.`, answers, answers.painLevel)}
-            style={{ marginTop: '8px', padding: '10px 20px', fontSize: '13px', borderRadius: '20px' }}
           >
-            Submit Pain Level <ArrowRight size={14} style={{ marginLeft: '6px' }} />
+            Submit Pain Scale <ArrowRight size={13} />
           </button>
         </div>
       );
@@ -799,27 +810,25 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
     if (checkInStep === 1) { // Fever (Yes/No)
       return (
-        <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center' }}>
-          <div className="questionnaire-options-row" style={{ display: 'flex', gap: '16px' }}>
+        <div className="checkin-options-panel" style={{ padding: '14px' }}>
+          <div className="choice-pill-grid">
             <button 
-              className={`checkbox-btn ${answers.hasFever ? 'active' : ''}`}
+              className={`choice-pill-btn ${answers.hasFever ? 'selected' : ''}`}
               onClick={() => setAnswers({ ...answers, hasFever: true, temperature: 100.6 })}
-              style={{ width: '140px', padding: '14px', fontSize: '14px', borderRadius: '8px', border: '1px solid var(--border-color)', background: answers.hasFever ? 'var(--warning-bg)' : '#fff', color: answers.hasFever ? 'var(--warning)' : 'inherit', fontWeight: answers.hasFever ? '600' : 'normal', cursor: 'pointer' }}
             >
               Yes, I have a fever
             </button>
             <button 
-              className={`checkbox-btn ${!answers.hasFever ? 'active' : ''}`}
+              className={`choice-pill-btn ${!answers.hasFever ? 'selected' : ''}`}
               onClick={() => setAnswers({ ...answers, hasFever: false, temperature: 98.6 })}
-              style={{ width: '140px', padding: '14px', fontSize: '14px', borderRadius: '8px', border: '1px solid var(--border-color)', background: !answers.hasFever ? 'var(--success-bg)' : '#fff', color: !answers.hasFever ? 'var(--success)' : 'inherit', fontWeight: !answers.hasFever ? '600' : 'normal', cursor: 'pointer' }}
             >
               No fever
             </button>
           </div>
           
           {answers.hasFever && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#fff', padding: '10px 16px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-              <label style={{ fontSize: '13px', fontWeight: 'bold' }}>Temperature (°F):</label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#fff', padding: '6px 12px', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.06)' }}>
+              <label style={{ fontSize: '11.5px', fontWeight: 'bold' }}>Temp (°F):</label>
               <input
                 type="number"
                 step="0.1"
@@ -827,22 +836,21 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 max="106.0"
                 value={answers.temperature}
                 onChange={(e) => setAnswers({ ...answers, temperature: parseFloat(e.target.value) || 100.4 })}
-                style={{ width: '80px', padding: '6px', borderRadius: '4px', border: '1px solid var(--border-color)', textAlign: 'center', fontSize: '14px' }}
+                style={{ width: '60px', padding: '4px', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.08)', textAlign: 'center', fontSize: '12px' }}
               />
             </div>
           )}
 
           <button 
-            className="btn-primary" 
+            className="checkin-submit-btn" 
             onClick={() => {
               const text = answers.hasFever 
                 ? `Yes, I have a fever. My temperature is ${answers.temperature}°F.` 
                 : "No, I do not have a fever.";
               handleInteractiveSubmit(text, answers, { hasFever: answers.hasFever, temp: answers.temperature });
             }}
-            style={{ padding: '10px 20px', fontSize: '13px', borderRadius: '20px' }}
           >
-            Submit Fever Status <ArrowRight size={14} style={{ marginLeft: '6px' }} />
+            Submit Fever Status <ArrowRight size={13} />
           </button>
         </div>
       );
@@ -850,29 +858,31 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
     if (checkInStep === 2) { // Medications (Yes/No)
       return (
-        <div className="questionnaire-options-row" style={{ padding: '20px', display: 'flex', gap: '16px', justifyContent: 'center' }}>
-          <button 
-            className="checkbox-btn"
-            onClick={() => {
-              const updated = { ...answers, medsTaken: true };
-              setAnswers(updated);
-              handleInteractiveSubmit("Yes, I took all my scheduled recovery medications today.", updated, true);
-            }}
-            style={{ width: '180px', padding: '16px', fontSize: '14px', borderRadius: '8px', border: '1px solid var(--success)', color: 'var(--success)', backgroundColor: 'var(--success-bg)', fontWeight: 'bold', cursor: 'pointer' }}
-          >
-            Yes, took medications
-          </button>
-          <button 
-            className="checkbox-btn"
-            onClick={() => {
-              const updated = { ...answers, medsTaken: false };
-              setAnswers(updated);
-              handleInteractiveSubmit("No, I missed some or all of my recovery medications today.", updated, false);
-            }}
-            style={{ width: '180px', padding: '16px', fontSize: '14px', borderRadius: '8px', border: '1px solid var(--warning)', color: 'var(--warning)', backgroundColor: 'var(--warning-bg)', fontWeight: 'bold', cursor: 'pointer' }}
-          >
-            No, missed medication
-          </button>
+        <div className="checkin-options-panel" style={{ padding: '14px' }}>
+          <div className="choice-pill-grid">
+            <button 
+              className="choice-pill-btn"
+              onClick={() => {
+                const updated = { ...answers, medsTaken: true };
+                setAnswers(updated);
+                handleInteractiveSubmit("Yes, I took all my scheduled recovery medications today.", updated, true);
+              }}
+              style={{ border: '1.5px solid var(--color-green)', color: 'var(--color-green)', background: 'var(--bg-green)', fontWeight: 'bold' }}
+            >
+              Yes, took medications
+            </button>
+            <button 
+              className="choice-pill-btn"
+              onClick={() => {
+                const updated = { ...answers, medsTaken: false };
+                setAnswers(updated);
+                handleInteractiveSubmit("No, I missed some or all of my recovery medications today.", updated, false);
+              }}
+              style={{ border: '1.5px solid var(--color-yellow)', color: 'var(--color-yellow)', background: 'var(--bg-yellow)', fontWeight: 'bold' }}
+            >
+              No, missed medication
+            </button>
+          </div>
         </div>
       );
     }
@@ -899,25 +909,16 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       };
 
       return (
-        <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center' }}>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center', maxWidth: '500px' }}>
+        <div className="checkin-options-panel" style={{ padding: '12px' }}>
+          <div className="choice-pill-grid">
             {options.map(opt => {
               const isSelected = answers.incisionIssues.includes(opt);
               return (
                 <button
                   key={opt}
                   onClick={() => toggleIncision(opt)}
-                  style={{ 
-                    padding: '10px 16px', 
-                    fontSize: '13px', 
-                    borderRadius: '20px', 
-                    border: '1px solid', 
-                    borderColor: isSelected ? 'var(--primary)' : 'rgba(0,0,0,0.1)',
-                    background: isSelected ? 'var(--primary)' : '#fff',
-                    color: isSelected ? 'white' : 'var(--text-main)',
-                    fontWeight: isSelected ? '600' : 'normal',
-                    cursor: 'pointer'
-                  }}
+                  className={`choice-pill-btn ${isSelected ? 'selected' : ''}`}
+                  style={{ fontSize: '11px', padding: '6px 12px' }}
                 >
                   {opt}
                 </button>
@@ -925,14 +926,13 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             })}
           </div>
           <button 
-            className="btn-primary" 
+            className="checkin-submit-btn" 
             onClick={() => {
               const selected = answers.incisionIssues.join(', ');
               handleInteractiveSubmit(`Incision status reported: ${selected}.`, answers, answers.incisionIssues);
             }}
-            style={{ marginTop: '8px', padding: '10px 20px', fontSize: '13px', borderRadius: '20px' }}
           >
-            Submit Incision Status <ArrowRight size={14} style={{ marginLeft: '6px' }} />
+            Submit Incision Status <ArrowRight size={13} />
           </button>
         </div>
       );
@@ -942,30 +942,20 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       const options: Array<{ label: string; val: 'Okay' | 'Getting harder' | 'Restricted' }> = [
         { label: "Okay (moving around normally)", val: 'Okay' },
         { label: "Getting harder to walk or exercise", val: 'Getting harder' },
-        { label: "Restricted (resting in bed/chair most of the time)", val: 'Restricted' }
+        { label: "Restricted (resting in bed/chair)", val: 'Restricted' }
       ];
 
       return (
-        <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', maxWidth: '400px' }}>
+        <div className="checkin-options-panel" style={{ padding: '12px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%' }}>
             {options.map(opt => {
               const isSelected = answers.mobility === opt.val;
               return (
                 <button
                   key={opt.val}
                   onClick={() => setAnswers({ ...answers, mobility: opt.val })}
-                  style={{ 
-                    padding: '12px 16px', 
-                    fontSize: '13px', 
-                    borderRadius: '8px', 
-                    border: '1px solid', 
-                    borderColor: isSelected ? 'var(--primary)' : 'rgba(0,0,0,0.1)',
-                    background: isSelected ? 'var(--glass-bg)' : '#fff',
-                    color: 'var(--text-main)',
-                    fontWeight: isSelected ? '600' : 'normal',
-                    textAlign: 'left',
-                    cursor: 'pointer'
-                  }}
+                  className={`choice-pill-btn ${isSelected ? 'selected' : ''}`}
+                  style={{ textAlign: 'left', width: '100%', borderRadius: '10px' }}
                 >
                   {opt.label}
                 </button>
@@ -973,14 +963,13 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             })}
           </div>
           <button 
-            className="btn-primary" 
+            className="checkin-submit-btn" 
             onClick={() => {
               const label = options.find(o => o.val === answers.mobility)?.label || answers.mobility;
               handleInteractiveSubmit(`My mobility is: ${label}.`, answers, answers.mobility);
             }}
-            style={{ marginTop: '8px', padding: '10px 20px', fontSize: '13px', borderRadius: '20px' }}
           >
-            Submit Mobility <ArrowRight size={14} style={{ marginLeft: '6px' }} />
+            Submit Mobility <ArrowRight size={13} />
           </button>
         </div>
       );
@@ -1008,14 +997,14 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       };
 
       return (
-        <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center' }}>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center', maxWidth: '500px' }}>
+        <div className="checkin-options-panel" style={{ padding: '12px' }}>
+          <div className="choice-pill-grid">
             {options.map(opt => {
               const isSelected = answers.unusualSymptoms.includes(opt);
               const isEmergencyOpt = ["Chest pain", "Difficulty breathing", "Uncontrolled bleeding", "Loss of consciousness"].includes(opt);
               const isRedOpt = opt === "Symptoms getting much worse";
               
-              let borderCol = 'rgba(0,0,0,0.1)';
+              let borderCol = 'rgba(0,0,0,0.06)';
               if (isSelected) borderCol = 'var(--primary)';
               else if (isEmergencyOpt) borderCol = '#ffc5c5';
               else if (isRedOpt) borderCol = '#ffd8be';
@@ -1024,32 +1013,27 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 <button
                   key={opt}
                   onClick={() => toggleSymptom(opt)}
+                  className={`choice-pill-btn ${isSelected ? 'selected' : ''}`}
                   style={{ 
-                    padding: '10px 16px', 
-                    fontSize: '13px',
-                    borderRadius: '20px',
-                    border: '1px solid',
+                    fontSize: '11px', 
+                    padding: '6px 12px',
                     borderColor: borderCol,
-                    background: isSelected ? 'var(--primary)' : '#fff',
-                    color: isSelected ? 'white' : (isEmergencyOpt ? 'var(--emergency)' : 'var(--text-main)'),
-                    fontWeight: isSelected ? '600' : 'normal',
-                    cursor: 'pointer'
+                    color: isSelected ? 'white' : (isEmergencyOpt ? 'var(--color-red)' : 'var(--text-main)'),
                   }}
                 >
-                  {opt} {isEmergencyOpt && <span style={{ color: 'var(--emergency)', marginLeft: '4px', fontSize: '11px', fontWeight: 'bold' }}>Alert</span>} {isRedOpt && !isSelected && <span style={{ color: 'var(--warning)', marginLeft: '4px', fontSize: '11px', fontWeight: 'bold' }}>Warning</span>}
+                  {opt} {isEmergencyOpt && <ShieldAlert size={11} style={{ display: 'inline-block', marginLeft: '4px', verticalAlign: 'middle' }} />}
                 </button>
               );
             })}
           </div>
           <button 
-            className="btn-primary" 
+            className="checkin-submit-btn" 
             onClick={() => {
               const selected = answers.unusualSymptoms.join(', ');
               handleInteractiveSubmit(`Unusual symptoms: ${selected}.`, answers, answers.unusualSymptoms);
             }}
-            style={{ marginTop: '8px', padding: '10px 20px', fontSize: '13px', borderRadius: '20px' }}
           >
-            Submit & Complete Check-In <ArrowRight size={14} style={{ marginLeft: '6px' }} />
+            Complete Check-In <ArrowRight size={13} />
           </button>
         </div>
       );
@@ -1057,13 +1041,13 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
     if (checkInStep === 6) { // Completed
       return (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '20px', flexDirection: 'column', alignItems: 'center', gap: '14px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--success)' }}>
-            <CheckCircle size={22} />
-            <strong style={{ fontSize: '15px' }}>Daily Check-In Completed Successfully</strong>
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '14px', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--color-green)' }}>
+            <CheckCircle size={18} />
+            <strong style={{ fontSize: '12.5px' }}>Check-In Completed</strong>
           </div>
-          <button className="btn-secondary" onClick={handleResetCheckIn} style={{ fontSize: '13px', padding: '8px 16px', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <RotateCcw size={14} /> Start New Check-In / Reset
+          <button className="choice-pill-btn" onClick={handleResetCheckIn} style={{ fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px' }}>
+            <RotateCcw size={12} /> Restart Check-In
           </button>
         </div>
       );
@@ -1072,106 +1056,139 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     return null;
   };
 
-  return (
-    <div className="chat-card">
-      <div className="chat-header">
-        <div className="chat-agent-info">
-          <div className="agent-avatar">S</div>
-          <div>
-            <h3 style={{ fontSize: '15px', fontWeight: 'bold', color: 'var(--primary-dark)' }}>Shalom AI Assistant</h3>
-            <span className="agent-status">
-              <span className="status-dot"></span> Active Demo MVP
-            </span>
+  if (!hasChatStarted) {
+    // Screen 6: Shalom AI Onboarding Home
+    const prebakedQueries = [
+      { text: "Is it normal to have more pain at night?", tag: "Pain" },
+      { text: "What activities are safe for me now?", tag: "Activity" },
+      { text: "How do I take my medications today?", tag: "Meds" },
+      { text: "Tips to reduce swelling and pain", tag: "Tips" }
+    ];
+
+    return (
+      <div className="chat-tab-container" style={{ animation: 'fadeIn 0.3s ease-out' }}>
+        {/* Onboarding Header */}
+        <div className="detail-header-row" style={{ marginBottom: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{
+              width: '28px', height: '28px', borderRadius: '8px',
+              background: 'linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white'
+            }}>
+              <Heart size={14} fill="white" />
+            </div>
+            <strong style={{ fontSize: '13px', color: 'var(--text-main)' }}>Shalom AI</strong>
+          </div>
+          <button className="detail-menu-btn" onClick={() => setChatMode(chatMode === 'check-in' ? 'faq' : 'check-in')}>
+            <span style={{ fontSize: '9px', fontWeight: '700' }}>{chatMode === 'check-in' ? 'FAQ' : 'Checkin'}</span>
+          </button>
+        </div>
+
+        {/* Glossy Hologram Sphere */}
+        <div className="sphere-card-container">
+          <div className="hologram-chat-sphere"></div>
+          <h2 className="sphere-title-greeting">Hi Aïda, how can I support your recovery today?</h2>
+        </div>
+
+        {/* 2x2 prebaked options */}
+        <div className="suggest-chips-grid">
+          {prebakedQueries.map((q, idx) => (
+            <div 
+              key={idx} 
+              className="suggest-chip-box"
+              onClick={() => handleSendMessage(q.text)}
+            >
+              <span className="suggest-chip-icon"><Sparkles size={11} /></span>
+              <span>{q.text}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Check-in Trigger banner */}
+        <div className="plan-checkin-prompt" style={{ marginBottom: '16px', padding: '12px' }}>
+          <div className="checkin-prompt-info" style={{ flexGrow: 1 }}>
+            <span className="checkin-prompt-title">Need to log today's vitals?</span>
+            <span className="checkin-prompt-desc" style={{ display: 'block', fontSize: '10px' }}>Run your daily check-in logs.</span>
+          </div>
+          <button className="checkin-prompt-btn" onClick={handleStartCheckIn} style={{ fontSize: '10.5px', padding: '6px 12px' }}>
+            Start Logs
+          </button>
+        </div>
+
+        {/* Input Console */}
+        <div className="chat-input-console">
+          <div className="console-row">
+            <input
+              type="text"
+              placeholder="Ask Shalom anything..."
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              onKeyDown={handleKeyPress}
+              className="console-field"
+            />
+            <button className="chat-circle-btn" style={{ padding: 0 }} onClick={() => speakText("I'm listening. Ask me anything.")} title="Voice dictate"><Mic size={13} /></button>
+            <button 
+              className="console-send-button" 
+              onClick={() => handleSendMessage(inputText)}
+              disabled={!inputText.trim()}
+            >
+              <Send size={12} />
+            </button>
           </div>
         </div>
       </div>
+    );
+  }
 
-      {/* Mode Selector Tab Group */}
-      <div className="chat-mode-tabs" style={{
-        display: 'flex',
-        background: 'rgba(0, 0, 0, 0.03)',
-        padding: '4px',
-        borderRadius: '12px',
-        margin: '12px 20px 0 20px',
-        border: '1px solid rgba(0,0,0,0.02)'
-      }}>
-        <button 
-          onClick={() => setChatMode('check-in')}
-          style={{
-            flex: 1,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '8px',
-            padding: '8px 16px',
-            fontSize: '13px',
-            fontWeight: '600',
-            border: 'none',
-            borderRadius: '8px',
-            background: chatMode === 'check-in' ? '#ffffff' : 'transparent',
-            color: chatMode === 'check-in' ? 'var(--primary-dark)' : 'var(--text-muted)',
-            boxShadow: chatMode === 'check-in' ? '0 2px 8px rgba(0,0,0,0.05)' : 'none',
-            cursor: 'pointer',
-            transition: 'all 0.2s ease'
-          }}
-        >
-          <ClipboardCheck size={14} /> Check-in Mode
+  // Screen 7: Active Chat Stream
+  return (
+    <div className="chat-tab-container" style={{ animation: 'fadeIn 0.28s ease-out' }}>
+      {/* Active chat header */}
+      <div className="detail-header-row" style={{ marginBottom: '10px' }}>
+        <button className="detail-back-btn" onClick={() => setHasChatStarted(false)}>
+          <ChevronLeft size={16} />
         </button>
-        <button 
-          onClick={() => setChatMode('faq')}
-          style={{
-            flex: 1,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '8px',
-            padding: '8px 16px',
-            fontSize: '13px',
-            fontWeight: '600',
-            border: 'none',
-            borderRadius: '8px',
-            background: chatMode === 'faq' ? '#ffffff' : 'transparent',
-            color: chatMode === 'faq' ? 'var(--primary-dark)' : 'var(--text-muted)',
-            boxShadow: chatMode === 'faq' ? '0 2px 8px rgba(0,0,0,0.05)' : 'none',
-            cursor: 'pointer',
-            transition: 'all 0.2s ease'
-          }}
-        >
-          <MessageCircle size={14} /> Chat / Ask Shalom
+        <span className="detail-title">Shalom Assistant</span>
+        <button className="detail-menu-btn" onClick={handleResetCheckIn} title="Reset chat session">
+          <RotateCcw size={14} />
         </button>
       </div>
 
       {/* Main chat window */}
-      <div className="chat-messages-container">
+      <div className="chat-scroller-view">
         {messages.map((msg) => {
           const isUser = msg.sender === 'user';
+          let wrapperStatusClass = '';
+          if (msg.isEmergency) wrapperStatusClass = 'emergency';
+          else if (msg.isMedicalWarning) wrapperStatusClass = 'warning';
+
           return (
-            <div key={msg.id} className={`chat-bubble-wrapper ${isUser ? 'user-wrapper' : 'shalom-wrapper'}`}>
-              {!isUser && <div className="bubble-avatar" style={{ backgroundColor: 'var(--primary-dark)' }}>S</div>}
-              <div className={`chat-bubble ${isUser ? 'user-bubble' : 'shalom-bubble'} ${msg.isEmergency ? 'emergency-bubble' : ''} ${msg.isMedicalWarning ? 'warning-bubble' : ''}`}>
+            <div key={msg.id} className={`chat-bubble-row ${isUser ? 'user' : 'shalom'} ${wrapperStatusClass}`}>
+              {!isUser && <div className="chat-bubble-avatar">S</div>}
+              <div className="chat-text-bubble">
                 
                 {msg.isEmergency && (
-                  <div className="bubble-alert-header emergency" style={{ color: 'var(--emergency)' }}>
-                    <ShieldAlert size={12} /> <span style={{ fontWeight: 'bold' }}>EMERGENCY DIRECTIVE</span>
+                  <div className="chat-alert-heading" style={{ color: 'var(--color-red)' }}>
+                    <ShieldAlert size={11} /> EMERGENCY WARNING
                   </div>
                 )}
 
                 {msg.isMedicalWarning && (
-                  <div className="bubble-alert-header warning" style={{ color: 'var(--warning)' }}>
-                    <AlertTriangle size={12} /> <span style={{ fontWeight: 'bold' }}>CLINICAL DIRECTIVE</span>
+                  <div className="chat-alert-heading" style={{ color: 'var(--color-yellow)' }}>
+                    <AlertTriangle size={11} /> CLINICAL WARNING
                   </div>
                 )}
 
-                <div className="bubble-text">
+                <div>
                   {msg.text.split('\n').map((line, idx) => {
                     if (line.startsWith('- ') || line.startsWith('* ')) {
-                      return <li key={idx} className="bubble-li">{line.substring(2)}</li>;
+                      return <li key={idx} style={{ marginLeft: '12px', fontSize: '12px' }}>{line.substring(2)}</li>;
                     }
-                    return <p key={idx} className="bubble-paragraph" style={{ margin: '4px 0' }}>{line}</p>;
+                    return <p key={idx} style={{ margin: '2px 0', fontSize: '12px' }}>{line}</p>;
                   })}
                 </div>
 
-                <div className="bubble-meta" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px', borderTop: '1px solid rgba(0,0,0,0.03)', paddingTop: '4px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px', borderTop: '1px solid rgba(0,0,0,0.03)', paddingTop: '4px' }}>
                   {!isUser && (
                     <button 
                       onClick={() => speakText(msg.text)} 
@@ -1179,11 +1196,11 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                       title="Listen to this message"
                       type="button"
                     >
-                      <Volume2 size={11} />
-                      <span>Listen</span>
+                      <Volume2 size={10} />
+                      <span style={{ fontSize: '10px' }}>Listen</span>
                     </button>
                   )}
-                  <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
+                  <span style={{ fontSize: '9px', color: 'var(--text-muted)' }}>
                     {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>
@@ -1193,12 +1210,12 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         })}
 
         {isTyping && (
-          <div className="chat-bubble-wrapper shalom-wrapper">
-            <div className="bubble-avatar" style={{ backgroundColor: 'var(--primary-dark)' }}>S</div>
-            <div className="chat-bubble shalom-bubble typing-bubble">
-              <span className="typing-dot"></span>
-              <span className="typing-dot"></span>
-              <span className="typing-dot"></span>
+          <div className="chat-bubble-row shalom">
+            <div className="chat-bubble-avatar">S</div>
+            <div className="chat-loading-dots">
+              <span className="loading-dot"></span>
+              <span className="loading-dot"></span>
+              <span className="loading-dot"></span>
             </div>
           </div>
         )}
@@ -1207,57 +1224,48 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
       {/* Interactive Questionnaire Panel */}
       {chatMode === 'check-in' && checkInStep !== -1 && (
-        <div style={{ borderTop: '1px solid rgba(0, 0, 0, 0.04)', backgroundColor: 'rgba(255, 255, 255, 0.65)' }}>
+        <div style={{ background: 'rgba(255, 255, 255, 0.4)', borderRadius: '12px', marginBottom: '8px' }}>
           {renderInteractiveControls()}
         </div>
       )}
 
-      {/* Futuristic Chat Console Footer */}
-      <div style={{ padding: '16px 20px', borderTop: '1px solid rgba(0,0,0,0.03)', background: 'transparent' }}>
-        {/* Recommendation Chips */}
-        {suggestionChips.length > 0 && (
-          <div className="pill-chips-container">
-            {suggestionChips.map((chip, idx) => (
-              <button 
-                key={idx} 
-                className={`pill-chip ${chip.action === 'emergency' ? 'emergency' : ''}`}
-                onClick={() => handleChipClick(chip.action)}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}
-              >
-                {chip.icon}
-                {chip.label}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Chat Input Console */}
-        <div className="console-container">
-          <div className="console-input-row" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <input
-              type="text"
-              placeholder={
-                chatMode === 'check-in' && checkInStep !== -1
-                  ? "Type your response or ask a question..."
-                  : chatMode === 'check-in'
-                  ? "Type 'check-in' to start or ask a question..."
-                  : "Ask any recovery question..."
-              }
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              onKeyDown={handleKeyPress}
-              className="console-textarea"
-              style={{ flex: 1 }}
-            />
+      {/* Suggestion Chips */}
+      {suggestionChips.length > 0 && (
+        <div className="chat-suggestion-chips">
+          {suggestionChips.map((chip, idx) => (
             <button 
-              className="console-send-btn" 
-              onClick={() => handleSendMessage(inputText)}
-              disabled={!inputText.trim()}
-              title="Send message"
+              key={idx} 
+              className="chat-suggestion-chip"
+              onClick={() => handleChipClick(chip.action)}
             >
-              Send <Send size={13} style={{ marginLeft: '4px' }} />
+              {chip.label}
             </button>
-          </div>
+          ))}
+        </div>
+      )}
+
+      {/* Console Input bar */}
+      <div className="chat-input-console">
+        <div className="console-row">
+          <input
+            type="text"
+            placeholder={
+              chatMode === 'check-in' && checkInStep !== -1
+                ? "Type response..."
+                : "Ask Shalom..."
+            }
+            value={inputText}
+            onChange={(e) => setInputText(e.target.value)}
+            onKeyDown={handleKeyPress}
+            className="console-field"
+          />
+          <button 
+            className="console-send-button" 
+            onClick={() => handleSendMessage(inputText)}
+            disabled={!inputText.trim()}
+          >
+            <Send size={12} />
+          </button>
         </div>
       </div>
     </div>
