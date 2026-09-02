@@ -14,10 +14,12 @@ import {
   Car,
   TrendingUp,
   Scissors,
-  Heart,
   Sparkles,
   Mic,
-  ChevronLeft
+  MessageSquare,
+  ClipboardList,
+  ShieldCheck,
+  VolumeX
 } from 'lucide-react';
 import { 
   type Message, 
@@ -28,7 +30,8 @@ import {
   getWarmFeedback, 
   evaluateSafety, 
   getGeminiResponse,
-  searchFAQDataset
+  searchFAQDataset,
+  getSimulatedResponse
 } from '../utils/shalomAgent';
 
 interface ChatInterfaceProps {
@@ -46,6 +49,7 @@ interface ChatInterfaceProps {
   isTtsEnabled: boolean;
   selectedVoiceName: string;
   voices: SpeechSynthesisVoice[];
+  ttsSpeed?: number;
 }
 
 const parseCheckInAnswer = (text: string, step: number): any => {
@@ -151,7 +155,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   faqDataset,
   isTtsEnabled,
   selectedVoiceName,
-  voices
+  voices,
+  ttsSpeed = 0.82
 }) => {
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -161,18 +166,45 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       timestamp: new Date(),
     }
   ]);
-  const [hasChatStarted, setHasChatStarted] = useState<boolean>(false);
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [chatMode, setChatMode] = useState<'check-in' | 'faq'>('check-in');
+  const [playingMessageId, setPlayingMessageId] = useState<string | null>(null);
   const activeUtterancesRef = useRef<SpeechSynthesisUtterance[]>([]);
 
-  const speakText = (text: string) => {
+  const stopSpeech = () => {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      try {
+        window.speechSynthesis.cancel();
+      } catch {
+        // Ignore
+      }
+    }
+    activeUtterancesRef.current = [];
+    setPlayingMessageId(null);
+  };
+
+  const toggleSpeakMessage = (msgId: string, text: string) => {
+    if (playingMessageId === msgId) {
+      stopSpeech();
+    } else {
+      speakText(text, msgId);
+    }
+  };
+
+  const speakText = (text: string, msgId?: string) => {
     if (!isTtsEnabled || typeof window === 'undefined' || !('speechSynthesis' in window)) return;
     
     // Stop any ongoing speech and clear active references
-    window.speechSynthesis.cancel();
-    activeUtterancesRef.current = [];
+    try {
+      window.speechSynthesis.cancel();
+      activeUtterancesRef.current = [];
+      if (window.speechSynthesis.paused) {
+        window.speechSynthesis.resume();
+      }
+    } catch {
+      // Ignore
+    }
 
     // Clean text: strip markdown and emojis for cleaner speech
     const cleanText = text
@@ -183,17 +215,34 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
     if (!cleanText) return;
 
+    if (msgId) {
+      setPlayingMessageId(msgId);
+    }
+
     const utterance = new SpeechSynthesisUtterance(cleanText);
     
-    // Configure natural, alert, and warm speech parameters
-    utterance.rate = 1.0;  // Standard speed for comfortable pacing
-    utterance.pitch = 1.08; // Slightly higher pitch for a brighter, more supportive medical assistant tone
+    // Configure natural, relaxed, calm and soothing speech parameters
+    utterance.rate = ttsSpeed || 0.82;  // Relaxed comfortable speed (prevents rushed audio)
+    utterance.pitch = 1.0;              // Warm, natural pitch
     utterance.volume = 1.0;
     
-    const voice = voices.find(v => v.name === selectedVoiceName);
-    if (voice) {
-      utterance.voice = voice;
-      utterance.lang = voice.lang;
+    // Dynamically retrieve live voices
+    const freshVoices = window.speechSynthesis.getVoices();
+    const available = freshVoices.length > 0 ? freshVoices : voices;
+
+    let chosenVoice: SpeechSynthesisVoice | undefined;
+    if (selectedVoiceName) {
+      chosenVoice = available.find(v => v.name === selectedVoiceName);
+    }
+    if (!chosenVoice) {
+      chosenVoice = available.find(v => v.lang.startsWith('en') && (v.name.includes('Samantha') || v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Daniel') || v.name.includes('Karen') || v.name.includes('Victoria')))
+        || available.find(v => v.lang.startsWith('en'))
+        || available[0];
+    }
+
+    if (chosenVoice) {
+      utterance.voice = chosenVoice;
+      utterance.lang = chosenVoice.lang;
     } else {
       utterance.lang = 'en-US';
     }
@@ -203,12 +252,25 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     
     utterance.onend = () => {
       activeUtterancesRef.current = activeUtterancesRef.current.filter(u => u !== utterance);
+      if (msgId) setPlayingMessageId(null);
     };
-    utterance.onerror = () => {
+    utterance.onerror = (e) => {
+      console.warn("Speech synthesis notice:", e);
       activeUtterancesRef.current = activeUtterancesRef.current.filter(u => u !== utterance);
+      if (msgId) setPlayingMessageId(null);
     };
 
-    window.speechSynthesis.speak(utterance);
+    setTimeout(() => {
+      try {
+        if (window.speechSynthesis.paused) {
+          window.speechSynthesis.resume();
+        }
+        window.speechSynthesis.speak(utterance);
+      } catch (err) {
+        console.error("SpeechSynthesis speak in chat failed:", err);
+        if (msgId) setPlayingMessageId(null);
+      }
+    }, 50);
   };
 
   // Guided Check-in Steps: 
@@ -257,7 +319,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   // Handle preset scenarios triggered from outside (Home screen)
   useEffect(() => {
     if (presetScenarioTrigger) {
-      setHasChatStarted(true);
       const answersCopy = { ...presetScenarioTrigger };
       setAnswers(answersCopy);
       
@@ -438,7 +499,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   ];
 
   const handleStartCheckIn = () => {
-    setHasChatStarted(true);
     setCheckInStep(0);
     onResetStatus();
     
@@ -471,7 +531,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   };
 
   const handleResetCheckIn = () => {
-    setHasChatStarted(false);
     setCheckInStep(-1);
     onResetStatus();
     setMessages([
@@ -562,7 +621,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   const handleSendMessage = async (textToSend: string) => {
     if (!textToSend.trim()) return;
-    setHasChatStarted(true);
 
     const lower = textToSend.toLowerCase().trim();
     const faqMatch = searchFAQDataset(textToSend, faqDataset);
@@ -717,10 +775,10 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             responseText = await getGeminiResponse([...messages, userMessage], apiKey, textToSend, serializedHistory, faqDataset);
           } else {
             // Local simulation RAG or fallback scope check
-            if (faqMatch.matched) {
-              responseText = faqMatch.response || '';
+            if (faqMatch.matched && faqMatch.response) {
+              responseText = faqMatch.response;
             } else {
-              responseText = "I am Shalom, your AI Post-Operative Recovery Assistant. I can only answer questions related to your post-operative recovery that are covered in my grounding knowledge base. For other inquiries, please contact your healthcare provider's office directly.";
+              responseText = getSimulatedResponse(textToSend, [...messages, userMessage], medicalHistory, faqDataset);
             }
           }
 
@@ -1056,106 +1114,92 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     return null;
   };
 
-  if (!hasChatStarted) {
-    // Screen 6: Shalom AI Onboarding Home
-    const prebakedQueries = [
-      { text: "Is it normal to have more pain at night?", tag: "Pain" },
-      { text: "What activities are safe for me now?", tag: "Activity" },
-      { text: "How do I take my medications today?", tag: "Meds" },
-      { text: "Tips to reduce swelling and pain", tag: "Tips" }
-    ];
+  const prebakedQueries = [
+    { text: "Is it normal to have more pain at night?", tag: "Pain" },
+    { text: "What activities are safe for me now?", tag: "Activity" },
+    { text: "How do I take my medications today?", tag: "Meds" },
+    { text: "Tips to reduce swelling and pain", tag: "Tips" }
+  ];
 
-    return (
-      <div className="chat-tab-container" style={{ animation: 'fadeIn 0.3s ease-out' }}>
-        {/* Onboarding Header */}
-        <div className="detail-header-row" style={{ marginBottom: '10px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div style={{
-              width: '28px', height: '28px', borderRadius: '8px',
-              background: 'linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white'
-            }}>
-              <Heart size={14} fill="white" />
-            </div>
-            <strong style={{ fontSize: '13px', color: 'var(--text-main)' }}>Shalom (AI Assistant)</strong>
+  return (
+    <div className="chat-tab-container">
+      {/* Top Header */}
+      <div className="chat-header-bar">
+        <div className="chat-header-left">
+          <div className="chat-header-avatar"></div>
+          <div>
+            <span className="chat-header-title">Shalom Recovery AI</span>
+            <span className="chat-header-status">
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10B981', display: 'inline-block', boxShadow: '0 0 6px #10B981' }}></span>
+              Online &amp; Clinical Guardrails Active
+            </span>
           </div>
-          <button className="detail-menu-btn" onClick={() => setChatMode(chatMode === 'check-in' ? 'faq' : 'check-in')}>
-            <span style={{ fontSize: '9px', fontWeight: '700' }}>{chatMode === 'check-in' ? 'FAQ' : 'Checkin'}</span>
-          </button>
         </div>
 
-        {/* Glossy Hologram Sphere */}
-        <div className="sphere-card-container">
-          <div className="hologram-chat-sphere"></div>
-          <h2 className="sphere-title-greeting">Hi Aïda, how can I support your recovery today?</h2>
-        </div>
-
-        {/* 2x2 prebaked options */}
-        <div className="suggest-chips-grid">
-          {prebakedQueries.map((q, idx) => (
-            <div 
-              key={idx} 
-              className="suggest-chip-box"
-              onClick={() => handleSendMessage(q.text)}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div className="chat-mode-toggle-group">
+            <button
+              type="button"
+              className={`chat-mode-btn ${chatMode === 'faq' && checkInStep === -1 ? 'active' : ''}`}
+              onClick={() => {
+                setChatMode('faq');
+                setCheckInStep(-1);
+              }}
+              style={{ display: 'flex', alignItems: 'center', gap: '5px' }}
             >
-              <span className="suggest-chip-icon"><Sparkles size={11} /></span>
-              <span>{q.text}</span>
-            </div>
-          ))}
-        </div>
-
-        {/* Check-in Trigger banner */}
-        <div className="plan-checkin-prompt" style={{ marginBottom: '16px', padding: '12px' }}>
-          <div className="checkin-prompt-info" style={{ flexGrow: 1 }}>
-            <span className="checkin-prompt-title">Need to log today's vitals?</span>
-            <span className="checkin-prompt-desc" style={{ display: 'block', fontSize: '10px' }}>Run your daily check-in logs.</span>
-          </div>
-          <button className="checkin-prompt-btn" onClick={handleStartCheckIn} style={{ fontSize: '10.5px', padding: '6px 12px' }}>
-            Start Logs
-          </button>
-        </div>
-
-        {/* Input Console */}
-        <div className="chat-input-console">
-          <div className="console-row">
-            <input
-              type="text"
-              placeholder="Ask Shalom anything..."
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              onKeyDown={handleKeyPress}
-              className="console-field"
-            />
-            <button className="chat-circle-btn" style={{ padding: 0 }} onClick={() => speakText("I'm listening. Ask me anything.")} title="Voice dictate"><Mic size={13} /></button>
-            <button 
-              className="console-send-button" 
-              onClick={() => handleSendMessage(inputText)}
-              disabled={!inputText.trim()}
+              <MessageSquare size={12} />
+              <span>Q&amp;A</span>
+            </button>
+            <button
+              type="button"
+              className={`chat-mode-btn ${chatMode === 'check-in' || checkInStep !== -1 ? 'active' : ''}`}
+              onClick={handleStartCheckIn}
+              style={{ display: 'flex', alignItems: 'center', gap: '5px' }}
             >
-              <Send size={12} />
+              <ClipboardList size={12} />
+              <span>Triage Check-In</span>
             </button>
           </div>
+
+          <button
+            type="button"
+            className="detail-menu-btn"
+            onClick={handleResetCheckIn}
+            title="Reset conversation"
+          >
+            <RotateCcw size={13} />
+          </button>
         </div>
       </div>
-    );
-  }
 
-  // Screen 7: Active Chat Stream
-  return (
-    <div className="chat-tab-container" style={{ animation: 'fadeIn 0.28s ease-out' }}>
-      {/* Active chat header */}
-      <div className="detail-header-row" style={{ marginBottom: '10px' }}>
-        <button className="detail-back-btn" onClick={() => setHasChatStarted(false)}>
-          <ChevronLeft size={16} />
-        </button>
-        <span className="detail-title">Shalom (AI Assistant)</span>
-        <button className="detail-menu-btn" onClick={handleResetCheckIn} title="Reset chat session">
-          <RotateCcw size={14} />
-        </button>
-      </div>
-
-      {/* Main chat window */}
+      {/* Main chat messages scroller */}
       <div className="chat-scroller-view">
+        {/* Welcome card if starting */}
+        {messages.length <= 1 && (
+          <div className="chat-welcome-box">
+            <div className="hologram-chat-sphere" style={{ width: '56px', height: '56px', margin: '0 auto' }}></div>
+            <strong style={{ fontSize: '15px', color: 'var(--text-main)' }}>
+              Hi Aïda, how can I support your recovery today?
+            </strong>
+            <p style={{ fontSize: '11.5px', color: 'var(--text-muted)', margin: 0, lineHeight: '1.4' }}>
+              Ask anything about post-op knee recovery, pain management, medications, or start your daily clinical check-in.
+            </p>
+
+            <div className="suggest-chips-grid" style={{ width: '100%', marginTop: '4px' }}>
+              {prebakedQueries.map((q, idx) => (
+                <div 
+                  key={idx} 
+                  className="suggest-chip-box"
+                  onClick={() => handleSendMessage(q.text)}
+                >
+                  <span className="suggest-chip-icon"><Sparkles size={11} /></span>
+                  <span>{q.text}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {messages.map((msg) => {
           const isUser = msg.sender === 'user';
           let wrapperStatusClass = '';
@@ -1168,14 +1212,14 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
               <div className="chat-text-bubble">
                 
                 {msg.isEmergency && (
-                  <div className="chat-alert-heading" style={{ color: 'var(--color-red)' }}>
-                    <ShieldAlert size={11} /> EMERGENCY WARNING
+                  <div className="chat-alert-heading" style={{ color: 'var(--color-red)', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
+                    <ShieldAlert size={12} /> EMERGENCY DIRECTIVE
                   </div>
                 )}
 
                 {msg.isMedicalWarning && (
-                  <div className="chat-alert-heading" style={{ color: 'var(--color-yellow)' }}>
-                    <AlertTriangle size={11} /> CLINICAL WARNING
+                  <div className="chat-alert-heading" style={{ color: 'var(--color-yellow)', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
+                    <AlertTriangle size={12} /> CLINICAL GUIDANCE
                   </div>
                 )}
 
@@ -1188,16 +1232,28 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                   })}
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px', borderTop: '1px solid rgba(0,0,0,0.03)', paddingTop: '4px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px', borderTop: '1px solid rgba(0,0,0,0.04)', paddingTop: '4px' }}>
                   {!isUser && (
                     <button 
-                      onClick={() => speakText(msg.text)} 
-                      className="replay-speech-btn"
-                      title="Listen to this message"
+                      onClick={() => toggleSpeakMessage(msg.id, msg.text)} 
+                      className={`replay-speech-btn ${playingMessageId === msg.id ? 'active-speaking' : ''}`}
+                      title={playingMessageId === msg.id ? "Click to stop voice playback" : "Listen to this response"}
                       type="button"
                     >
-                      <Volume2 size={10} />
-                      <span style={{ fontSize: '10px' }}>Listen</span>
+                      {playingMessageId === msg.id ? (
+                        <>
+                          <div className="audio-mini-bars">
+                            <span></span><span></span><span></span>
+                          </div>
+                          <VolumeX size={11} />
+                          <span>Stop</span>
+                        </>
+                      ) : (
+                        <>
+                          <Volume2 size={11} />
+                          <span>Listen</span>
+                        </>
+                      )}
                     </button>
                   )}
                   <span style={{ fontSize: '9px', color: 'var(--text-muted)' }}>
@@ -1224,14 +1280,14 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
       {/* Interactive Questionnaire Panel */}
       {chatMode === 'check-in' && checkInStep !== -1 && (
-        <div style={{ background: 'rgba(255, 255, 255, 0.4)', borderRadius: '12px', marginBottom: '8px' }}>
+        <div style={{ background: 'var(--bg-glass-card)', border: '1px solid var(--border-glass)', borderRadius: '16px', padding: '10px', marginBottom: '8px', flexShrink: 0 }}>
           {renderInteractiveControls()}
         </div>
       )}
 
-      {/* Suggestion Chips */}
+      {/* Quick Suggestion Chips (Modern AI Prompts) */}
       {suggestionChips.length > 0 && (
-        <div className="chat-suggestion-chips">
+        <div className="chat-suggestion-chips-bar">
           {suggestionChips.map((chip, idx) => (
             <button 
               key={idx} 
@@ -1244,28 +1300,45 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         </div>
       )}
 
-      {/* Console Input bar */}
-      <div className="chat-input-console">
-        <div className="console-row">
-          <input
-            type="text"
-            placeholder={
-              chatMode === 'check-in' && checkInStep !== -1
-                ? "Type response..."
-                : "Ask Shalom..."
-            }
-            value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-            onKeyDown={handleKeyPress}
-            className="console-field"
-          />
-          <button 
-            className="console-send-button" 
-            onClick={() => handleSendMessage(inputText)}
-            disabled={!inputText.trim()}
-          >
-            <Send size={12} />
-          </button>
+      {/* Modern AI Input Console */}
+      <div className="chat-modern-footer-area">
+        <div className="chat-input-console">
+          <div className="console-row">
+            <button 
+              type="button"
+              className="chat-mic-btn" 
+              onClick={() => speakText("I'm listening. Ask me anything about your recovery.")} 
+              title="Voice input"
+            >
+              <Mic size={15} />
+            </button>
+            <input
+              type="text"
+              placeholder={
+                chatMode === 'check-in' && checkInStep !== -1
+                  ? "Type your check-in answer..."
+                  : "Message Shalom about medications, pain, exercises..."
+              }
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              onKeyDown={handleKeyPress}
+              className="console-field"
+            />
+            <button 
+              type="button"
+              className="console-send-button" 
+              onClick={() => handleSendMessage(inputText)}
+              disabled={!inputText.trim()}
+              title="Send message"
+            >
+              <Send size={13} />
+            </button>
+          </div>
+        </div>
+
+        <div className="chat-footer-disclaimer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
+          <ShieldCheck size={13} style={{ color: 'var(--primary)', flexShrink: 0 }} />
+          <span>Shalom AI is grounded in Dr. Robert Smith's post-op protocol • In case of emergency, call 911 immediately.</span>
         </div>
       </div>
     </div>

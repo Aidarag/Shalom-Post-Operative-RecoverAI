@@ -21,7 +21,21 @@ import {
   AlertCircle,
   Thermometer,
   Moon,
-  Info
+  Info,
+  Palette,
+  Sparkles,
+  Droplets,
+  Volume2,
+  VolumeX,
+  AlertTriangle,
+  ClipboardList,
+  Check,
+  Leaf,
+  Zap,
+  Feather,
+  Sun,
+  PhoneCall,
+  X
 } from 'lucide-react';
 import { ChatInterface } from './components/ChatInterface';
 import { type CheckInAnswers, type CareTeamReport, normalizePatientRecord } from './utils/shalomAgent';
@@ -33,11 +47,12 @@ interface TodayTask {
   id: string;
   name: string;
   dose?: string;
-  type: 'medication' | 'activity' | 'checkin';
+  type: 'medication' | 'activity' | 'wound' | 'checkin' | 'hydration';
   timeSlot?: string;
   timeHour?: string;
   completed: boolean;
   instructions?: string;
+  tag?: string;
   streak?: number;
   bestTime?: string;
 }
@@ -58,10 +73,18 @@ interface ChartLog {
 
 function App() {
   const [activeTab, setActiveTab] = useState<TabType>('home');
-  const [isDesktop, setIsDesktop] = useState<boolean>(window.innerWidth >= 1024);
+  const [isDesktop, setIsDesktop] = useState<boolean>(typeof window !== 'undefined' ? window.innerWidth >= 768 : true);
+  const [currentTheme, setCurrentTheme] = useState<string>(() => {
+    return localStorage.getItem('shalom_theme') || 'bio-iris';
+  });
 
   useEffect(() => {
-    const handleResize = () => setIsDesktop(window.innerWidth >= 1024);
+    document.documentElement.setAttribute('data-theme', currentTheme);
+    localStorage.setItem('shalom_theme', currentTheme);
+  }, [currentTheme]);
+
+  useEffect(() => {
+    const handleResize = () => setIsDesktop(window.innerWidth >= 768);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
@@ -77,6 +100,7 @@ function App() {
   const [isTtsEnabled] = useState<boolean>(true);
   const [selectedVoiceName, setSelectedVoiceName] = useState<string>('');
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [ttsSpeed, setTtsSpeed] = useState<number>(0.82);
 
   // Preset check-in triggers
   const [presetScenarioTrigger, setPresetScenarioTrigger] = useState<CheckInAnswers | null>(null);
@@ -113,9 +137,8 @@ function App() {
   };
   
   // Screen sub-tab toggles
-  const [planSubTab, setPlanSubTab] = useState<'schedule' | 'tasks'>('schedule');
   const [progressSubTab, setProgressSubTab] = useState<'overview' | 'checkins' | 'trends'>('overview');
-  const [checklistSpaceFilter, setChecklistSpaceFilter] = useState<'all' | 'medication' | 'wound' | 'exercise' | 'hydration'>('all');
+  const [planCategoryFilter, setPlanCategoryFilter] = useState<'all' | 'medication' | 'activity' | 'wound' | 'checkin'>('all');
   
   // Sliders Form State (Screen 3)
   const [showCheckInForm, setShowCheckInForm] = useState<boolean>(false);
@@ -126,6 +149,148 @@ function App() {
   const [sliderSleep, setSliderSleep] = useState<number>(7);
   const [sliderMood, setSliderMood] = useState<number>(6);
   const [selectedLogIndex, setSelectedLogIndex] = useState<number>(6);
+
+  // Rotating monitor card state (15s rotation)
+  const [monitorSlideIndex, setMonitorSlideIndex] = useState<number>(0);
+  const [isMonitorPaused, setIsMonitorPaused] = useState<boolean>(false);
+  const [monitorProgress, setMonitorProgress] = useState<number>(0);
+  const [isSpeakingHero, setIsSpeakingHero] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (isMonitorPaused) return;
+
+    // Advance progress smoothly over 15 seconds (150ms intervals)
+    const intervalMs = 150;
+    const step = (intervalMs / 15000) * 100;
+
+    const timer = setInterval(() => {
+      setMonitorProgress((prev) => {
+        if (prev >= 100) {
+          setMonitorSlideIndex((slide) => (slide + 1) % 4);
+          return 0;
+        }
+        return prev + step;
+      });
+    }, intervalMs);
+
+    return () => clearInterval(timer);
+  }, [isMonitorPaused]);
+
+  const activeHeroUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+
+  const stopHeroSpeech = () => {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      try {
+        window.speechSynthesis.cancel();
+      } catch {
+        // Ignore
+      }
+    }
+    setIsSpeakingHero(false);
+    activeHeroUtteranceRef.current = null;
+  };
+
+  const toggleHeroSpeech = (text: string) => {
+    if (isSpeakingHero) {
+      stopHeroSpeech();
+    } else {
+      speakHeroMessage(text);
+    }
+  };
+
+  const speakHeroMessage = (text: string) => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    
+    // Cancel prior speech without early returning
+    try {
+      window.speechSynthesis.cancel();
+      if (window.speechSynthesis.paused) {
+        window.speechSynthesis.resume();
+      }
+    } catch {
+      // Ignore
+    }
+
+    const cleanText = text.replace(/<[^>]+>/g, '').trim();
+    if (!cleanText) return;
+
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    utterance.rate = ttsSpeed || 0.82; // Relaxed, natural, comforting tempo
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0;
+
+    // Dynamically query fresh live voices
+    const freshVoices = window.speechSynthesis.getVoices();
+    const available = freshVoices.length > 0 ? freshVoices : voices;
+
+    let chosenVoice: SpeechSynthesisVoice | undefined;
+    if (selectedVoiceName) {
+      chosenVoice = available.find(v => v.name === selectedVoiceName);
+    }
+    if (!chosenVoice) {
+      chosenVoice = available.find(v => v.lang.startsWith('en') && (v.name.includes('Samantha') || v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Daniel') || v.name.includes('Karen') || v.name.includes('Victoria')))
+        || available.find(v => v.lang.startsWith('en'))
+        || available[0];
+    }
+
+    if (chosenVoice) {
+      utterance.voice = chosenVoice;
+      utterance.lang = chosenVoice.lang;
+    } else {
+      utterance.lang = 'en-US';
+    }
+
+    activeHeroUtteranceRef.current = utterance;
+
+    utterance.onstart = () => setIsSpeakingHero(true);
+    utterance.onend = () => {
+      setIsSpeakingHero(false);
+      activeHeroUtteranceRef.current = null;
+    };
+    utterance.onerror = (e) => {
+      console.warn("Speech synthesis notice:", e);
+      setIsSpeakingHero(false);
+      activeHeroUtteranceRef.current = null;
+    };
+
+    // 50ms timeout ensures cancel() cleanly clears the WebKit/Blink audio queue
+    setTimeout(() => {
+      try {
+        if (window.speechSynthesis.paused) {
+          window.speechSynthesis.resume();
+        }
+        window.speechSynthesis.speak(utterance);
+      } catch (err) {
+        console.error("SpeechSynthesis speak failed:", err);
+        setIsSpeakingHero(false);
+      }
+    }, 50);
+  };
+
+  const goToSlide = (idx: number) => {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window && window.speechSynthesis.speaking) {
+      window.speechSynthesis.cancel();
+      setIsSpeakingHero(false);
+    }
+    setMonitorSlideIndex(idx);
+    setMonitorProgress(0);
+  };
+  const nextSlide = () => {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window && window.speechSynthesis.speaking) {
+      window.speechSynthesis.cancel();
+      setIsSpeakingHero(false);
+    }
+    setMonitorSlideIndex((prev) => (prev + 1) % 4);
+    setMonitorProgress(0);
+  };
+  const prevSlide = () => {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window && window.speechSynthesis.speaking) {
+      window.speechSynthesis.cancel();
+      setIsSpeakingHero(false);
+    }
+    setMonitorSlideIndex((prev) => (prev === 0 ? 3 : prev - 1));
+    setMonitorProgress(0);
+  };
 
   // History seed logs matching screen 9 with times
   const [historyLogs, setHistoryLogs] = useState<ChartLog[]>([
@@ -220,9 +385,10 @@ function App() {
           dose: m.dose,
           type: 'medication',
           timeSlot: m.frequency || 'Upcoming',
-          timeHour: idx === 0 ? '10:00 AM' : idx === 1 ? '2:00 PM' : '8:00 PM',
+          timeHour: idx === 0 ? '08:00 AM' : idx === 1 ? '01:00 PM' : idx === 2 ? '06:00 PM' : '09:00 PM',
           completed: false,
-          instructions: m.frequency,
+          instructions: m.frequency || 'Take with food and water',
+          tag: idx === 0 ? 'Pain Relief' : idx === 1 ? 'Infection Shield' : idx === 2 ? 'DVT Prevention' : 'GI Comfort',
           streak: 4 + idx,
           bestTime: 'Morning'
         }));
@@ -230,36 +396,74 @@ function App() {
         const activities: TodayTask[] = (normalized.dischargeInstructions?.activity || []).map((act, idx) => ({
           id: `act-${idx}`,
           name: act,
+          dose: idx === 0 ? '10 reps • 3 sets' : idx === 1 ? '5–10 min walk' : '8–10 reps',
           type: 'activity',
-          timeSlot: 'Upcoming',
-          timeHour: idx === 0 ? '11:00 AM' : '6:00 PM',
+          timeSlot: 'Physical Therapy',
+          timeHour: idx === 0 ? '10:00 AM' : idx === 1 ? '03:30 PM' : '07:30 PM',
           completed: false,
+          instructions: 'Maintain steady breathing and stop if sharp pain occurs.',
+          tag: idx === 0 ? 'Strength PT' : idx === 1 ? 'Mobility Goal' : 'Range of Motion',
           streak: 3 + idx,
           bestTime: 'Afternoon'
         }));
 
+        const woundTasks: TodayTask[] = [
+          { id: 'wound-1', name: 'Incision Inspection & Dryness Check', dose: 'Visual Exam', type: 'wound', timeHour: '09:00 AM', completed: false, instructions: 'Ensure wound margins are clean and dry with no spreading redness.', tag: 'Wound Care', streak: 6 },
+          { id: 'wound-2', name: 'Cold Compression / Ice Therapy', dose: '20 min session', type: 'wound', timeHour: '02:30 PM', completed: false, instructions: 'Wrap ice pack in clean towel. Apply to knee to soothe swelling.', tag: 'Swelling Relief', streak: 4 },
+          { id: 'wound-3', name: 'Leg Elevation & Rest Session', dose: '30 min session', type: 'wound', timeHour: '05:30 PM', completed: false, instructions: 'Elevate leg with 2 pillows under calves/ankles above heart level.', tag: 'Circulation', streak: 5 }
+        ];
+
         const checkInTask: TodayTask = {
           id: 'task-checkin',
-          name: 'Daily Check-In',
+          name: 'Morning Vitals & Pain Check-In',
+          dose: 'Temp & Pain Scale',
           type: 'checkin',
-          timeSlot: 'Log pain & vitals',
-          timeHour: 'Morning',
+          timeSlot: 'Daily Log',
+          timeHour: '08:30 AM',
           completed: checkInComplete,
+          instructions: 'Record oral temperature, pain score (0-10), and symptoms.',
+          tag: 'Daily Triage',
           streak: historyLogs.length,
           bestTime: 'Morning'
         };
 
-        list = [...meds, ...activities, checkInTask];
+        const hydrationTask: TodayTask = {
+          id: 'task-hydration',
+          name: 'Hydration Target (8 Glasses)',
+          dose: 'Target: 64 oz',
+          type: 'hydration',
+          timeSlot: 'Hydration',
+          timeHour: '12:30 PM',
+          completed: false,
+          instructions: 'Sip water steadily throughout the day to support healing tissue.',
+          tag: 'Hydration',
+          streak: 5
+        };
+
+        list = [...meds, ...activities, ...woundTasks, checkInTask, hydrationTask];
       }
     } else {
-      // Default fallback matching user requirements
+      // Default fallback matching clinically structured post-op protocol
       list = [
-        { id: 'task-checkin', name: 'Daily Check-In', type: 'checkin', timeSlot: 'Log pain & vitals', timeHour: '08:30 AM', completed: checkInComplete, streak: historyLogs.length, bestTime: 'Morning' },
-        { id: 'med-1', name: 'Oxycodone (Pain relief)', dose: '5mg - Take 1 tablet', type: 'medication', timeSlot: 'Oxycodone 5mg', timeHour: '10:00 AM', completed: false, instructions: 'Take with water', streak: 4, bestTime: 'Morning' },
-        { id: 'act-1', name: 'Physical Therapy: Knee Exercises', dose: '10 reps, hold 5s', type: 'activity', timeSlot: 'Knee exercises', timeHour: '11:00 AM', completed: false, instructions: 'Do not overextend', streak: 5, bestTime: 'Afternoon' },
-        { id: 'med-2', name: 'Aspirin (Blood thinner)', dose: '81mg - Take 1 tablet', type: 'medication', timeSlot: 'Aspirin 81mg', timeHour: '02:00 PM', completed: false, instructions: 'Take with food', streak: 6, bestTime: 'Afternoon' },
-        { id: 'act-2', name: 'Physical Therapy: Cold Compress', dose: 'Apply ice pack 20 mins', type: 'activity', timeSlot: 'Cold compress', timeHour: '06:00 PM', completed: false, instructions: 'Wrap in towel', streak: 3, bestTime: 'Evening' },
-        { id: 'med-3', name: 'Colace (Stool softener)', dose: '100mg - Take 1 capsule', type: 'medication', timeSlot: 'Colace 100mg', timeHour: '08:00 PM', completed: false, instructions: 'Take with plenty of fluids', streak: 4, bestTime: 'Evening' }
+        // 💊 Category 1: Medications
+        { id: 'med-1', name: 'Oxycodone (Pain Relief)', dose: '5 mg • Take 1 tablet', type: 'medication', timeSlot: 'Oxycodone 5mg', timeHour: '08:00 AM', completed: false, instructions: 'Take with light meal & plenty of water. Do not drive.', tag: 'Pain Relief', streak: 4, bestTime: 'Morning' },
+        { id: 'med-2', name: 'Cephalexin (Antibiotic)', dose: '500 mg • Take 1 capsule', type: 'medication', timeSlot: 'Cephalexin 500mg', timeHour: '01:00 PM', completed: false, instructions: 'Take every 8 hours with full glass of water.', tag: 'Infection Shield', streak: 6, bestTime: 'Afternoon' },
+        { id: 'med-3', name: 'Aspirin (Blood Thinner)', dose: '81 mg • Take 1 tablet', type: 'medication', timeSlot: 'Aspirin 81mg', timeHour: '06:00 PM', completed: false, instructions: 'Take with evening meal to prevent blood clots (DVT).', tag: 'DVT Prevention', streak: 6, bestTime: 'Evening' },
+        { id: 'med-4', name: 'Colace (Stool Softener)', dose: '100 mg • Take 1 capsule', type: 'medication', timeSlot: 'Colace 100mg', timeHour: '09:00 PM', completed: false, instructions: 'Take at bedtime with plenty of fluids.', tag: 'GI Comfort', streak: 4, bestTime: 'Night' },
+
+        // 🏃 Category 2: Physical Therapy & Mobility
+        { id: 'pt-1', name: 'Quad Sets & Ankle Pumps', dose: '10 reps • 3 sets (hold 5s)', type: 'activity', timeSlot: 'PT Exercise', timeHour: '10:00 AM', completed: false, instructions: 'Tighten thigh muscles down flat. Flex & point toes to boost circulation.', tag: 'Strength PT', streak: 5, bestTime: 'Morning' },
+        { id: 'pt-2', name: 'Assisted Walker Walk', dose: '5–10 min slow walk', type: 'activity', timeSlot: 'Mobility Goal', timeHour: '03:30 PM', completed: false, instructions: 'Keep posture upright with walker. Stop if you experience sharp knee pain.', tag: 'Mobility Goal', streak: 3, bestTime: 'Afternoon' },
+        { id: 'pt-3', name: 'Heel Slides & Range of Motion', dose: '8–10 reps (gentle bend)', type: 'activity', timeSlot: 'Flexion PT', timeHour: '07:30 PM', completed: false, instructions: 'Slide heel smoothly toward hip on bed. Pause at comfortable resistance.', tag: 'Flexion PT', streak: 4, bestTime: 'Evening' },
+
+        // 🩹 Category 3: Wound & Recovery Care
+        { id: 'wound-1', name: 'Morning Incision Inspection', dose: 'Visual Check', type: 'wound', timeSlot: 'Incision Check', timeHour: '09:00 AM', completed: false, instructions: 'Ensure incision is dry with clean margins. Report redness spreading >1 inch.', tag: 'Wound Care', streak: 6, bestTime: 'Morning' },
+        { id: 'wound-2', name: 'Cold Compression / Ice Therapy', dose: '20 min session', type: 'wound', timeSlot: 'Cold Compress', timeHour: '02:30 PM', completed: false, instructions: 'Wrap ice pack in clean cloth. Apply to knee to soothe swelling.', tag: 'Swelling Relief', streak: 4, bestTime: 'Afternoon' },
+        { id: 'wound-3', name: 'Leg Elevation & Rest Session', dose: '30 min session', type: 'wound', timeSlot: 'Elevation', timeHour: '05:30 PM', completed: false, instructions: 'Place 2 pillows under calves/ankles above heart level (not directly under knee).', tag: 'Circulation', streak: 5, bestTime: 'Evening' },
+
+        // 🩺 Category 4: Clinical Vitals & Wellness
+        { id: 'checkin-1', name: 'Morning Vitals & Pain Check-In', dose: 'Temp & Pain Scale', type: 'checkin', timeSlot: 'Daily Log', timeHour: '08:30 AM', completed: checkInComplete, instructions: 'Record your oral temperature, pain score (0-10), and symptoms.', tag: 'Daily Triage', streak: historyLogs.length, bestTime: 'Morning' },
+        { id: 'checkin-2', name: 'Hydration Target (8 Glasses)', dose: 'Target: 64 oz', type: 'hydration', timeSlot: 'Hydration', timeHour: '12:30 PM', completed: false, instructions: 'Maintain steady hydration throughout the day to support tissue healing.', tag: 'Hydration', streak: 5, bestTime: 'Afternoon' }
       ];
     }
     
@@ -281,12 +485,18 @@ function App() {
     } else {
       // Seed default baseline tasks for this date
       const base: TodayTask[] = [
-        { id: 'task-checkin', name: 'Daily Check-In', type: 'checkin', timeSlot: 'Log pain & vitals', timeHour: '08:30 AM', completed: false, streak: historyLogs.length, bestTime: 'Morning' },
-        { id: 'med-1', name: 'Oxycodone (Pain relief)', dose: '5mg - Take 1 tablet', type: 'medication', timeSlot: 'Oxycodone 5mg', timeHour: '10:00 AM', completed: false, instructions: 'Take with water', streak: 4, bestTime: 'Morning' },
-        { id: 'act-1', name: 'Physical Therapy: Knee Exercises', dose: '10 reps, hold 5s', type: 'activity', timeSlot: 'Knee exercises', timeHour: '11:00 AM', completed: false, instructions: 'Do not overextend', streak: 5, bestTime: 'Afternoon' },
-        { id: 'med-2', name: 'Aspirin (Blood thinner)', dose: '81mg - Take 1 tablet', type: 'medication', timeSlot: 'Aspirin 81mg', timeHour: '02:00 PM', completed: false, instructions: 'Take with food', streak: 6, bestTime: 'Afternoon' },
-        { id: 'act-2', name: 'Physical Therapy: Cold Compress', dose: 'Apply ice pack 20 mins', type: 'activity', timeSlot: 'Cold compress', timeHour: '06:00 PM', completed: false, instructions: 'Wrap in towel', streak: 3, bestTime: 'Evening' },
-        { id: 'med-3', name: 'Colace (Stool softener)', dose: '100mg - Take 1 capsule', type: 'medication', timeSlot: 'Colace 100mg', timeHour: '08:00 PM', completed: false, instructions: 'Take with plenty of fluids', streak: 4, bestTime: 'Evening' }
+        { id: 'med-1', name: 'Oxycodone (Pain Relief)', dose: '5 mg • Take 1 tablet', type: 'medication', timeSlot: 'Oxycodone 5mg', timeHour: '08:00 AM', completed: false, instructions: 'Take with light meal & plenty of water. Do not drive.', tag: 'Pain Relief', streak: 4, bestTime: 'Morning' },
+        { id: 'med-2', name: 'Cephalexin (Antibiotic)', dose: '500 mg • Take 1 capsule', type: 'medication', timeSlot: 'Cephalexin 500mg', timeHour: '01:00 PM', completed: false, instructions: 'Take every 8 hours with full glass of water.', tag: 'Infection Shield', streak: 6, bestTime: 'Afternoon' },
+        { id: 'med-3', name: 'Aspirin (Blood Thinner)', dose: '81 mg • Take 1 tablet', type: 'medication', timeSlot: 'Aspirin 81mg', timeHour: '06:00 PM', completed: false, instructions: 'Take with evening meal to prevent blood clots (DVT).', tag: 'DVT Prevention', streak: 6, bestTime: 'Evening' },
+        { id: 'med-4', name: 'Colace (Stool Softener)', dose: '100 mg • Take 1 capsule', type: 'medication', timeSlot: 'Colace 100mg', timeHour: '09:00 PM', completed: false, instructions: 'Take at bedtime with plenty of fluids.', tag: 'GI Comfort', streak: 4, bestTime: 'Night' },
+        { id: 'pt-1', name: 'Quad Sets & Ankle Pumps', dose: '10 reps • 3 sets (hold 5s)', type: 'activity', timeSlot: 'PT Exercise', timeHour: '10:00 AM', completed: false, instructions: 'Tighten thigh muscles down flat. Flex & point toes to boost circulation.', tag: 'Strength PT', streak: 5, bestTime: 'Morning' },
+        { id: 'pt-2', name: 'Assisted Walker Walk', dose: '5–10 min slow walk', type: 'activity', timeSlot: 'Mobility Goal', timeHour: '03:30 PM', completed: false, instructions: 'Keep posture upright with walker. Stop if you experience sharp knee pain.', tag: 'Mobility Goal', streak: 3, bestTime: 'Afternoon' },
+        { id: 'pt-3', name: 'Heel Slides & Range of Motion', dose: '8–10 reps (gentle bend)', type: 'activity', timeSlot: 'Flexion PT', timeHour: '07:30 PM', completed: false, instructions: 'Slide heel smoothly toward hip on bed. Pause at comfortable resistance.', tag: 'Flexion PT', streak: 4, bestTime: 'Evening' },
+        { id: 'wound-1', name: 'Morning Incision Inspection', dose: 'Visual Check', type: 'wound', timeSlot: 'Incision Check', timeHour: '09:00 AM', completed: false, instructions: 'Ensure incision is dry with clean margins. Report redness spreading >1 inch.', tag: 'Wound Care', streak: 6, bestTime: 'Morning' },
+        { id: 'wound-2', name: 'Cold Compression / Ice Therapy', dose: '20 min session', type: 'wound', timeSlot: 'Cold Compress', timeHour: '02:30 PM', completed: false, instructions: 'Wrap ice pack in clean cloth. Apply to knee to soothe swelling.', tag: 'Swelling Relief', streak: 4, bestTime: 'Afternoon' },
+        { id: 'wound-3', name: 'Leg Elevation & Rest Session', dose: '30 min session', type: 'wound', timeSlot: 'Elevation', timeHour: '05:30 PM', completed: false, instructions: 'Place 2 pillows under calves/ankles above heart level (not directly under knee).', tag: 'Circulation', streak: 5, bestTime: 'Evening' },
+        { id: 'checkin-1', name: 'Morning Vitals & Pain Check-In', dose: 'Temp & Pain Scale', type: 'checkin', timeSlot: 'Daily Log', timeHour: '08:30 AM', completed: false, instructions: 'Record your oral temperature, pain score (0-10), and symptoms.', tag: 'Daily Triage', streak: historyLogs.length, bestTime: 'Morning' },
+        { id: 'checkin-2', name: 'Hydration Target (8 Glasses)', dose: 'Target: 64 oz', type: 'hydration', timeSlot: 'Hydration', timeHour: '12:30 PM', completed: false, instructions: 'Maintain steady hydration throughout the day to support tissue healing.', tag: 'Hydration', streak: 5, bestTime: 'Afternoon' }
       ];
       
       const today = new Date(2026, 7, 28);
@@ -480,140 +690,352 @@ function App() {
     return (
       <div className="home-tab-container" style={{ animation: 'fadeIn 0.3s ease-out' }}>
         {/* Top Greeting Row with Avatar */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div style={{
-              width: '42px', height: '42px', borderRadius: '50%',
+              width: '38px', height: '38px', borderRadius: '50%',
               background: 'linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%)',
               color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontWeight: 800, fontSize: '15px', border: '2px solid #ffffff',
+              fontWeight: 800, fontSize: '14px', border: '2px solid #ffffff',
               boxShadow: '0 4px 12px rgba(0, 31, 63, 0.1)'
             }}>
               AÏ
             </div>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Recovery Plan</span>
-              <strong style={{ fontSize: '17px', color: 'var(--text-main)', fontWeight: '800' }}>Good morning Aïda!</strong>
+              <span style={{ fontSize: '10.5px', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Recovery Plan</span>
+              <strong style={{ fontSize: '16px', color: 'var(--text-main)', fontWeight: '800' }}>Good morning Aïda!</strong>
             </div>
           </div>
           <button className="bell-btn" style={{ 
-            width: '38px', height: '38px', borderRadius: '50%', background: 'var(--bg-glass-card)', 
+            width: '36px', height: '36px', borderRadius: '50%', background: 'var(--bg-glass-card)', 
             border: '1px solid var(--border-glass)', display: 'flex', alignItems: 'center', justifyContent: 'center',
             cursor: 'pointer', transition: 'var(--transition-fluid)'
           }} onClick={() => triggerMockCheckInDirect('green')} title="Mock checkin stable">
-            <CheckCircle2 size={16} style={{ color: 'var(--primary)' }} />
+            <CheckCircle2 size={15} style={{ color: 'var(--primary)' }} />
           </button>
         </div>
 
-        {/* Main Glowing Daily Check-In Card */}
-        <div className="main-checkin-glowing-card" style={{
-          background: 'linear-gradient(135deg, #001F3F 0%, #008C8C 50%, #00BFFF 100%)',
-          borderRadius: '28px',
-          padding: '24px',
-          color: '#ffffff',
-          position: 'relative',
-          overflow: 'hidden',
-          boxShadow: '0 16px 36px rgba(0, 140, 140, 0.15)',
-          marginBottom: '20px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '14px',
-          cursor: 'pointer'
-        }} onClick={() => setShowCheckInForm(true)}>
-          {/* Decorative glossy orbs inside card */}
-          <div style={{ position: 'absolute', top: '-50px', right: '-50px', width: '150px', height: '150px', borderRadius: '50%', background: 'rgba(255,255,255,0.06)', filter: 'blur(20px)' }}></div>
-          
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div style={{ background: 'rgba(255,255,255,0.15)', padding: '6px 12px', borderRadius: '20px', fontSize: '10px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Monitoring Log
-            </div>
-            <span style={{ fontSize: '11.5px', color: 'rgba(255,255,255,0.8)', fontWeight: '700' }}>Day 6 of Recovery</span>
-          </div>
+        {/* Interactive Shalom Recover AI Bubble Hero Card (15s rotation + TTS voice) */}
+        <div 
+          className="shalom-hero-card"
+          onMouseEnter={() => setIsMonitorPaused(true)}
+          onMouseLeave={() => setIsMonitorPaused(false)}
+        >
+          {/* Subtle glossy background orbs */}
+          <div style={{ position: 'absolute', top: '-50px', right: '-50px', width: '160px', height: '160px', borderRadius: '50%', background: 'rgba(255,255,255,0.06)', filter: 'blur(20px)', pointerEvents: 'none' }}></div>
+          <div style={{ position: 'absolute', bottom: '-40px', left: '-40px', width: '130px', height: '130px', borderRadius: '50%', background: 'rgba(255,255,255,0.04)', filter: 'blur(16px)', pointerEvents: 'none' }}></div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px' }}>
-            <h3 style={{ fontSize: '20px', fontWeight: '800', lineHeight: '1.2', margin: 0 }}>How are you feeling today?</h3>
-            <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.85)', lineHeight: '1.5', margin: 0 }}>
-              {checkInComplete 
-                ? 'Your daily vitals and symptoms are successfully recorded. Tap to adjust check-in values.'
-                : 'Take 2 minutes to log your pain level, temperature, and surgical incision status.'}
-            </p>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px' }}>
-            <button style={{
-              background: '#ffffff', color: '#001F3F', border: 'none', 
-              padding: '10px 22px', borderRadius: '18px', fontWeight: '800', 
-              fontSize: '12px', cursor: 'pointer', boxShadow: '0 4px 10px rgba(0,0,0,0.1)'
-            }}>
-              {checkInComplete ? 'Update Log' : 'Start Check-In'}
-            </button>
-            {checkInComplete && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', fontWeight: '700', color: '#ffffff', marginLeft: '8px' }}>
-                <span style={{ 
-                  width: '6px', height: '6px', borderRadius: '50%', 
-                  background: activeReport?.status === 'Green' ? '#00FF66' : activeReport?.status === 'Yellow' ? '#FFCC00' : '#FF3B30', 
-                  display: 'inline-block', 
-                  boxShadow: activeReport?.status === 'Green' ? '0 0 8px #00FF66' : activeReport?.status === 'Yellow' ? '0 0 8px #FFCC00' : '0 0 8px #FF3B30'
-                }}></span>
-                Report Active ({activeReport?.status || 'Green'})
+          {/* Header Row: Shalom AI Avatar Presence + Live Online + Controls */}
+          <div className="shalom-ai-header-row">
+            <div 
+              className="shalom-ai-presence" 
+              onClick={() => {
+                const currentMsg = [
+                  'Good morning Aïda! Take 2 minutes to check in your pain and vitals so I can keep Dr. Smith and your care team updated.',
+                  'Aïda, remember to stay hydrated! Sip water steadily toward your 8-glass goal, and take your scheduled medications with food to prevent nausea.',
+                  'Time for your gentle knee rehab! Complete your 3 sets of ankle pumps and quad sets, and take a short supported walk with your walker.',
+                  'Remember to keep your incision dressing clean and dry today. Prop your leg on 2 pillows under your calf to keep swelling down.'
+                ][monitorSlideIndex];
+                toggleHeroSpeech(currentMsg);
+              }}
+              title={isSpeakingHero ? "Click to stop speaking" : "Tap to hear Shalom AI speak"}
+            >
+              <div className="shalom-avatar-orb"></div>
+              <div className="shalom-presence-info">
+                <span className="shalom-ai-name">
+                  Shalom Recover AI
+                  {isSpeakingHero && (
+                    <span className="shalom-audio-wave">
+                      <span></span><span></span><span></span>
+                    </span>
+                  )}
+                </span>
+                <span className="shalom-live-status">
+                  <span className="shalom-status-dot"></span>
+                  {isSpeakingHero ? 'Speaking...' : 'Online & Monitoring'}
+                </span>
               </div>
+            </div>
+
+            {/* Slide Dots + Audio Speak Button + Nav Arrows */}
+            <div className="shalom-nav-controls">
+              {/* Speaker / Listen toggle button */}
+              <button
+                type="button"
+                className={`shalom-audio-btn ${isSpeakingHero ? 'speaking' : ''}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const currentMsg = [
+                    'Good morning Aïda! Take 2 minutes to check in your pain and vitals so I can keep Dr. Smith and your care team updated.',
+                    'Aïda, remember to stay hydrated! Sip water steadily toward your 8-glass goal, and take your scheduled medications with food to prevent nausea.',
+                    'Time for your gentle knee rehab! Complete your 3 sets of ankle pumps and quad sets, and take a short supported walk with your walker.',
+                    'Remember to keep your incision dressing clean and dry today. Prop your leg on 2 pillows under your calf to keep swelling down.'
+                  ][monitorSlideIndex];
+                  toggleHeroSpeech(currentMsg);
+                }}
+                title={isSpeakingHero ? 'Click to stop / mute voice' : 'Listen to Shalom AI voice'}
+              >
+                {isSpeakingHero ? (
+                  <>
+                    <div className="audio-mini-bars">
+                      <span></span><span></span><span></span>
+                    </div>
+                    <VolumeX size={12} />
+                    <span>Stop</span>
+                  </>
+                ) : (
+                  <>
+                    <Volume2 size={13} />
+                    <span>Listen</span>
+                  </>
+                )}
+              </button>
+
+              {/* Dot indicators */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                {[0, 1, 2, 3].map((idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    className={`shalom-dot-btn ${monitorSlideIndex === idx ? 'active' : ''}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      goToSlide(idx);
+                    }}
+                    title={`Slide ${idx + 1}`}
+                  />
+                ))}
+              </div>
+
+              {/* Prev / Next */}
+              <button
+                type="button"
+                className="monitor-arrow-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  prevSlide();
+                }}
+                title="Previous message"
+              >
+                <ChevronLeft size={14} />
+              </button>
+              <button
+                type="button"
+                className="monitor-arrow-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  nextSlide();
+                }}
+                title="Next message"
+              >
+                <ChevronRightIcon size={14} />
+              </button>
+            </div>
+          </div>
+
+          {/* Interactive Speech Bubble */}
+          <div 
+            key={monitorSlideIndex} 
+            className="shalom-speech-bubble"
+            onClick={() => {
+              if (monitorSlideIndex === 0) setShowCheckInForm(true);
+              else if (monitorSlideIndex === 1) setHydrationGlasses(prev => Math.min(8, prev + 1));
+              else if (monitorSlideIndex === 2) { setActiveTab('plan'); setPlanCategoryFilter('activity'); }
+              else if (monitorSlideIndex === 3) { setActiveTab('plan'); setPlanCategoryFilter('wound'); }
+            }}
+          >
+            {monitorSlideIndex === 0 && (
+              <>
+                <div className="shalom-bubble-tag">
+                  <Heart size={11} fill="currentColor" />
+                  <span>Daily Morning Triage • Day 6</span>
+                </div>
+                <p className="shalom-bubble-message">
+                  “Good morning Aïda! How are you feeling today? Take 2 minutes to check in your pain &amp; temperature so I can keep Dr. Smith and your care team updated.”
+                </p>
+              </>
+            )}
+
+            {monitorSlideIndex === 1 && (
+              <>
+                <div className="shalom-bubble-tag">
+                  <Droplets size={11} />
+                  <span>Diet &amp; Hydration Goal</span>
+                </div>
+                <p className="shalom-bubble-message">
+                  “Aïda, don’t forget your hydration goal! Sip water steadily toward your 8 glasses, and take scheduled medications with a light meal to prevent nausea.”
+                </p>
+              </>
+            )}
+
+            {monitorSlideIndex === 2 && (
+              <>
+                <div className="shalom-bubble-tag">
+                  <Activity size={11} />
+                  <span>Physical Therapy &amp; Movement</span>
+                </div>
+                <p className="shalom-bubble-message">
+                  “Time for gentle knee exercises! Let's do your 3 sets of ankle pumps &amp; quad sets, and take a short 5-minute walk with your walker. Stop if you feel sharp pain.”
+                </p>
+              </>
+            )}
+
+            {monitorSlideIndex === 3 && (
+              <>
+                <div className="shalom-bubble-tag">
+                  <ShieldAlert size={11} />
+                  <span>Incision &amp; Wound Safety</span>
+                </div>
+                <p className="shalom-bubble-message">
+                  “Remember to keep your incision dressing clean &amp; strictly dry. Propping your leg on 2 pillows under your calf will help keep any swelling down.”
+                </p>
+              </>
             )}
           </div>
+
+          {/* Action Row */}
+          <div className="shalom-action-row">
+            {monitorSlideIndex === 0 && (
+              <>
+                <button
+                  type="button"
+                  className="shalom-primary-btn"
+                  onClick={() => setShowCheckInForm(true)}
+                >
+                  <Heart size={13} fill="currentColor" />
+                  <span>{checkInComplete ? 'Review Check-In' : 'Start Morning Check-In'}</span>
+                </button>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontWeight: '700', color: '#ffffff' }}>
+                  <span style={{
+                    width: '7px', height: '7px', borderRadius: '50%',
+                    background: checkInComplete ? (activeReport?.status === 'Green' ? '#10B981' : activeReport?.status === 'Yellow' ? '#F59E0B' : '#EF4444') : '#94A3B8',
+                    boxShadow: checkInComplete ? '0 0 8px #10B981' : 'none'
+                  }}></span>
+                  <span>{checkInComplete ? `Triage Status: ${activeReport?.status || 'Green'}` : 'Pending Today’s Log'}</span>
+                </div>
+              </>
+            )}
+
+            {monitorSlideIndex === 1 && (
+              <>
+                <button
+                  type="button"
+                  className="shalom-primary-btn"
+                  onClick={() => setHydrationGlasses(prev => Math.min(8, prev + 1))}
+                >
+                  <Droplets size={13} />
+                  <span>+ Log 1 Glass ({hydrationGlasses}/8)</span>
+                </button>
+
+                <span style={{ fontSize: '11px', fontWeight: '700', color: 'rgba(255,255,255,0.9)' }}>
+                  {hydrationGlasses >= 8 ? 'Hydration Goal Reached!' : `${8 - hydrationGlasses} glasses left today`}
+                </span>
+              </>
+            )}
+
+            {monitorSlideIndex === 2 && (
+              <>
+                <button
+                  type="button"
+                  className="shalom-primary-btn"
+                  onClick={() => {
+                    setActiveTab('plan');
+                    setPlanCategoryFilter('activity');
+                  }}
+                >
+                  <Activity size={13} />
+                  <span>Open PT Exercises</span>
+                </button>
+
+                <span style={{ fontSize: '11px', fontWeight: '700', color: 'rgba(255,255,255,0.9)' }}>
+                  {todayTasks.filter(t => t.type === 'activity' && t.completed).length} of {todayTasks.filter(t => t.type === 'activity').length} exercises completed
+                </span>
+              </>
+            )}
+
+            {monitorSlideIndex === 3 && (
+              <>
+                <button
+                  type="button"
+                  className="shalom-primary-btn"
+                  onClick={() => {
+                    setActiveTab('plan');
+                    setPlanCategoryFilter('wound');
+                  }}
+                >
+                  <ShieldAlert size={13} />
+                  <span>View Wound Protocol</span>
+                </button>
+
+                <span style={{ fontSize: '11px', fontWeight: '700', color: 'rgba(255,255,255,0.9)' }}>
+                  Next cold compress: 02:30 PM
+                </span>
+              </>
+            )}
+          </div>
+
+          {/* 15s Countdown Progress line */}
+          <div className="shalom-timer-bar" style={{ width: `${monitorProgress}%` }}></div>
         </div>
 
-        {/* Talk to Shalom AI - Horizontal Link Card */}
+        {/* Talk to Shalom AI - Compact Horizontal Link Card */}
         <div className="glass-card talk-shalom-bar" style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '16px',
-          padding: '16px 20px',
-          borderRadius: '24px',
+          gap: '14px',
+          padding: '12px 18px',
+          borderRadius: '18px',
           border: '1.5px solid var(--border-glass)',
-          background: 'linear-gradient(135deg, rgba(0, 140, 140, 0.04) 0%, rgba(0, 191, 255, 0.01) 100%)',
-          marginBottom: '24px',
+          background: 'linear-gradient(135deg, rgba(79, 70, 229, 0.05) 0%, rgba(6, 182, 212, 0.03) 100%)',
+          marginBottom: '14px',
           cursor: 'pointer',
           transition: 'all 0.2s ease'
         }} onClick={() => setActiveTab('chat')}>
           <div style={{
-            width: '38px', height: '38px', borderRadius: '12px',
+            width: '34px', height: '34px', borderRadius: '10px',
             background: 'linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff'
+            display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff',
+            flexShrink: 0
           }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="white" />
               <path d="M12 6.5v5M9.5 9h5" stroke="var(--primary)" strokeWidth="2.2" strokeLinecap="round" />
             </svg>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, gap: '2px' }}>
-            <strong style={{ fontSize: '13px', color: 'var(--text-main)' }}>Talk to Shalom AI</strong>
-            <span style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.3' }}>Ask anything about recovery instructions or pain limits</span>
+            <strong style={{ fontSize: '12.5px', color: 'var(--text-main)' }}>Talk to Shalom AI</strong>
+            <span style={{ fontSize: '10.5px', color: 'var(--text-muted)', lineHeight: '1.3' }}>Ask anything about recovery instructions or pain limits</span>
           </div>
           <ChevronRightIcon size={16} style={{ color: 'var(--primary)' }} />
         </div>
 
         {/* Today's Tasks Section Header */}
-        <div className="section-header-row" style={{ marginBottom: '14px' }}>
-          <span className="section-title">Today's Routine</span>
-          <button className="section-link" onClick={() => setActiveTab('plan')}>View checklist</button>
+        <div className="section-header-row" style={{ gridColumn: 'span 2', marginBottom: '10px' }}>
+          <span className="section-title">Clinical Recovery Dashboard</span>
+          <button className="section-link" onClick={() => setActiveTab('plan')}>View full schedule</button>
         </div>
 
-        {/* Left Column / Main content */}
-        <div className="home-main-col" style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+        {/* 4 Core Recovery Dashboard Cards Grid */}
+        <div className="home-dashboard-4grid">
           
-          {/* Section 1: Scheduled Medications */}
-          <div className="dashboard-section-box">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+          {/* Card 1: Scheduled Medications */}
+          <div className="dashboard-card-pro">
+            <div className="dashboard-card-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Pill size={14} style={{ color: 'var(--primary)' }} />
-                <span style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--text-main)', letterSpacing: '0.5px' }}>
+                <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
+                  <Pill size={14} />
+                </div>
+                <strong style={{ fontSize: '13px', color: 'var(--text-main)', letterSpacing: '0.2px' }}>
                   Scheduled Medications
-                </span>
+                </strong>
               </div>
-              <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--primary)' }}>
+              <span className="dashboard-card-badge">
                 {completedMeds} of {totalMeds} completed
               </span>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px' }}>
               {medicationTasks.map(task => (
                 <div key={task.id} className={`task-card-row ${task.completed ? 'completed' : ''}`} onClick={() => setSelectedTaskId(task.id)}>
                   <div className="task-card-left">
@@ -639,46 +1061,24 @@ function App() {
             </div>
           </div>
 
-          {/* Section 2: Wound & Incision Care Checklist */}
-          <div className="dashboard-section-box">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-              <ShieldAlert size={14} style={{ color: 'var(--primary)' }} />
-              <span style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--text-main)', letterSpacing: '0.5px' }}>
-                Incision Care & Dressing
+          {/* Card 2: Activities & Limits */}
+          <div className="dashboard-card-pro">
+            <div className="dashboard-card-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(6, 182, 212, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)' }}>
+                  <Activity size={14} />
+                </div>
+                <strong style={{ fontSize: '13px', color: 'var(--text-main)', letterSpacing: '0.2px' }}>
+                  Activities &amp; Limits
+                </strong>
+              </div>
+              <span className="dashboard-card-badge" style={{ background: 'rgba(6, 182, 212, 0.1)', color: 'var(--accent-dark)' }}>
+                {activityTasks.filter(t => t.completed).length} of {activityTasks.length} done
               </span>
-            </div>
-            <p style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.4', margin: '0 0 10px 0' }}>
-              Dressing change due at <strong>6:00 PM</strong>. Follow steps carefully:
-            </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <div className="task-card-row" style={{ padding: '8px 12px' }}>
-                <span style={{ fontSize: '11.5px', color: 'var(--text-main)', fontWeight: '600' }}>1. Wash hands thoroughly with soap & warm water</span>
-              </div>
-              <div className="task-card-row" style={{ padding: '8px 12px' }}>
-                <span style={{ fontSize: '11.5px', color: 'var(--text-main)', fontWeight: '600' }}>2. Remove old dressing & inspect wound condition</span>
-              </div>
-              <div className="task-card-row" style={{ padding: '8px 12px' }}>
-                <span style={{ fontSize: '11.5px', color: 'var(--text-main)', fontWeight: '600' }}>3. Clean with sterile water; apply clean gauze dressing</span>
-              </div>
-              <div className="task-card-row" style={{ padding: '8px 12px' }}>
-                <span style={{ fontSize: '11.5px', color: 'var(--text-main)', fontWeight: '600' }}>4. Keep incision completely dry during bathing</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Right Column / Sidebar elements */}
-        <div className="home-side-col" style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-          
-          {/* Section 3: Activities & Restrictions */}
-          <div className="glass-card" style={{ padding: '16px', borderRadius: '20px', border: '1px solid var(--border-glass)', background: 'var(--bg-glass-card)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-              <Activity size={15} style={{ color: 'var(--accent)' }} />
-              <strong style={{ fontSize: '12px', textTransform: 'uppercase', color: 'var(--text-main)', letterSpacing: '0.3px' }}>Activities & Limits</strong>
             </div>
             
             {/* Exercises items */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px' }}>
               {activityTasks.map(task => (
                 <div key={task.id} className={`task-card-row ${task.completed ? 'completed' : ''}`} onClick={() => setSelectedTaskId(task.id)} style={{ padding: '10px' }}>
                   <div className="task-card-left">
@@ -698,8 +1098,11 @@ function App() {
             </div>
 
             {/* Restrictions list */}
-            <div style={{ background: 'rgba(205,97,51,0.03)', padding: '10px', borderRadius: '12px', border: '1px solid rgba(205,97,51,0.05)' }}>
-              <strong style={{ fontSize: '10.5px', color: 'var(--color-yellow)', display: 'block', marginBottom: '4px' }}>⚠️ Active Restrictions</strong>
+            <div style={{ background: 'rgba(217, 119, 6, 0.06)', padding: '10px 12px', borderRadius: '14px', border: '1px solid rgba(217, 119, 6, 0.15)', marginTop: '8px' }}>
+              <strong style={{ fontSize: '10.5px', color: 'var(--color-yellow)', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
+                <AlertTriangle size={12} />
+                <span>Active Restrictions</span>
+              </strong>
               <ul style={{ paddingLeft: '14px', margin: 0, fontSize: '10.5px', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '3px' }}>
                 <li>Do not lift objects heavier than 10 lbs.</li>
                 <li>Do not drive while taking pain medication.</li>
@@ -708,58 +1111,87 @@ function App() {
             </div>
           </div>
 
-          {/* Section 4: Diet & Hydration */}
-          <div className="glass-card" style={{ padding: '16px', borderRadius: '20px', border: '1px solid var(--border-glass)', background: 'var(--bg-glass-card)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+          {/* Card 3: Incision Care & Dressing */}
+          <div className="dashboard-card-pro">
+            <div className="dashboard-card-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Clock size={15} style={{ color: 'var(--primary)' }} />
-                <strong style={{ fontSize: '12px', textTransform: 'uppercase', color: 'var(--text-main)', letterSpacing: '0.3px' }}>Diet & Hydration</strong>
+                <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(239, 68, 68, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-red)' }}>
+                  <ShieldAlert size={14} />
+                </div>
+                <strong style={{ fontSize: '13px', color: 'var(--text-main)', letterSpacing: '0.2px' }}>
+                  Incision Care &amp; Dressing
+                </strong>
               </div>
-              <strong style={{ fontSize: '12px', color: 'var(--primary)' }}>{hydrationGlasses} / 8 Glasses</strong>
+              <span className="dashboard-card-badge" style={{ background: 'rgba(239, 68, 68, 0.08)', color: 'var(--color-red)' }}>
+                Next due: 6:00 PM
+              </span>
             </div>
 
-            {/* Hydration quick log panel */}
-            <div style={{ 
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px',
-              background: 'rgba(255,255,255,0.4)', padding: '8px 12px', borderRadius: '14px', marginBottom: '12px',
-              border: '1px solid rgba(0, 140, 140, 0.05)'
-            }}>
-              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Hydration Goal</span>
-              <button 
-                className="choice-pill-btn" 
-                style={{ padding: '4px 10px', fontSize: '10px', marginLeft: 'auto', background: 'var(--primary)', color: '#fff' }}
-                onClick={() => setHydrationGlasses(prev => Math.min(8, prev + 1))}
-              >
-                + Log 1 Glass
-              </button>
+            <p style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.4', margin: '8px 0 10px 0' }}>
+              Dressing change due at <strong>6:00 PM</strong>. Follow surgical sterile steps:
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div className="task-card-row" style={{ padding: '8px 12px' }}>
+                <span style={{ fontSize: '11px', color: 'var(--text-main)', fontWeight: '600' }}>1. Wash hands thoroughly with soap &amp; warm water</span>
+              </div>
+              <div className="task-card-row" style={{ padding: '8px 12px' }}>
+                <span style={{ fontSize: '11px', color: 'var(--text-main)', fontWeight: '600' }}>2. Inspect wound for excess redness or fluid drainage</span>
+              </div>
+              <div className="task-card-row" style={{ padding: '8px 12px' }}>
+                <span style={{ fontSize: '11px', color: 'var(--text-main)', fontWeight: '600' }}>3. Clean gently with sterile saline &amp; apply fresh dry gauze</span>
+              </div>
+              <div className="task-card-row" style={{ padding: '8px 12px' }}>
+                <span style={{ fontSize: '11px', color: 'var(--text-main)', fontWeight: '600' }}>4. Keep incision completely dry during sponge bathing</span>
+              </div>
             </div>
 
-            {/* Nutrition Guidelines */}
-            <ul style={{ paddingLeft: '14px', margin: 0, fontSize: '10.5px', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <li>High-fiber foods recommended for digestion.</li>
-              <li>Avoid alcohol intake during recovery.</li>
-              <li>Take your medications with a light meal.</li>
-            </ul>
+            <div style={{ background: 'var(--bg-green)', padding: '8px 12px', borderRadius: '12px', border: '1px solid rgba(5, 150, 105, 0.15)', marginTop: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--color-green)' }}></span>
+              <span style={{ fontSize: '10.5px', color: 'var(--color-green)', fontWeight: '700' }}>Status: Incision clean &amp; healing normally (Day 6)</span>
+            </div>
           </div>
 
-          {/* Section 5: Follow-Up Appointments */}
-          <div className="glass-card" style={{ padding: '16px', borderRadius: '20px', border: '1px solid var(--border-glass)', background: 'var(--bg-glass-card)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-              <Calendar size={15} style={{ color: 'var(--primary)' }} />
-              <strong style={{ fontSize: '12px', textTransform: 'uppercase', color: 'var(--text-main)', letterSpacing: '0.3px' }}>Follow-Up Surgical Visit</strong>
+          {/* Card 4: Follow-Up Appointments */}
+          <div className="dashboard-card-pro">
+            <div className="dashboard-card-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
+                  <Calendar size={14} />
+                </div>
+                <strong style={{ fontSize: '13px', color: 'var(--text-main)', letterSpacing: '0.2px' }}>
+                  Follow-Up Appointments
+                </strong>
+              </div>
+              <span className="dashboard-card-badge">
+                In 6 Days
+              </span>
             </div>
 
-            <div style={{ background: 'rgba(0,140,140,0.03)', padding: '10px', borderRadius: '12px', border: '1px solid rgba(0,140,140,0.05)', marginBottom: '10px' }}>
-              <strong style={{ fontSize: '11.5px', color: 'var(--text-main)' }}>Dr. Smith &bull; Sept 5</strong>
-              <span style={{ fontSize: '10.5px', color: 'var(--text-muted)', display: 'block', marginTop: '2px' }}>Post-op evaluation in 6 days at 10:30 AM</span>
+            <div style={{ background: 'var(--primary-light)', padding: '12px 14px', borderRadius: '16px', border: '1px solid var(--border-glass)', margin: '10px 0 12px 0' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                <strong style={{ fontSize: '12.5px', color: 'var(--text-main)' }}>Dr. Robert Smith</strong>
+                <span style={{ fontSize: '10px', color: 'var(--primary)', fontWeight: '700', background: '#ffffff', padding: '2px 8px', borderRadius: '8px' }}>Orthopedic Surgical</span>
+              </div>
+              <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px', lineHeight: '1.4' }}>
+                <Calendar size={12} style={{ color: 'var(--primary)', flexShrink: 0 }} />
+                <span><strong>Sept 5, 2026 at 10:30 AM</strong> • Orthopedic Clinic Suite 400</span>
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '12px' }}>
+              <span style={{ fontSize: '10.5px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <ClipboardList size={12} style={{ color: 'var(--primary)', flexShrink: 0 }} />
+                <span><strong>Preparation Checklist:</strong> Bring current medications &amp; symptom logs from Days 3–5.</span>
+              </span>
             </div>
 
             <button 
               className="meds-action-btn"
-              style={{ fontSize: '11px', padding: '8px 12px', width: '100%', textTransform: 'none' }}
+              style={{ fontSize: '11.5px', padding: '10px 14px', width: '100%', textTransform: 'none', borderRadius: '14px' }}
               onClick={() => setShowAppointmentSummaryModal(true)}
             >
-              Prep Instructions & Pre-Visit Report
+              Prep Instructions &amp; Pre-Visit Report
             </button>
           </div>
 
@@ -769,228 +1201,409 @@ function App() {
   };
 
   // ==========================================
-  // RENDER TAB 2: Plan (Timeline & Tasks list - Screen 2 & 8)
+  // RENDER TAB 2: Plan (Structured & Grouped Recovery Schedule)
   // ==========================================
   const renderPlanTab = () => {
+    const totalTasks = todayTasks.length;
+    const completedTasks = todayTasks.filter(t => t.completed).length;
+    const progressPercent = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+    const medTasks = todayTasks.filter(t => t.type === 'medication');
+    const medDone = medTasks.filter(t => t.completed).length;
+
+    const ptTasks = todayTasks.filter(t => t.type === 'activity');
+    const ptDone = ptTasks.filter(t => t.completed).length;
+
+    const woundTasks = todayTasks.filter(t => t.type === 'wound');
+    const woundDone = woundTasks.filter(t => t.completed).length;
+
+    const vitalsTasks = todayTasks.filter(t => t.type === 'checkin' || t.type === 'hydration');
+    const vitalsDone = vitalsTasks.filter(t => t.completed).length;
+
+    const showMeds = planCategoryFilter === 'all' || planCategoryFilter === 'medication';
+    const showPT = planCategoryFilter === 'all' || planCategoryFilter === 'activity';
+    const showWound = planCategoryFilter === 'all' || planCategoryFilter === 'wound';
+    const showVitals = planCategoryFilter === 'all' || planCategoryFilter === 'checkin';
+
     return (
       <div style={{ display: 'flex', flexDirection: 'column', animation: 'fadeIn 0.3s ease-out' }}>
-        {/* Sub-tabs header */}
-        <div className="tabs-header-row">
+        {/* Month & Year header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', paddingLeft: '4px' }}>
+          <span style={{ fontSize: '13px', fontWeight: '800', color: 'var(--text-main)' }}>
+            {selectedDate.toLocaleDateString([], { month: 'long', year: 'numeric' })}
+          </span>
+          <span style={{ fontSize: '11px', color: 'var(--primary)', fontWeight: '700' }}>
+            Day 6 of Recovery
+          </span>
+        </div>
+        
+        {/* Horizontal Dates row */}
+        <div className="date-bar-container">
+          {getCalendarDays().map((d) => {
+            const isSelected = getDateKey(d) === getDateKey(selectedDate);
+            const dayName = d.toLocaleDateString([], { weekday: 'short' });
+            const dayNum = d.getDate();
+            return (
+              <div 
+                key={getDateKey(d)} 
+                className={`date-bar-day ${isSelected ? 'active' : ''}`}
+                onClick={() => setSelectedDate(d)}
+              >
+                <span className="date-day-name">{dayName}</span>
+                <span className="date-day-num">{dayNum}</span>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Daily Check-in Card banner */}
+        <div className="plan-checkin-prompt">
+          <div className="checkin-prompt-icon-wrap">
+            <Heart size={20} fill="var(--primary)" />
+          </div>
+          <div className="checkin-prompt-info" style={{ flexGrow: 1 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span className="checkin-prompt-title">Daily Clinical Check-In</span>
+              {checkInComplete && (
+                <span style={{ fontSize: '10px', fontWeight: '800', color: 'var(--color-green)', background: 'var(--bg-green)', padding: '2px 8px', borderRadius: '10px', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                  Recorded <Check size={11} />
+                </span>
+              )}
+            </div>
+            <span className="checkin-prompt-desc">
+              {checkInComplete 
+                ? 'Your daily pain, swelling, and vitals log is up to date.'
+                : 'Log your pain level, temperature, and surgical incision status today.'}
+            </span>
+            <button className="checkin-prompt-btn" onClick={() => setShowCheckInForm(true)}>
+              {checkInComplete ? 'Review Check-In' : 'Check In Now'}
+            </button>
+          </div>
+        </div>
+
+        {/* Daily Progress Summary Card */}
+        <div className="plan-summary-banner">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <strong style={{ fontSize: '13.5px', color: 'var(--text-main)', display: 'block' }}>Today's Structured Plan</strong>
+              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                {completedTasks} of {totalTasks} recovery actions completed ({progressPercent}%)
+              </span>
+            </div>
+            <span style={{ 
+              fontSize: '14px', fontWeight: '800', color: 'var(--primary)', 
+              background: 'var(--primary-light)', padding: '6px 12px', borderRadius: '14px' 
+            }}>
+              {progressPercent}%
+            </span>
+          </div>
+
+          <div className="plan-progress-bar-bg">
+            <div className="plan-progress-bar-fill" style={{ width: `${progressPercent}%` }}></div>
+          </div>
+        </div>
+
+        {/* Category Filters Bar */}
+        <div className="plan-category-filters">
           <button 
-            className={`tab-header-btn ${planSubTab === 'schedule' ? 'active' : ''}`}
-            onClick={() => setPlanSubTab('schedule')}
+            type="button"
+            className={`plan-filter-chip ${planCategoryFilter === 'all' ? 'active' : ''}`}
+            onClick={() => setPlanCategoryFilter('all')}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
           >
-            Today's Plan
+            <Sparkles size={12} />
+            <span>All Groups ({completedTasks}/{totalTasks})</span>
           </button>
+          
           <button 
-            className={`tab-header-btn ${planSubTab === 'tasks' ? 'active' : ''}`}
-            onClick={() => setPlanSubTab('tasks')}
+            type="button"
+            className={`plan-filter-chip ${planCategoryFilter === 'medication' ? 'active' : ''}`}
+            onClick={() => setPlanCategoryFilter('medication')}
           >
-            Checklist Tasks
+            <Pill size={12} />
+            <span>Medications ({medDone}/{medTasks.length})</span>
+          </button>
+
+          <button 
+            type="button"
+            className={`plan-filter-chip ${planCategoryFilter === 'activity' ? 'active' : ''}`}
+            onClick={() => setPlanCategoryFilter('activity')}
+          >
+            <Activity size={12} />
+            <span>Physical Therapy ({ptDone}/{ptTasks.length})</span>
+          </button>
+
+          <button 
+            type="button"
+            className={`plan-filter-chip ${planCategoryFilter === 'wound' ? 'active' : ''}`}
+            onClick={() => setPlanCategoryFilter('wound')}
+          >
+            <ShieldAlert size={12} />
+            <span>Wound Care ({woundDone}/{woundTasks.length})</span>
+          </button>
+
+          <button 
+            type="button"
+            className={`plan-filter-chip ${planCategoryFilter === 'checkin' ? 'active' : ''}`}
+            onClick={() => setPlanCategoryFilter('checkin')}
+          >
+            <Heart size={12} />
+            <span>Vitals &amp; Care ({vitalsDone}/{vitalsTasks.length})</span>
           </button>
         </div>
 
-        {planSubTab === 'schedule' ? (
-          <>
-            {/* Month & Year header */}
-            <div style={{ fontSize: '12.5px', fontWeight: '800', color: 'var(--text-main)', marginBottom: '8px', paddingLeft: '6px' }}>
-              {selectedDate.toLocaleDateString([], { month: 'long', year: 'numeric' })}
-            </div>
-            
-            {/* Horizontal Dates row */}
-            <div className="date-bar-container">
-              {getCalendarDays().map((d) => {
-                const isSelected = getDateKey(d) === getDateKey(selectedDate);
-                const dayName = d.toLocaleDateString([], { weekday: 'short' });
-                const dayNum = d.getDate();
-                return (
-                  <div 
-                    key={getDateKey(d)} 
-                    className={`date-bar-day ${isSelected ? 'active' : ''}`}
-                    onClick={() => setSelectedDate(d)}
-                  >
-                    <span className="date-day-name">{dayName}</span>
-                    <span className="date-day-num">{dayNum}</span>
+        {/* Grouped Structure List */}
+        <div className="plan-groups-list">
+
+          {/* GROUP 1: MEDICATIONS */}
+          {showMeds && medTasks.length > 0 && (
+            <div className="plan-group-card">
+              <div className="plan-group-header">
+                <div className="plan-group-title-wrap">
+                  <div className="plan-group-icon-wrap" style={{ background: 'var(--primary-light)', color: 'var(--primary)' }}>
+                    <Pill size={18} />
                   </div>
-                );
-              })}
-            </div>
-
-            {/* Daily Check-in Card banner */}
-            <div className="plan-checkin-prompt">
-              <div className="checkin-prompt-icon-wrap">
-                <Heart size={20} fill="var(--primary)" />
+                  <div>
+                    <h4 className="plan-group-name">Prescribed Medications</h4>
+                    <span className="plan-group-subtitle">Dosages, pain relief &amp; infection prevention</span>
+                  </div>
+                </div>
+                <span className="plan-group-badge">
+                  {medDone} of {medTasks.length} taken
+                </span>
               </div>
-              <div className="checkin-prompt-info">
-                <span className="checkin-prompt-title">Daily Check-In</span>
-                <span className="checkin-prompt-desc">How are you feeling today?</span>
-                <button className="checkin-prompt-btn" onClick={() => setShowCheckInForm(true)}>Check in now</button>
-              </div>
-            </div>
 
-            {/* Today's Schedule timeline */}
-            <div style={{ marginBottom: '8px' }}>
-              <span className="section-title" style={{ display: 'block', marginBottom: '14px' }}>Today's Schedule</span>
-              
-              <div className="timeline-list">
-                <div className="timeline-vertical-line"></div>
-                {todayTasks.map((task) => (
-                  <div key={task.id} className={`timeline-item ${task.completed ? 'completed' : ''}`}>
-                    <span className="timeline-hour">{task.timeHour}</span>
-                    <div className="timeline-dot-anchor"></div>
-                    <div className="timeline-card-content" onClick={() => setSelectedTaskId(task.id)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div>
-                        <span className="timeline-item-title">{task.name}</span>
-                        <p className="timeline-item-desc">{task.dose || task.instructions}</p>
+              <div className="plan-group-tip">
+                <Info size={14} style={{ color: 'var(--primary)', flexShrink: 0 }} />
+                <span>Tip: Take pain medications 30–45 mins before Physical Therapy for optimal comfort during movement.</span>
+              </div>
+
+              <div className="plan-tasks-container">
+                {medTasks.map(task => (
+                  <div 
+                    key={task.id} 
+                    className={`plan-task-item ${task.completed ? 'completed' : ''}`}
+                    onClick={() => setSelectedTaskId(task.id)}
+                  >
+                    <div className="plan-task-left">
+                      <span className="plan-task-time">{task.timeHour}</span>
+                      <div className="plan-task-body">
+                        <div className="plan-task-header-row">
+                          <span className="plan-task-title">{task.name}</span>
+                          {task.tag && <span className="plan-task-tag">{task.tag}</span>}
+                        </div>
+                        {task.dose && <span className="plan-task-dose">{task.dose}</span>}
+                        {task.instructions && <span className="plan-task-desc">{task.instructions}</span>}
                       </div>
-                      <span className={`task-checkbox-indicator ${task.completed ? 'checked' : ''}`} style={{ flexShrink: 0, marginLeft: '12px' }} onClick={(e) => {
+                    </div>
+
+                    <span 
+                      className={`task-checkbox-indicator ${task.completed ? 'checked' : ''}`}
+                      style={{ flexShrink: 0, marginLeft: '12px' }}
+                      onClick={(e) => {
                         e.stopPropagation();
                         toggleTaskCompleted(task.id);
-                      }}>
-                        {task.completed ? '✓' : ''}
-                      </span>
-                    </div>
+                      }}
+                      title="Toggle medication taken"
+                    >
+                      {task.completed ? '✓' : ''}
+                    </span>
                   </div>
                 ))}
               </div>
             </div>
-          </>
-        ) : (
-          /* Tasks tab (Screen 8) */
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            
-            {/* Space Filters Bar */}
-            <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '6px', marginBottom: '4px' }}>
-              {[
-                { id: 'all', label: 'All Spaces' },
-                { id: 'medication', label: 'Medications' },
-                { id: 'wound', label: 'Wound Care' },
-                { id: 'exercise', label: 'PT Exercises' },
-                { id: 'hydration', label: 'Hydration' }
-              ].map(f => (
-                <button 
-                  key={f.id}
-                  onClick={() => setChecklistSpaceFilter(f.id as any)}
-                  style={{
-                    border: 'none', padding: '6px 14px', borderRadius: '12px', fontSize: '10.5px', fontWeight: '700',
-                    background: checklistSpaceFilter === f.id ? 'var(--primary)' : 'rgba(0,0,0,0.03)',
-                    color: checklistSpaceFilter === f.id ? 'white' : 'var(--text-muted)',
-                    cursor: 'pointer', transition: 'var(--transition-fluid)', flexShrink: 0
-                  }}
-                >
-                  {f.label}
-                </button>
-              ))}
-            </div>
+          )}
 
-            {/* Medications Space */}
-            {(checklistSpaceFilter === 'all' || checklistSpaceFilter === 'medication') && (
-              <div className="dashboard-section-box">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-                  <Pill size={14} style={{ color: 'var(--primary)' }} />
-                  <span style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--text-main)', letterSpacing: '0.5px' }}>
-                    Medication Routine
-                  </span>
+          {/* GROUP 2: PHYSICAL THERAPY & MOBILITY */}
+          {showPT && ptTasks.length > 0 && (
+            <div className="plan-group-card">
+              <div className="plan-group-header">
+                <div className="plan-group-title-wrap">
+                  <div className="plan-group-icon-wrap" style={{ background: 'var(--accent-light)', color: 'var(--accent-dark)' }}>
+                    <Activity size={18} />
+                  </div>
+                  <div>
+                    <h4 className="plan-group-name">Physical Therapy &amp; Mobility</h4>
+                    <span className="plan-group-subtitle">Strength exercises, gait training &amp; flexion</span>
+                  </div>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {todayTasks.filter(t => t.type === 'medication').map(task => (
-                    <div key={task.id} className={`task-card-row ${task.completed ? 'completed' : ''}`} onClick={() => setSelectedTaskId(task.id)}>
-                      <div className="task-card-left">
-                        <div className="task-checkbox-indicator checked" style={{ 
-                          width: '20px', height: '20px', borderRadius: '50%', border: '1.5px solid var(--primary)',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '10px',
-                          background: task.completed ? 'var(--primary)' : 'transparent', color: task.completed ? '#fff' : 'transparent', fontSize: '10px'
-                        }} onClick={(e) => {
-                          e.stopPropagation();
-                          toggleTaskCompleted(task.id);
-                        }}>
-                          ✓
+                <span className="plan-group-badge" style={{ background: 'var(--accent-light)', color: 'var(--accent-dark)' }}>
+                  {ptDone} of {ptTasks.length} done
+                </span>
+              </div>
+
+              <div className="plan-group-tip" style={{ background: 'rgba(6, 182, 212, 0.04)' }}>
+                <Info size={14} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+                <span>Tip: Move steadily and breathe evenly. Stop if you experience sharp catching or sudden swelling.</span>
+              </div>
+
+              <div className="plan-tasks-container">
+                {ptTasks.map(task => (
+                  <div 
+                    key={task.id} 
+                    className={`plan-task-item ${task.completed ? 'completed' : ''}`}
+                    onClick={() => setSelectedTaskId(task.id)}
+                  >
+                    <div className="plan-task-left">
+                      <span className="plan-task-time" style={{ background: 'var(--accent-light)', color: 'var(--accent-dark)' }}>
+                        {task.timeHour}
+                      </span>
+                      <div className="plan-task-body">
+                        <div className="plan-task-header-row">
+                          <span className="plan-task-title">{task.name}</span>
+                          {task.tag && <span className="plan-task-tag">{task.tag}</span>}
                         </div>
-                        <span className="task-card-title" style={{ fontSize: '12px' }}>{task.name}</span>
+                        {task.dose && <span className="plan-task-dose">{task.dose}</span>}
+                        {task.instructions && <span className="plan-task-desc">{task.instructions}</span>}
                       </div>
-                      <span className="task-card-time" style={{ fontSize: '11px' }}>{task.timeHour}</span>
                     </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
-            {/* Wound Incision Care Space */}
-            {(checklistSpaceFilter === 'all' || checklistSpaceFilter === 'wound') && (
-              <div className="dashboard-section-box">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-                  <ShieldAlert size={14} style={{ color: 'var(--primary)' }} />
-                  <span style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--text-main)', letterSpacing: '0.5px' }}>
-                    Wound & Incision Care Checklist
-                  </span>
-                </div>
-                <ul style={{ margin: 0, paddingLeft: '16px', fontSize: '12.5px', color: 'var(--text-muted)', lineHeight: '1.6', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <li>✓ Wash hands thoroughly with soap.</li>
-                  <li>✓ Inspect wound for redness/swelling (Report to Shalom AI if increased).</li>
-                  <li>✓ Clean with sterile water; apply clean gauze.</li>
-                  <li>✓ Keep incision dry.</li>
-                </ul>
-              </div>
-            )}
-
-            {/* Rehabilitation Activity Space */}
-            {(checklistSpaceFilter === 'all' || checklistSpaceFilter === 'exercise') && (
-              <div className="dashboard-section-box">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-                  <Activity size={14} style={{ color: 'var(--accent)' }} />
-                  <span style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--text-main)', letterSpacing: '0.5px' }}>
-                    Activity & Exercises
-                  </span>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {todayTasks.filter(t => t.type === 'activity').map(task => (
-                    <div key={task.id} className={`task-card-row ${task.completed ? 'completed' : ''}`} onClick={() => setSelectedTaskId(task.id)}>
-                      <div className="task-card-left">
-                        <div className="task-checkbox-indicator checked" style={{ 
-                          width: '20px', height: '20px', borderRadius: '50%', border: '1.5px solid var(--accent)',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '10px',
-                          background: task.completed ? 'var(--accent)' : 'transparent', color: task.completed ? '#fff' : 'transparent', fontSize: '10px'
-                        }} onClick={(e) => {
-                          e.stopPropagation();
-                          toggleTaskCompleted(task.id);
-                        }}>
-                          ✓
-                        </div>
-                        <span className="task-card-title" style={{ fontSize: '12px' }}>{task.name}</span>
-                      </div>
-                      <span className="task-card-time" style={{ fontSize: '11px' }}>{task.timeHour}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Diet & Hydration Space */}
-            {(checklistSpaceFilter === 'all' || checklistSpaceFilter === 'hydration') && (
-              <div className="dashboard-section-box">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Clock size={14} style={{ color: 'var(--primary)' }} />
-                    <span style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--text-main)', letterSpacing: '0.5px' }}>
-                      Diet & Hydration
+                    <span 
+                      className={`task-checkbox-indicator ${task.completed ? 'checked' : ''}`}
+                      style={{ flexShrink: 0, marginLeft: '12px' }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleTaskCompleted(task.id);
+                      }}
+                      title="Toggle exercise completed"
+                    >
+                      {task.completed ? '✓' : ''}
                     </span>
                   </div>
-                  <strong style={{ fontSize: '11px', color: 'var(--primary)' }}>{hydrationGlasses} of 8 glasses logged</strong>
-                </div>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button 
-                    className="choice-pill-btn" 
-                    style={{ fontSize: '10px', padding: '6px 12px' }}
-                    onClick={() => setHydrationGlasses(prev => Math.min(8, prev + 1))}
-                  >
-                    + Log Hydration Glass
-                  </button>
-                </div>
+                ))}
               </div>
-            )}
+            </div>
+          )}
 
-          </div>
-        )}
+          {/* GROUP 3: WOUND & INCISION CARE */}
+          {showWound && woundTasks.length > 0 && (
+            <div className="plan-group-card">
+              <div className="plan-group-header">
+                <div className="plan-group-title-wrap">
+                  <div className="plan-group-icon-wrap" style={{ background: 'var(--bg-yellow)', color: 'var(--color-yellow)' }}>
+                    <ShieldAlert size={18} />
+                  </div>
+                  <div>
+                    <h4 className="plan-group-name">Wound &amp; Incision Recovery</h4>
+                    <span className="plan-group-subtitle">Incision hygiene, swelling control &amp; elevation</span>
+                  </div>
+                </div>
+                <span className="plan-group-badge" style={{ background: 'var(--bg-yellow)', color: 'var(--color-yellow)' }}>
+                  {woundDone} of {woundTasks.length} done
+                </span>
+              </div>
+
+              <div className="plan-group-tip" style={{ background: 'rgba(217, 119, 6, 0.04)' }}>
+                <Info size={14} style={{ color: 'var(--color-yellow)', flexShrink: 0 }} />
+                <span>Tip: Keep incision completely dry. Elevate leg with pillows under calves, not directly behind the knee.</span>
+              </div>
+
+              <div className="plan-tasks-container">
+                {woundTasks.map(task => (
+                  <div 
+                    key={task.id} 
+                    className={`plan-task-item ${task.completed ? 'completed' : ''}`}
+                    onClick={() => setSelectedTaskId(task.id)}
+                  >
+                    <div className="plan-task-left">
+                      <span className="plan-task-time" style={{ background: 'var(--bg-yellow)', color: 'var(--color-yellow)' }}>
+                        {task.timeHour}
+                      </span>
+                      <div className="plan-task-body">
+                        <div className="plan-task-header-row">
+                          <span className="plan-task-title">{task.name}</span>
+                          {task.tag && <span className="plan-task-tag">{task.tag}</span>}
+                        </div>
+                        {task.dose && <span className="plan-task-dose">{task.dose}</span>}
+                        {task.instructions && <span className="plan-task-desc">{task.instructions}</span>}
+                      </div>
+                    </div>
+
+                    <span 
+                      className={`task-checkbox-indicator ${task.completed ? 'checked' : ''}`}
+                      style={{ flexShrink: 0, marginLeft: '12px' }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleTaskCompleted(task.id);
+                      }}
+                      title="Toggle wound care task"
+                    >
+                      {task.completed ? '✓' : ''}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* GROUP 4: CLINICAL VITALS & WELLNESS */}
+          {showVitals && vitalsTasks.length > 0 && (
+            <div className="plan-group-card">
+              <div className="plan-group-header">
+                <div className="plan-group-title-wrap">
+                  <div className="plan-group-icon-wrap" style={{ background: 'var(--bg-green)', color: 'var(--color-green)' }}>
+                    <Heart size={18} />
+                  </div>
+                  <div>
+                    <h4 className="plan-group-name">Clinical Vitals &amp; Wellness</h4>
+                    <span className="plan-group-subtitle">Temperature, symptom tracking &amp; hydration</span>
+                  </div>
+                </div>
+                <span className="plan-group-badge" style={{ background: 'var(--bg-green)', color: 'var(--color-green)' }}>
+                  {vitalsDone} of {vitalsTasks.length} done
+                </span>
+              </div>
+
+              <div className="plan-group-tip" style={{ background: 'rgba(5, 150, 105, 0.04)' }}>
+                <Info size={14} style={{ color: 'var(--color-green)', flexShrink: 0 }} />
+                <span>Tip: Recording your vitals at the same time each morning helps Shalom AI detect subtle healing patterns early.</span>
+              </div>
+
+              <div className="plan-tasks-container">
+                {vitalsTasks.map(task => (
+                  <div 
+                    key={task.id} 
+                    className={`plan-task-item ${task.completed ? 'completed' : ''}`}
+                    onClick={() => {
+                      if (task.type === 'checkin') {
+                        setShowCheckInForm(true);
+                      } else {
+                        setSelectedTaskId(task.id);
+                      }
+                    }}
+                  >
+                    <div className="plan-task-left">
+                      <span className="plan-task-time" style={{ background: 'var(--bg-green)', color: 'var(--color-green)' }}>
+                        {task.timeHour}
+                      </span>
+                      <div className="plan-task-body">
+                        <div className="plan-task-header-row">
+                          <span className="plan-task-title">{task.name}</span>
+                          {task.tag && <span className="plan-task-tag">{task.tag}</span>}
+                        </div>
+                        {task.dose && <span className="plan-task-dose">{task.dose}</span>}
+                        {task.instructions && <span className="plan-task-desc">{task.instructions}</span>}
+                      </div>
+                    </div>
+
+                    <span 
+                      className={`task-checkbox-indicator ${task.completed ? 'checked' : ''}`}
+                      style={{ flexShrink: 0, marginLeft: '12px' }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleTaskCompleted(task.id);
+                      }}
+                      title="Toggle vitals/hydration completed"
+                    >
+                      {task.completed ? '✓' : ''}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+        </div>
       </div>
     );
   };
@@ -1000,20 +1613,19 @@ function App() {
   // ==========================================
   const renderChatTab = () => {
     return (
-      <div className="chat-tab-container">
-        <ChatInterface 
-          apiKey={apiKey} 
-          onCheckInComplete={handleCheckInComplete}
-          presetScenarioTrigger={presetScenarioTrigger}
-          clearPresetScenarioTrigger={() => setPresetScenarioTrigger(null)}
-          onResetStatus={handleResetCheckIn}
-          medicalHistory={medicalHistory}
-          faqDataset={faqDataset}
-          isTtsEnabled={isTtsEnabled}
-          selectedVoiceName={selectedVoiceName}
-          voices={voices}
-        />
-      </div>
+      <ChatInterface 
+        apiKey={apiKey} 
+        onCheckInComplete={handleCheckInComplete}
+        presetScenarioTrigger={presetScenarioTrigger}
+        clearPresetScenarioTrigger={() => setPresetScenarioTrigger(null)}
+        onResetStatus={handleResetCheckIn}
+        medicalHistory={medicalHistory}
+        faqDataset={faqDataset}
+        isTtsEnabled={isTtsEnabled}
+        selectedVoiceName={selectedVoiceName}
+        voices={voices}
+        ttsSpeed={ttsSpeed}
+      />
     );
   };
 
@@ -1491,11 +2103,11 @@ function App() {
           {/* Severity background color zones for older patient triage context */}
           {/* Mild Zone (Green status log) */}
           <rect x={padding} y={padding} width={chartWidth} height={chartHeight} fill="none" />
-          <rect x={padding} y={padding + chartHeight * 0.7} width={chartWidth} height={chartHeight * 0.3} fill="rgba(33, 140, 116, 0.05)" rx="4" />
+          <rect x={padding} y={padding + chartHeight * 0.7} width={chartWidth} height={chartHeight * 0.3} fill="var(--bg-green)" rx="4" />
           {/* Moderate Zone (Yellow status log) */}
-          <rect x={padding} y={padding + chartHeight * 0.3} width={chartWidth} height={chartHeight * 0.4} fill="rgba(205, 97, 51, 0.05)" rx="4" />
+          <rect x={padding} y={padding + chartHeight * 0.3} width={chartWidth} height={chartHeight * 0.4} fill="var(--bg-yellow)" rx="4" />
           {/* Severe Zone (Red status log) */}
-          <rect x={padding} y={padding} width={chartWidth} height={chartHeight * 0.3} fill="rgba(179, 57, 57, 0.05)" rx="4" />
+          <rect x={padding} y={padding} width={chartWidth} height={chartHeight * 0.3} fill="var(--bg-red)" rx="4" />
 
           {/* Grid lines */}
           <line x1={padding} y1={padding} x2={width - padding} y2={padding} stroke="rgba(0,0,0,0.03)" strokeWidth="1" />
@@ -1515,7 +2127,7 @@ function App() {
             <path 
               d={targetPathD} 
               fill="none" 
-              stroke="rgba(0, 140, 140, 0.45)" 
+              stroke="var(--accent)" 
               strokeWidth="1.8" 
               strokeDasharray="4,4" 
               strokeLinecap="round" 
@@ -1560,7 +2172,7 @@ function App() {
                   textAnchor="middle" 
                   fontSize="8.5" 
                   fontWeight={isSelected ? "800" : "600"} 
-                  fill={isSelected ? "var(--primary-dark)" : "var(--text-muted)"}
+                  fill={isSelected ? "var(--primary)" : "var(--text-muted)"}
                 >
                   {dateNum}
                 </text>
@@ -1570,13 +2182,13 @@ function App() {
         </svg>
 
         {/* Legend */}
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginTop: '16px', borderTop: '1px solid rgba(0,0,0,0.04)', paddingTop: '10px' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginTop: '16px', borderTop: '1px solid var(--border-glass)', paddingTop: '10px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <span style={{ width: '12px', height: '3px', background: 'var(--primary)', borderRadius: '1.5px', display: 'inline-block' }}></span>
             <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Your Pain</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ width: '12px', height: '0px', borderTop: '2px dashed rgba(0, 140, 140, 0.6)', display: 'inline-block' }}></span>
+            <span style={{ width: '12px', height: '0px', borderTop: '2px dashed var(--accent)', display: 'inline-block' }}></span>
             <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Expected Curve</span>
           </div>
         </div>
@@ -1692,6 +2304,148 @@ function App() {
               <button className="sim-pill yellow" onClick={() => handleTriggerPreset('yellow')}>Warning Chat</button>
               <button className="sim-pill red" onClick={() => handleTriggerPreset('red')}>Urgent Chat</button>
               <button className="sim-pill emergency" onClick={() => handleTriggerPreset('emergency')}>Emergency Chat</button>
+            </div>
+          </div>
+        </div>
+
+        {/* Aesthetic Theme Palette section */}
+        <div className="profile-menu-section">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px', paddingLeft: '4px' }}>
+            <span className="profile-menu-title" style={{ margin: 0, padding: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Palette size={13} style={{ color: 'var(--primary)' }} />
+              Aesthetic &amp; Color Palette
+            </span>
+            <span style={{ fontSize: '10px', color: 'var(--primary)', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <Sparkles size={12} /> Live Switcher
+            </span>
+          </div>
+          <div className="profile-menu-card" style={{ padding: '14px' }}>
+            <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '0 0 10px 0', lineHeight: '1.4' }}>
+              Customize your visual healing sanctuary with curated medical color harmonies:
+            </p>
+            <div className="theme-picker-grid">
+              <button 
+                type="button"
+                className={`theme-chip-btn ${currentTheme === 'bio-iris' ? 'active' : ''}`}
+                onClick={() => setCurrentTheme('bio-iris')}
+              >
+                <span className="theme-swatch" style={{ background: 'linear-gradient(135deg, #4F46E5 0%, #06B6D4 100%)' }}></span>
+                <div>
+                  <span className="theme-chip-name" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Sparkles size={11} /> Bio-Iris</span>
+                  <span className="theme-chip-desc">Indigo &amp; Cyan</span>
+                </div>
+              </button>
+
+              <button 
+                type="button"
+                className={`theme-chip-btn ${currentTheme === 'nordic-sage' ? 'active' : ''}`}
+                onClick={() => setCurrentTheme('nordic-sage')}
+              >
+                <span className="theme-swatch" style={{ background: 'linear-gradient(135deg, #0D9488 0%, #10B981 100%)' }}></span>
+                <div>
+                  <span className="theme-chip-name" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Leaf size={11} /> Bio-Sage</span>
+                  <span className="theme-chip-desc">Pine &amp; Jade</span>
+                </div>
+              </button>
+
+              <button 
+                type="button"
+                className={`theme-chip-btn ${currentTheme === 'cosmic-aurora' ? 'active' : ''}`}
+                onClick={() => setCurrentTheme('cosmic-aurora')}
+              >
+                <span className="theme-swatch" style={{ background: 'linear-gradient(135deg, #8B5CF6 0%, #00E5FF 100%)' }}></span>
+                <div>
+                  <span className="theme-chip-name" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Palette size={11} /> Aurora</span>
+                  <span className="theme-chip-desc">Violet &amp; Neon</span>
+                </div>
+              </button>
+
+              <button 
+                type="button"
+                className={`theme-chip-btn ${currentTheme === 'rose-sanctuary' ? 'active' : ''}`}
+                onClick={() => setCurrentTheme('rose-sanctuary')}
+              >
+                <span className="theme-swatch" style={{ background: 'linear-gradient(135deg, #E11D48 0%, #F59E0B 100%)' }}></span>
+                <div>
+                  <span className="theme-chip-name" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Sun size={11} /> Sanctuary</span>
+                  <span className="theme-chip-desc">Rose &amp; Amber</span>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Voice & Speech Pace Section */}
+        <div className="profile-menu-section">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px', paddingLeft: '4px' }}>
+            <span className="profile-menu-title" style={{ margin: 0, padding: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Volume2 size={13} style={{ color: 'var(--primary)' }} />
+              Shalom AI Voice Speed
+            </span>
+            <button
+              type="button"
+              onClick={() => speakHeroMessage("Hello Aïda, this is your Shalom Recover AI assistant speaking at a relaxed, comforting pace.")}
+              style={{
+                background: 'var(--primary-light)',
+                border: '1px solid var(--border-glass)',
+                color: 'var(--primary)',
+                fontSize: '10.5px',
+                fontWeight: '700',
+                padding: '4px 10px',
+                borderRadius: '12px',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}
+            >
+              <Volume2 size={12} />
+              <span>Test Voice</span>
+            </button>
+          </div>
+          <div className="profile-menu-card" style={{ padding: '14px' }}>
+            <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '0 0 10px 0', lineHeight: '1.4' }}>
+              Select your preferred speaking tempo for care instructions and reminders:
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+              <button
+                type="button"
+                className={`theme-chip-btn ${ttsSpeed <= 0.80 ? 'active' : ''}`}
+                style={{ padding: '10px 8px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+                onClick={() => {
+                  setTtsSpeed(0.78);
+                  speakHeroMessage("Voice speed set to gentle and calm.");
+                }}
+              >
+                <span style={{ fontSize: '12px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '4px' }}><Feather size={12} /> Gentle</span>
+                <span style={{ fontSize: '9.5px', color: 'var(--text-muted)' }}>0.78x Speed</span>
+              </button>
+
+              <button
+                type="button"
+                className={`theme-chip-btn ${ttsSpeed > 0.80 && ttsSpeed < 0.90 ? 'active' : ''}`}
+                style={{ padding: '10px 8px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+                onClick={() => {
+                  setTtsSpeed(0.82);
+                  speakHeroMessage("Voice speed set to natural and comfortable.");
+                }}
+              >
+                <span style={{ fontSize: '12px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '4px' }}><Leaf size={12} /> Natural</span>
+                <span style={{ fontSize: '9.5px', color: 'var(--text-muted)' }}>0.82x Speed</span>
+              </button>
+
+              <button
+                type="button"
+                className={`theme-chip-btn ${ttsSpeed >= 0.90 ? 'active' : ''}`}
+                style={{ padding: '10px 8px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+                onClick={() => {
+                  setTtsSpeed(0.92);
+                  speakHeroMessage("Voice speed set to brisk.");
+                }}
+              >
+                <span style={{ fontSize: '12px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '4px' }}><Zap size={12} /> Brisk</span>
+                <span style={{ fontSize: '9.5px', color: 'var(--text-muted)' }}>0.92x Speed</span>
+              </button>
             </div>
           </div>
         </div>
@@ -1858,8 +2612,8 @@ function App() {
 
         {/* Hero Card */}
         <div className="detail-hero-card">
-          <div className="detail-hero-pill" style={{ color: task.completed ? 'var(--color-green)' : 'var(--color-yellow)' }}>
-            {task.completed ? 'Today: Taken ✓' : 'Today: Pending'}
+          <div className="detail-hero-pill" style={{ color: task.completed ? 'var(--color-green)' : 'var(--color-yellow)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+            {task.completed ? <><Check size={11} /> Today: Taken</> : 'Today: Pending'}
           </div>
           <h2 className="detail-hero-name">{task.name}</h2>
           <p className="detail-hero-desc">
@@ -2010,40 +2764,52 @@ function App() {
 
   return (
     <div className="desktop-layout">
-      {/* Decorative ambient gradients */}
-      <div className="decor-orb pink"></div>
-      <div className="decor-orb blue"></div>
-      <div className="decor-orb green"></div>
-
-      {/* Centered Mobile Web Viewport matching Aïda mockup */}
+      {/* Centered Web Viewport / App Shell */}
       <div className="web-app-viewport">
-        {/* Viewport-level animated background orbs */}
-        <div className="screen-orb teal"></div>
-        <div className="screen-orb blue"></div>
-
-        {/* Core Screen */}
-        <div className="viewport-screen">
-          {renderActiveTabContent()}
-        </div>
-
-        {/* Bottom Floating Navigation bar with signature floating center sphere */}
+        {/* Left Sidebar Navigation (Desktop) / Bottom Bar (Mobile) */}
         <nav className="viewport-tab-bar">
-          {/* Desktop Sidebar Branding Logo */}
-          <div className="sidebar-logo-area" style={{ display: 'none' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '32px' }}>
+          {/* Desktop Sidebar Branding & Patient Profile */}
+          <div className="sidebar-logo-area">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
               <div style={{
-                width: '36px', height: '36px', borderRadius: '12px',
+                width: '38px', height: '38px', borderRadius: '12px',
                 background: 'linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center'
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 4px 12px var(--primary-glow)'
               }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="white" />
                   <path d="M12 6.5v5M9.5 9h5" stroke="var(--primary)" strokeWidth="2.2" strokeLinecap="round" />
                 </svg>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <strong style={{ fontSize: '16px', color: 'var(--text-main)', lineHeight: '1.2', fontWeight: 800 }}>Shalom</strong>
-                <span style={{ fontSize: '9px', color: 'var(--text-muted)', fontWeight: 600 }}>Recovery AI</span>
+                <span style={{ fontSize: '10px', color: 'var(--primary)', fontWeight: 700 }}>Recovery AI</span>
+              </div>
+            </div>
+
+            {/* Patient Profile Card */}
+            <div style={{
+              background: 'var(--bg-glass-card)',
+              border: '1px solid var(--border-glass)',
+              borderRadius: '16px',
+              padding: '10px 12px',
+              marginBottom: '20px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px'
+            }}>
+              <div style={{
+                width: '32px', height: '32px', borderRadius: '50%',
+                background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)',
+                color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '11px', fontWeight: '800'
+              }}>
+                AG
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <strong style={{ fontSize: '12px', color: 'var(--text-main)' }}>Aïda Garba</strong>
+                <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Knee Post-Op • Day 6</span>
               </div>
             </div>
           </div>
@@ -2053,7 +2819,7 @@ function App() {
             onClick={() => { setShowCheckInForm(false); setSelectedTaskId(null); setActiveTab('home'); }}
           >
             <Home size={18} />
-            <span>Today</span>
+            <span>Home</span>
           </button>
 
           <button 
@@ -2064,14 +2830,14 @@ function App() {
             <span>Plan</span>
           </button>
 
-          {/* Floating center sphere AI Assistant button */}
+          {/* Animated Shalom AI Sphere Assistant button */}
           <button 
             className={`tab-item chat-btn-floating ${activeTab === 'chat' ? 'active' : ''}`} 
             onClick={() => { setShowCheckInForm(false); setSelectedTaskId(null); setActiveTab('chat'); }}
-            title="Shalom (AI Assistant)"
+            title="Shalom (AI Recovery Assistant)"
           >
-            <div className="tab-chat-sphere"></div>
-            <span className="sidebar-chat-label" style={{ display: 'none' }}>AI Assistant</span>
+            <div className="shalom-avatar-orb"></div>
+            <span className="sidebar-chat-label">Shalom</span>
           </button>
 
           <button 
@@ -2089,7 +2855,35 @@ function App() {
             <User size={18} />
             <span>Profile</span>
           </button>
+
+          {/* Desktop Care Team Hotline */}
+          <div className="sidebar-careteam-footer">
+            <div style={{
+              background: 'rgba(239, 68, 68, 0.05)',
+              border: '1px solid rgba(239, 68, 68, 0.15)',
+              borderRadius: '14px',
+              padding: '10px 12px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '3px'
+            }}>
+              <span style={{ fontSize: '9.5px', fontWeight: '800', color: 'var(--color-red)', textTransform: 'uppercase', letterSpacing: '0.4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <PhoneCall size={11} /> Care Team Hotline
+              </span>
+              <span style={{ fontSize: '11px', color: 'var(--text-main)', fontWeight: '700' }}>
+                Dr. Smith's Office
+              </span>
+              <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
+                Emergency Hotline: 911
+              </span>
+            </div>
+          </div>
         </nav>
+
+        {/* Main Content Workspace (Scrollable & Responsive) */}
+        <main className={`viewport-screen ${activeTab === 'chat' ? 'chat-active-viewport' : ''}`}>
+          {renderActiveTabContent()}
+        </main>
       </div>
 
       {showAppointmentSummaryModal && (
@@ -2114,9 +2908,9 @@ function App() {
               <span style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--primary)', letterSpacing: '0.5px' }}>Pre-Visit Recovery Report</span>
               <button 
                 onClick={() => setShowAppointmentSummaryModal(false)}
-                style={{ border: 'none', background: 'rgba(0,0,0,0.04)', width: '28px', height: '28px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}
+                style={{ border: 'none', background: 'rgba(0,0,0,0.04)', width: '28px', height: '28px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-main)' }}
               >
-                ✕
+                <X size={15} />
               </button>
             </div>
 
@@ -2126,8 +2920,8 @@ function App() {
             </p>
 
             {/* Before Appointment Instructions */}
-            <div style={{ background: 'rgba(0,140,140,0.03)', padding: '14px', borderRadius: '16px', border: '1px solid rgba(0,140,140,0.05)', marginBottom: '18px', marginTop: '16px' }}>
-              <strong style={{ fontSize: '12px', color: 'var(--text-main)', display: 'block', marginBottom: '8px' }}>📋 Preparation Guidelines</strong>
+            <div style={{ background: 'var(--primary-light)', padding: '14px', borderRadius: '16px', border: '1px solid var(--border-glass)', marginBottom: '18px', marginTop: '16px' }}>
+              <strong style={{ fontSize: '12px', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}><ClipboardList size={13} style={{ color: 'var(--primary)' }} /> Preparation Guidelines</strong>
               <ul style={{ paddingLeft: '16px', margin: 0, fontSize: '11.5px', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '6px', lineHeight: '1.5' }}>
                 <li>Bring your current active medications list.</li>
                 <li>Be prepared to review symptom logs from Days 3–5.</li>
