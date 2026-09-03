@@ -1318,14 +1318,6 @@ function App() {
           </div>
         </div>
 
-        {/* Unified Single Master Card (All 4 Pillars Displayed) */}
-        <div style={{ marginTop: '16px', marginBottom: '8px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--text-main)' }}>Recovery Plan Dashboard</span>
-          </div>
-          {renderUnifiedRecoveryMasterCard()}
-        </div>
-
         {/* Category Filters Bar */}
         <div className="plan-category-filters">
           <button 
