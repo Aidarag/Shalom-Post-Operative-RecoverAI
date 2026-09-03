@@ -122,8 +122,19 @@ function App() {
   const [todayTasks, setTodayTasks] = useState<TodayTask[]>([]);
   const [checkInComplete, setCheckInComplete] = useState<boolean>(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
-  const [hydrationGlasses, setHydrationGlasses] = useState<number>(4);
+  const [hydrationGlasses, setHydrationGlasses] = useState<number>(5); // 5 of 8 glasses as shown in reference
+  const [woundCheckDone, setWoundCheckDone] = useState<boolean>(true);
+  const [woundStatus, setWoundStatus] = useState<'clear' | 'pending' | 'attention'>('clear');
+  const [showIncisionCheckModal, setShowIncisionCheckModal] = useState<boolean>(false);
+  const [toastNotification, setToastNotification] = useState<string | null>(null);
   const [showAppointmentSummaryModal, setShowAppointmentSummaryModal] = useState<boolean>(false);
+
+  const triggerToast = (msg: string) => {
+    setToastNotification(msg);
+    setTimeout(() => {
+      setToastNotification(null);
+    }, 3200);
+  };
   
   // Calendar and date-based task states
   const [selectedDate, setSelectedDate] = useState<Date>(new Date(2026, 7, 28)); // August 28, 2026
@@ -184,31 +195,7 @@ function App() {
   const [sliderMood, setSliderMood] = useState<number>(6);
   const [selectedLogIndex, setSelectedLogIndex] = useState<number>(6);
 
-  // Rotating monitor card state (15s rotation)
-  const [monitorSlideIndex, setMonitorSlideIndex] = useState<number>(0);
-  const [isMonitorPaused, setIsMonitorPaused] = useState<boolean>(false);
-  const [monitorProgress, setMonitorProgress] = useState<number>(0);
   const [isSpeakingHero, setIsSpeakingHero] = useState<boolean>(false);
-
-  useEffect(() => {
-    if (isMonitorPaused) return;
-
-    // Advance progress smoothly over 15 seconds (150ms intervals)
-    const intervalMs = 150;
-    const step = (intervalMs / 15000) * 100;
-
-    const timer = setInterval(() => {
-      setMonitorProgress((prev) => {
-        if (prev >= 100) {
-          setMonitorSlideIndex((slide) => (slide + 1) % 4);
-          return 0;
-        }
-        return prev + step;
-      });
-    }, intervalMs);
-
-    return () => clearInterval(timer);
-  }, [isMonitorPaused]);
 
   const activeHeroUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
 
@@ -301,30 +288,7 @@ function App() {
     }, 50);
   };
 
-  const goToSlide = (idx: number) => {
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window && window.speechSynthesis.speaking) {
-      window.speechSynthesis.cancel();
-      setIsSpeakingHero(false);
-    }
-    setMonitorSlideIndex(idx);
-    setMonitorProgress(0);
-  };
-  const nextSlide = () => {
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window && window.speechSynthesis.speaking) {
-      window.speechSynthesis.cancel();
-      setIsSpeakingHero(false);
-    }
-    setMonitorSlideIndex((prev) => (prev + 1) % 4);
-    setMonitorProgress(0);
-  };
-  const prevSlide = () => {
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window && window.speechSynthesis.speaking) {
-      window.speechSynthesis.cancel();
-      setIsSpeakingHero(false);
-    }
-    setMonitorSlideIndex((prev) => (prev === 0 ? 3 : prev - 1));
-    setMonitorProgress(0);
-  };
+
 
   // History seed logs matching screen 9 with times
   const [historyLogs, setHistoryLogs] = useState<ChartLog[]>([
@@ -629,6 +593,7 @@ function App() {
     };
     handleCheckInComplete(answers, mockReport.status, mockReport);
   };
+  void triggerMockCheckInDirect;
 
   const handleResetCheckIn = () => {
     setCheckInComplete(false);
@@ -712,23 +677,664 @@ function App() {
   };
 
   // ==========================================
+  // CARD 1: SHALOM RECOVER AI (REFERENCE CARD 1)
+  // ==========================================
+  const renderShalomRecoverCard = () => {
+    let dynamicMessage = "Your recovery is on track today.";
+    let dynamicCta = "✦ Continue today's recovery →";
+    let dynamicAction = () => {
+      const nextPending = todayTasks.find(t => !t.completed);
+      if (nextPending) {
+        setSelectedTaskId(nextPending.id);
+      } else {
+        setActiveTab('plan');
+      }
+    };
+
+    if (!checkInComplete) {
+      dynamicMessage = "Your Day 6 recovery check-in is pending. Let's record your pain score & temperature.";
+      dynamicCta = "✦ Start morning check-in →";
+      dynamicAction = () => setShowCheckInForm(true);
+    } else {
+      const pendingActivity = todayTasks.find(t => t.type === 'activity' && !t.completed);
+      if (pendingActivity) {
+        dynamicMessage = `Morning check-in verified (Pain: ${historyLogs[historyLogs.length - 1]?.painLevel || 4}/10). Next up: your physical therapy walk.`;
+        dynamicCta = "✦ Start physical activity →";
+        dynamicAction = () => {
+          toggleTaskCompleted(pendingActivity.id);
+          triggerToast(`Physical activity logged: ${pendingActivity.name}`);
+        };
+      } else if (hydrationGlasses < 8) {
+        dynamicMessage = "Physical therapy on track! Keep sipping water steadily toward your 8-glass goal.";
+        dynamicCta = "✦ Log a glass of water →";
+        dynamicAction = () => {
+          setHydrationGlasses(prev => {
+            const n = Math.min(12, prev + 1);
+            triggerToast(`Logged a glass of water (${n}/8)`);
+            return n;
+          });
+        };
+      } else if (!woundCheckDone) {
+        dynamicMessage = "Remember to inspect your surgical incision and dressing.";
+        dynamicCta = "✦ Check my incision →";
+        dynamicAction = () => setShowIncisionCheckModal(true);
+      } else {
+        dynamicMessage = "Outstanding work today, Aïda! All recovery milestones completed. Keep your leg elevated.";
+        dynamicCta = "✦ Review recovery wins →";
+        dynamicAction = () => setActiveTab('trends');
+      }
+    }
+
+    const currentStatus = activeReport?.status || (checkInComplete ? 'Green' : 'Pending');
+
+    return (
+      <div key="card-shalom-ai" className="plan-card-pro">
+        {/* Top Header */}
+        <div className="plan-card-top-row">
+          <div className="plan-card-badge-left">
+            <div className="plan-card-icon-box" style={{ background: 'linear-gradient(135deg, #3730A3 0%, #4F46E5 100%)', borderColor: 'rgba(99, 102, 241, 0.4)', boxShadow: '0 0 16px rgba(79, 70, 229, 0.4)' }}>
+              <Heart size={16} fill="#E0E7FF" color="#E0E7FF" />
+            </div>
+            <div>
+              <span style={{ fontSize: '13px', fontWeight: 800, color: '#FFFFFF', display: 'block' }}>
+                Shalom Recover AI
+              </span>
+              <span style={{ fontSize: '10.5px', color: '#94A3B8', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: currentStatus === 'Green' ? '#10B981' : currentStatus === 'Yellow' ? '#F59E0B' : '#EF4444', boxShadow: '0 0 6px #10B981' }}></span>
+                {checkInComplete ? `Triage: ${currentStatus}` : 'Online & Monitoring'}
+              </span>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => toggleHeroSpeech(dynamicMessage)}
+            style={{
+              background: 'rgba(255, 255, 255, 0.06)',
+              border: '1px solid rgba(255, 255, 255, 0.12)',
+              borderRadius: '20px',
+              padding: '4px 10px',
+              color: '#C4B5FD',
+              fontSize: '11px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '5px',
+              cursor: 'pointer'
+            }}
+            title={isSpeakingHero ? "Stop speaking" : "Listen to Shalom AI"}
+          >
+            {isSpeakingHero ? <VolumeX size={12} /> : <Volume2 size={12} />}
+            <span>{isSpeakingHero ? "Mute" : "Listen"}</span>
+          </button>
+        </div>
+
+        {/* Speech Bubble pointing right to orb */}
+        <div 
+          className="plan-card-speech-bubble" 
+          onClick={() => toggleHeroSpeech(dynamicMessage)}
+          title="Tap to listen"
+          style={{ cursor: 'pointer' }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+            <Sparkles size={13} style={{ color: '#C084FC' }} />
+            <strong style={{ fontSize: '13.5px', color: '#FFFFFF' }}>
+              Good morning, <span className="plan-card-headline-accent">Aïda.</span>
+            </strong>
+          </div>
+          <p style={{ fontSize: '11.5px', color: '#94A3B8', margin: 0, lineHeight: '1.45' }}>
+            {dynamicMessage}
+          </p>
+        </div>
+
+        {/* Action Button */}
+        <button 
+          type="button" 
+          className="plan-card-cta-btn" 
+          onClick={dynamicAction}
+        >
+          <span>{dynamicCta}</span>
+        </button>
+
+        {/* 3D Glowing Iridescent Spherical Orb (Reference 1) */}
+        <div className="plan-card-orb-container">
+          <div className="plan-orb-reflection"></div>
+          <div className="plan-orb-ring-1"></div>
+          <div className="plan-orb-ring-2"></div>
+          <div className="plan-orb-sphere">
+            {/* Atmospheric inner glow */}
+            <div style={{
+              width: '120px', height: '120px', borderRadius: '50%',
+              background: 'radial-gradient(circle at 35% 35%, rgba(216, 180, 254, 0.35) 0%, rgba(99, 102, 241, 0.15) 50%, transparent 80%)',
+              filter: 'blur(10px)', position: 'absolute'
+            }} />
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // ==========================================
+  // CARD 2: PHYSICAL ACTIVITY (REFERENCE CARD 2)
+  // ==========================================
+  const renderPhysicalActivityCard = () => {
+    const ptTasks = todayTasks.filter(t => t.type === 'activity');
+    const ptDone = ptTasks.filter(t => t.completed).length;
+    const ptTotal = ptTasks.length || 3;
+    const nextActivity = ptTasks.find(t => !t.completed) || ptTasks[0];
+
+    const handleToggleActivity = () => {
+      if (nextActivity) {
+        toggleTaskCompleted(nextActivity.id);
+        const nextDone = ptDone + (nextActivity.completed ? -1 : 1);
+        triggerToast(`Activity updated: ${nextActivity.name} (${Math.max(0, nextDone)}/${ptTotal} done)`);
+      }
+    };
+
+    return (
+      <div key="card-physical-activity" className="plan-card-pro">
+        {/* Top Header */}
+        <div className="plan-card-top-row">
+          <div className="plan-card-badge-left">
+            <div className="plan-card-icon-box">
+              <Activity size={16} />
+            </div>
+            <span className="plan-card-title-track">PHYSICAL ACTIVITY</span>
+          </div>
+
+          <div className="plan-card-status-pill">
+            <Clock size={12} style={{ color: '#C084FC' }} />
+            <span>{nextActivity?.timeHour || '09:00 AM'}</span>
+          </div>
+        </div>
+
+        {/* Headline & Dynamic Text */}
+        <div>
+          <h3 className="plan-card-headline">
+            Time to move,<br />
+            <span className="plan-card-headline-accent">Aïda.</span>
+          </h3>
+
+          <p className="plan-card-subtitle">
+            {ptDone === 0 && "A short walk and your exercises will help your recovery."}
+            {ptDone > 0 && ptDone < ptTotal && `${ptDone} of ${ptTotal} sessions completed. Great job keeping your knee mobile!`}
+            {ptDone >= ptTotal && "All mobility sessions completed today! Fantastic dedication to healing."}
+          </p>
+        </div>
+
+        {/* Nested Plan Card */}
+        <div 
+          className="plan-card-nested-row"
+          onClick={() => nextActivity && setSelectedTaskId(nextActivity.id)}
+          title="Click to view full exercise instructions"
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div className="plan-card-nested-icon" style={{ background: ptDone > 0 ? '#10B981' : 'linear-gradient(135deg, #7C3AED 0%, #A855F7 100%)' }}>
+              {ptDone > 0 ? <Check size={16} /> : `${ptDone}/${ptTotal}`}
+            </div>
+            <div>
+              <strong className="plan-card-nested-title">Today’s plan</strong>
+              <span className="plan-card-nested-desc">
+                {nextActivity?.name || 'Walk 5–10 minutes'} &bull; {ptDone} of {ptTotal} today
+              </span>
+            </div>
+          </div>
+          <ChevronRightIcon size={16} style={{ color: '#64748B' }} />
+        </div>
+
+        {/* Action Button */}
+        <button 
+          type="button" 
+          className="plan-card-cta-btn"
+          onClick={handleToggleActivity}
+        >
+          <span>{ptDone >= ptTotal ? 'All activity completed today ✓' : 'Start your activity →'}</span>
+        </button>
+
+        {/* 3D Glowing Orb with Line-Art Walking Woman (Reference 2) */}
+        <div className="plan-card-orb-container">
+          <div className="plan-orb-reflection"></div>
+          <div className="plan-orb-ring-1"></div>
+          <div className="plan-orb-ring-2"></div>
+          <div className="plan-orb-sphere">
+            {/* SVG Line-Art Walking Woman */}
+            <svg width="86" height="106" viewBox="0 0 100 120" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ filter: 'drop-shadow(0 0 5px rgba(255, 255, 255, 0.85))' }}>
+              {/* Head & Ponytail */}
+              <circle cx="48" cy="18" r="7" stroke="#FFFFFF" strokeWidth="1.8" />
+              <path d="M43 16C40 14 36 17 34 22C37 22 41 20 43 18" stroke="#FFFFFF" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+              {/* Torso */}
+              <path d="M47 25L46 45M50 25L52 45" stroke="#FFFFFF" strokeWidth="1.8" strokeLinecap="round" />
+              <path d="M43 31L35 39M54 31L63 40" stroke="#FFFFFF" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+              {/* Left Arm forward */}
+              <path d="M63 40L68 52" stroke="#FFFFFF" strokeWidth="1.8" strokeLinecap="round" />
+              {/* Right Arm back */}
+              <path d="M35 39L28 48" stroke="#FFFFFF" strokeWidth="1.8" strokeLinecap="round" />
+              {/* Left Leg forward in stride */}
+              <path d="M52 45L62 70L74 95L80 97" stroke="#FFFFFF" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+              {/* Right Leg back in stride */}
+              <path d="M46 45L38 70L28 92L23 93" stroke="#FFFFFF" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+              {/* Left Shoe */}
+              <path d="M74 95L82 98C84 99 83 101 80 101L72 98Z" stroke="#FFFFFF" strokeWidth="1.8" strokeLinejoin="round" />
+              {/* Right Shoe */}
+              <path d="M28 92L21 94C19 95 19 97 22 97L29 94Z" stroke="#FFFFFF" strokeWidth="1.8" strokeLinejoin="round" />
+            </svg>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // ==========================================
+  // CARD 3: DAILY WATER LOG (REFERENCE CARD 3)
+  // ==========================================
+  const renderDailyWaterCard = () => {
+    const handleAddWater = () => {
+      setHydrationGlasses(prev => {
+        const next = Math.min(12, prev + 1);
+        if (next >= 8) {
+          const hydTask = todayTasks.find(t => t.type === 'hydration');
+          if (hydTask && !hydTask.completed) {
+            toggleTaskCompleted(hydTask.id);
+          }
+          triggerToast("Goal reached! 8 of 8 glasses logged today. Excellent tissue recovery!");
+        } else {
+          triggerToast(`Logged a glass of water (${next} of 8 glasses)`);
+        }
+        return next;
+      });
+    };
+
+    const handleSubtractWater = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      setHydrationGlasses(prev => Math.max(0, prev - 1));
+    };
+
+    return (
+      <div key="card-daily-water" className="plan-card-pro">
+        {/* Top Header */}
+        <div className="plan-card-top-row">
+          <div className="plan-card-badge-left">
+            <div className="plan-card-icon-box" style={{ borderColor: 'rgba(56, 189, 248, 0.35)', color: '#38BDF8' }}>
+              <Droplets size={16} />
+            </div>
+            <span className="plan-card-title-track">DAILY WATER LOG</span>
+          </div>
+
+          <div className="plan-card-status-pill" style={{ borderColor: 'rgba(56, 189, 248, 0.3)' }}>
+            <Droplets size={12} style={{ color: '#38BDF8' }} />
+            <span>{hydrationGlasses} of 8 glasses</span>
+          </div>
+        </div>
+
+        {/* Headline & Dynamic Text */}
+        <div>
+          <h3 className="plan-card-headline">
+            Hydrate,<br />
+            <span className="plan-card-headline-accent">Aïda.</span>
+          </h3>
+
+          <p className="plan-card-subtitle">
+            {hydrationGlasses < 8 
+              ? `You’ve had ${hydrationGlasses} glasses today. Let’s hit your goal of 8!` 
+              : `Goal achieved! You've had 8 glasses today. Hydration supports optimal tissue recovery!`}
+          </p>
+        </div>
+
+        {/* Nested Reminder Card */}
+        <div className="plan-card-nested-row">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div className="plan-card-nested-icon" style={{ background: 'linear-gradient(135deg, #0284C7 0%, #38BDF8 100%)' }}>
+              <Droplets size={16} />
+            </div>
+            <div>
+              <strong className="plan-card-nested-title">Next reminder</strong>
+              <span className="plan-card-nested-desc">2:00 PM &bull; Every 2 hours</span>
+            </div>
+          </div>
+          <ChevronRightIcon size={16} style={{ color: '#64748B' }} />
+        </div>
+
+        {/* Action Button Row with quick add & undo */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', position: 'relative', zIndex: 2 }}>
+          <button 
+            type="button" 
+            className="plan-card-cta-btn"
+            onClick={handleAddWater}
+          >
+            <Plus size={14} />
+            <span>Log a glass of water &rarr;</span>
+          </button>
+
+          {hydrationGlasses > 0 && (
+            <button
+              type="button"
+              onClick={handleSubtractWater}
+              style={{
+                background: 'rgba(255, 255, 255, 0.06)',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                borderRadius: '50%',
+                width: '32px',
+                height: '32px',
+                color: '#94A3B8',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '14px',
+                fontWeight: 'bold'
+              }}
+              title="Undo last glass"
+            >
+              -
+            </button>
+          )}
+        </div>
+
+        {/* 3D Glowing Orb with Line-Art Water Droplet (Reference 3) */}
+        <div className="plan-card-orb-container">
+          <div className="plan-orb-reflection"></div>
+          <div className="plan-orb-ring-1"></div>
+          <div className="plan-orb-ring-2"></div>
+          <div className="plan-orb-sphere">
+            {/* SVG Line-Art Water Droplet */}
+            <svg width="74" height="74" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ filter: 'drop-shadow(0 0 6px rgba(56, 189, 248, 0.9))' }}>
+              <path d="M50 16C50 16 23 52 23 68C23 82.9 35.1 95 50 95C64.9 95 77 82.9 77 68C77 52 50 16 50 16Z" stroke="#FFFFFF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+              {/* Droplet Reflection Arc */}
+              <path d="M62 84C68 79 71 71 71 63" stroke="#FFFFFF" strokeWidth="2.2" strokeLinecap="round" />
+            </svg>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // ==========================================
+  // CARD 4: INCISION & WOUND SAFETY (REFERENCE CARD 4)
+  // ==========================================
+  const renderIncisionSafetyCard = () => {
+    return (
+      <div key="card-wound-safety" className="plan-card-pro">
+        {/* Top Header */}
+        <div className="plan-card-top-row">
+          <div className="plan-card-badge-left">
+            <div className="plan-card-icon-box" style={{ borderColor: 'rgba(168, 85, 247, 0.35)' }}>
+              <ShieldCheck size={16} />
+            </div>
+            <div>
+              <span className="plan-card-title-track" style={{ display: 'block' }}>INCISION &amp; WOUND SAFETY</span>
+              <span style={{ fontSize: '10.5px', color: '#94A3B8', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10B981', boxShadow: '0 0 6px #10B981' }}></span>
+                Protection is progress.
+              </span>
+            </div>
+          </div>
+
+          <div className="plan-card-status-pill">
+            {woundStatus === 'clear' ? (
+              <CheckCircle2 size={12} style={{ color: '#10B981' }} />
+            ) : (
+              <AlertTriangle size={12} style={{ color: '#F59E0B' }} />
+            )}
+            <span>{woundStatus === 'clear' ? 'All clear today' : 'Needs review'}</span>
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: woundStatus === 'clear' ? '#10B981' : '#F59E0B' }}></span>
+          </div>
+        </div>
+
+        {/* Headline & Dynamic Text */}
+        <div>
+          <h3 className="plan-card-headline">
+            Let’s keep your<br />
+            <span className="plan-card-headline-accent">healing on track, Aïda.</span>
+          </h3>
+
+          <p className="plan-card-subtitle">
+            {woundStatus === 'clear' 
+              ? "Clean, protect, and watch for any changes. You’re doing great. 💜" 
+              : "Inspect dressing for any warmth, spreading redness, or fluid discharge."}
+          </p>
+        </div>
+
+        {/* Nested Reminder Card */}
+        <div 
+          className="plan-card-nested-row"
+          onClick={() => setShowIncisionCheckModal(true)}
+          title="Click to check incision safety"
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div className="plan-card-nested-icon" style={{ background: 'linear-gradient(135deg, #7C3AED 0%, #C084FC 100%)' }}>
+              <Sparkles size={16} />
+            </div>
+            <div>
+              <strong className="plan-card-nested-title">Next check-in reminder</strong>
+              <span className="plan-card-nested-desc">12:00 PM today &bull; Visual inspection</span>
+            </div>
+          </div>
+          <ChevronRightIcon size={16} style={{ color: '#64748B' }} />
+        </div>
+
+        {/* Action Button */}
+        <button 
+          type="button" 
+          className="plan-card-cta-btn"
+          onClick={() => setShowIncisionCheckModal(true)}
+        >
+          <ShieldCheck size={14} />
+          <span>{woundStatus === 'clear' ? 'Check my incision →' : 'Review incision status →'}</span>
+        </button>
+
+        {/* Bottom Full-Width Tip Banner (Reference 4) */}
+        <div className="plan-card-tip-banner">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ width: '26px', height: '26px', borderRadius: '50%', background: 'rgba(168, 85, 247, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#C084FC', flexShrink: 0 }}>
+              <Info size={13} />
+            </div>
+            <div>
+              <strong style={{ fontSize: '10.5px', color: '#C4B5FD', display: 'block' }}>Tip of the day</strong>
+              <span style={{ fontSize: '10.5px', color: '#94A3B8' }}>
+                Keep the area clean and dry. Avoid soaking in water until cleared by your care team.
+              </span>
+            </div>
+          </div>
+          <span style={{ fontSize: '10.5px', color: '#C084FC', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }} onClick={() => { setActiveTab('plan'); setPlanCategoryFilter('wound'); }}>
+            Learn more &gt;
+          </span>
+        </div>
+
+        {/* 3D Glowing Orb with Shield & Stitches (Reference 4) */}
+        <div className="plan-card-orb-container" style={{ top: '42%' }}>
+          <div className="plan-orb-reflection"></div>
+          <div className="plan-orb-ring-1"></div>
+          <div className="plan-orb-ring-2"></div>
+          <div className="plan-orb-sphere">
+            {/* SVG Line-Art Shield with Stitches and Sparkle Star */}
+            <svg width="78" height="88" viewBox="0 0 100 110" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ filter: 'drop-shadow(0 0 5px rgba(216, 180, 254, 0.85))' }}>
+              {/* Shield Outline */}
+              <path d="M50 14L24 26V54C24 74 35 90 50 98C65 90 76 74 76 54V26L50 14Z" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              {/* Incision Line */}
+              <path d="M50 32C49 43 51 55 49 76" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" />
+              {/* Horizontal Stitches */}
+              <path d="M43 38L57 38" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" />
+              <path d="M42 47L58 47" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" />
+              <path d="M41 56L59 56" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" />
+              <path d="M43 65L57 65" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" />
+              <path d="M44 73L56 73" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" />
+              {/* Sparkle Star */}
+              <path d="M66 60L67.5 64L71.5 65.5L67.5 67L66 71L64.5 67L60.5 65.5L64.5 64L66 60Z" fill="#FFFFFF" />
+            </svg>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // ==========================================
+  // INCISION & WOUND SAFETY CHECK MODAL
+  // ==========================================
+  const renderIncisionCheckModal = () => {
+    if (!showIncisionCheckModal) return null;
+
+    const handleConfirmClear = () => {
+      setWoundCheckDone(true);
+      setWoundStatus('clear');
+      const woundTask = todayTasks.find(t => t.type === 'wound');
+      if (woundTask && !woundTask.completed) {
+        toggleTaskCompleted(woundTask.id);
+      }
+      setShowIncisionCheckModal(false);
+      triggerToast("Incision check verified: All clear today. Great job keeping your wound protected!");
+    };
+
+    const handleReportConcern = () => {
+      setWoundCheckDone(true);
+      setWoundStatus('attention');
+      setShowIncisionCheckModal(false);
+      triggerToast("Concern flagged: Care team alerted. Please keep leg elevated.");
+    };
+
+    return (
+      <div className="glass-modal-overlay" style={{
+        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+        background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)',
+        zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: '20px', animation: 'fadeIn 0.2s ease-out'
+      }}>
+        <div className="glass-card" style={{
+          background: 'rgba(255, 255, 255, 0.98)',
+          border: '1.5px solid var(--border-glass)',
+          borderRadius: '26px',
+          width: '100%',
+          maxWidth: '500px',
+          padding: '24px',
+          boxShadow: '0 24px 60px rgba(0, 0, 0, 0.25)',
+          maxHeight: '90vh',
+          overflowY: 'auto'
+        }}>
+          {/* Header */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'rgba(124, 58, 237, 0.1)', color: '#7C3AED', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <ShieldCheck size={18} />
+              </div>
+              <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: '#7C3AED', letterSpacing: '0.5px' }}>
+                Incision &amp; Wound Safety Check
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowIncisionCheckModal(false)}
+              style={{ border: 'none', background: 'rgba(0,0,0,0.05)', width: '28px', height: '28px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+              <X size={15} />
+            </button>
+          </div>
+
+          <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 4px 0' }}>
+            Daily Knee Incision Inspection
+          </h3>
+          <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '0 0 16px 0', lineHeight: '1.4' }}>
+            Inspect your left knee surgical dressing and skin margins. Look for normal closure and verify that no concerning symptoms are present.
+          </p>
+
+          {/* Checklist questions */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
+            <div style={{ padding: '12px', borderRadius: '14px', background: 'rgba(0,0,0,0.02)', border: '1px solid var(--border-glass)' }}>
+              <strong style={{ fontSize: '12px', color: 'var(--text-main)', display: 'block', marginBottom: '4px' }}>
+                1. Incision Dressing Condition
+              </strong>
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '8px', background: '#DCFCE7', color: '#15803D', fontWeight: 700 }}>Clean &amp; Dry ✓</span>
+                <span style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '8px', background: '#F1F5F9', color: '#64748B' }}>Minor Clear Fluid</span>
+                <span style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '8px', background: '#F1F5F9', color: '#64748B' }}>Heavy Drainage</span>
+              </div>
+            </div>
+
+            <div style={{ padding: '12px', borderRadius: '14px', background: 'rgba(0,0,0,0.02)', border: '1px solid var(--border-glass)' }}>
+              <strong style={{ fontSize: '12px', color: 'var(--text-main)', display: 'block', marginBottom: '4px' }}>
+                2. Redness &amp; Swelling Margins
+              </strong>
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '8px', background: '#DCFCE7', color: '#15803D', fontWeight: 700 }}>Normal / Mild (&lt; 1 inch) ✓</span>
+                <span style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '8px', background: '#F1F5F9', color: '#64748B' }}>Spreading Redness</span>
+                <span style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '8px', background: '#F1F5F9', color: '#64748B' }}>Hot to Touch</span>
+              </div>
+            </div>
+
+            <div style={{ padding: '12px', borderRadius: '14px', background: 'rgba(0,0,0,0.02)', border: '1px solid var(--border-glass)' }}>
+              <strong style={{ fontSize: '12px', color: 'var(--text-main)', display: 'block', marginBottom: '4px' }}>
+                3. Body Temperature
+              </strong>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Thermometer size={14} style={{ color: 'var(--primary)' }} />
+                <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-main)' }}>98.6°F &bull; Normal (No fever detected)</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Action buttons */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <button
+              type="button"
+              onClick={handleConfirmClear}
+              style={{
+                background: 'linear-gradient(90deg, #10B981 0%, #059669 100%)',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '14px',
+                padding: '12px',
+                fontSize: '13px',
+                fontWeight: 800,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                boxShadow: '0 4px 14px rgba(16, 185, 129, 0.3)'
+              }}
+            >
+              <CheckCircle2 size={16} /> Confirm All Clear &bull; Healing on Track
+            </button>
+
+            <button
+              type="button"
+              onClick={handleReportConcern}
+              style={{
+                background: 'transparent',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                color: '#DC2626',
+                borderRadius: '14px',
+                padding: '10px',
+                fontSize: '11.5px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px'
+              }}
+            >
+              <AlertTriangle size={14} />
+              <span>Report a Concern to Dr. Carter's Office</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // ==========================================
   // RENDER TAB 1: Today (Home Tab - Screen 1)
   // ==========================================
   const renderHomeTab = () => {
-    // Group tasks dynamically for the Dashboard segments
     const medicationTasks = todayTasks.filter(t => t.type === 'medication');
-    const activityTasks = todayTasks.filter(t => t.type === 'activity');
-
     const totalMeds = medicationTasks.length;
     const completedMeds = medicationTasks.filter(t => t.completed).length;
 
     return (
       <div className="home-tab-container" style={{ animation: 'fadeIn 0.3s ease-out' }}>
         {/* Top Greeting Row with Avatar */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div style={{
-              width: '38px', height: '38px', borderRadius: '50%',
+              width: '40px', height: '40px', borderRadius: '50%',
               background: 'linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%)',
               color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontWeight: 800, fontSize: '14px', border: '2px solid #ffffff',
@@ -738,280 +1344,33 @@ function App() {
             </div>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               <span style={{ fontSize: '10.5px', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Recovery Plan</span>
-              <strong style={{ fontSize: '16px', color: 'var(--text-main)', fontWeight: '800' }}>Good morning Aïda!</strong>
+              <strong style={{ fontSize: '16px', color: 'var(--text-main)', fontWeight: '800' }}>Good morning, Aïda!</strong>
             </div>
           </div>
-          <button className="bell-btn" style={{ 
-            width: '36px', height: '36px', borderRadius: '50%', background: 'var(--bg-glass-card)', 
-            border: '1px solid var(--border-glass)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer', transition: 'var(--transition-fluid)'
-          }} onClick={() => triggerMockCheckInDirect('green')} title="Mock checkin stable">
-            <CheckCircle2 size={15} style={{ color: 'var(--primary)' }} />
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--primary)', background: 'var(--primary-light)', padding: '4px 10px', borderRadius: '12px' }}>
+              Day 6 Post-Op
+            </span>
+          </div>
         </div>
 
-        {/* Interactive Shalom Recover AI Bubble Hero Card (15s rotation + TTS voice) */}
-        <div 
-          className="shalom-hero-card"
-          onMouseEnter={() => setIsMonitorPaused(true)}
-          onMouseLeave={() => setIsMonitorPaused(false)}
-        >
-          {/* Subtle glossy background orbs */}
-          <div style={{ position: 'absolute', top: '-50px', right: '-50px', width: '160px', height: '160px', borderRadius: '50%', background: 'rgba(255,255,255,0.06)', filter: 'blur(20px)', pointerEvents: 'none' }}></div>
-          <div style={{ position: 'absolute', bottom: '-40px', left: '-40px', width: '130px', height: '130px', borderRadius: '50%', background: 'rgba(255,255,255,0.04)', filter: 'blur(16px)', pointerEvents: 'none' }}></div>
-
-          {/* Header Row: Shalom AI Avatar Presence + Live Online + Controls */}
-          <div className="shalom-ai-header-row">
-            <div 
-              className="shalom-ai-presence" 
-              onClick={() => {
-                const currentMsg = [
-                  'Good morning Aïda! Take 2 minutes to check in your pain and vitals so I can keep Dr. Smith and your care team updated.',
-                  'Aïda, remember to stay hydrated! Sip water steadily toward your 8-glass goal, and take your scheduled medications with food to prevent nausea.',
-                  'Time for your gentle knee rehab! Complete your 3 sets of ankle pumps and quad sets, and take a short supported walk with your walker.',
-                  'Remember to keep your incision dressing clean and dry today. Prop your leg on 2 pillows under your calf to keep swelling down.'
-                ][monitorSlideIndex];
-                toggleHeroSpeech(currentMsg);
-              }}
-              title={isSpeakingHero ? "Click to stop speaking" : "Tap to hear Shalom AI speak"}
-            >
-              <div className="shalom-avatar-orb"></div>
-              <div className="shalom-presence-info">
-                <span className="shalom-ai-name">
-                  Shalom Recover AI
-                  {isSpeakingHero && (
-                    <span className="shalom-audio-wave">
-                      <span></span><span></span><span></span>
-                    </span>
-                  )}
-                </span>
-                <span className="shalom-live-status">
-                  <span className="shalom-status-dot"></span>
-                  {isSpeakingHero ? 'Speaking...' : 'Online & Monitoring'}
-                </span>
-              </div>
-            </div>
-
-            {/* Slide Dots + Audio Speak Button + Nav Arrows */}
-            <div className="shalom-nav-controls">
-              {/* Speaker / Listen toggle button */}
-              <button
-                type="button"
-                className={`shalom-audio-btn ${isSpeakingHero ? 'speaking' : ''}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  const currentMsg = [
-                    'Good morning Aïda! Take 2 minutes to check in your pain and vitals so I can keep Dr. Smith and your care team updated.',
-                    'Aïda, remember to stay hydrated! Sip water steadily toward your 8-glass goal, and take your scheduled medications with food to prevent nausea.',
-                    'Time for your gentle knee rehab! Complete your 3 sets of ankle pumps and quad sets, and take a short supported walk with your walker.',
-                    'Remember to keep your incision dressing clean and dry today. Prop your leg on 2 pillows under your calf to keep swelling down.'
-                  ][monitorSlideIndex];
-                  toggleHeroSpeech(currentMsg);
-                }}
-                title={isSpeakingHero ? 'Click to stop / mute voice' : 'Listen to Shalom AI voice'}
-              >
-                {isSpeakingHero ? (
-                  <>
-                    <div className="audio-mini-bars">
-                      <span></span><span></span><span></span>
-                    </div>
-                    <VolumeX size={12} />
-                    <span>Stop</span>
-                  </>
-                ) : (
-                  <>
-                    <Volume2 size={13} />
-                    <span>Listen</span>
-                  </>
-                )}
-              </button>
-
-              {/* Dot indicators */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                {[0, 1, 2, 3].map((idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    className={`shalom-dot-btn ${monitorSlideIndex === idx ? 'active' : ''}`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      goToSlide(idx);
-                    }}
-                    title={`Slide ${idx + 1}`}
-                  />
-                ))}
-              </div>
-
-              {/* Prev / Next */}
-              <button
-                type="button"
-                className="monitor-arrow-btn"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  prevSlide();
-                }}
-                title="Previous message"
-              >
-                <ChevronLeft size={14} />
-              </button>
-              <button
-                type="button"
-                className="monitor-arrow-btn"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  nextSlide();
-                }}
-                title="Next message"
-              >
-                <ChevronRightIcon size={14} />
-              </button>
-            </div>
+        {/* Recovery Plan Dashboard Section Header */}
+        <div className="section-header-row" style={{ gridColumn: 'span 2', marginBottom: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span className="section-title">Recovery Plan Dashboard</span>
+            <span style={{ fontSize: '10.5px', fontWeight: 800, color: 'var(--primary)', background: 'rgba(79, 70, 229, 0.1)', padding: '2px 8px', borderRadius: '8px' }}>
+              Interactive
+            </span>
           </div>
+          <button className="section-link" onClick={() => setActiveTab('plan')}>View full schedule &rarr;</button>
+        </div>
 
-          {/* Interactive Speech Bubble */}
-          <div 
-            key={monitorSlideIndex} 
-            className="shalom-speech-bubble"
-            onClick={() => {
-              if (monitorSlideIndex === 0) setShowCheckInForm(true);
-              else if (monitorSlideIndex === 1) setHydrationGlasses(prev => Math.min(8, prev + 1));
-              else if (monitorSlideIndex === 2) { setActiveTab('plan'); setPlanCategoryFilter('activity'); }
-              else if (monitorSlideIndex === 3) { setActiveTab('plan'); setPlanCategoryFilter('wound'); }
-            }}
-          >
-            {monitorSlideIndex === 0 && (
-              <>
-                <div className="shalom-bubble-tag">
-                  <Heart size={11} fill="currentColor" />
-                  <span>Daily Morning Triage • Day 6</span>
-                </div>
-                <p className="shalom-bubble-message">
-                  “Good morning Aïda! How are you feeling today? Take 2 minutes to check in your pain &amp; temperature so I can keep Dr. Smith and your care team updated.”
-                </p>
-              </>
-            )}
-
-            {monitorSlideIndex === 1 && (
-              <>
-                <div className="shalom-bubble-tag">
-                  <Droplets size={11} />
-                  <span>Diet &amp; Hydration Goal</span>
-                </div>
-                <p className="shalom-bubble-message">
-                  “Aïda, don’t forget your hydration goal! Sip water steadily toward your 8 glasses, and take scheduled medications with a light meal to prevent nausea.”
-                </p>
-              </>
-            )}
-
-            {monitorSlideIndex === 2 && (
-              <>
-                <div className="shalom-bubble-tag">
-                  <Activity size={11} />
-                  <span>Physical Therapy &amp; Movement</span>
-                </div>
-                <p className="shalom-bubble-message">
-                  “Time for gentle knee exercises! Let's do your 3 sets of ankle pumps &amp; quad sets, and take a short 5-minute walk with your walker. Stop if you feel sharp pain.”
-                </p>
-              </>
-            )}
-
-            {monitorSlideIndex === 3 && (
-              <>
-                <div className="shalom-bubble-tag">
-                  <ShieldAlert size={11} />
-                  <span>Incision &amp; Wound Safety</span>
-                </div>
-                <p className="shalom-bubble-message">
-                  “Remember to keep your incision dressing clean &amp; strictly dry. Propping your leg on 2 pillows under your calf will help keep any swelling down.”
-                </p>
-              </>
-            )}
-          </div>
-
-          {/* Action Row */}
-          <div className="shalom-action-row">
-            {monitorSlideIndex === 0 && (
-              <>
-                <button
-                  type="button"
-                  className="shalom-primary-btn"
-                  onClick={() => setShowCheckInForm(true)}
-                >
-                  <Heart size={13} fill="currentColor" />
-                  <span>{checkInComplete ? 'Review Check-In' : 'Start Morning Check-In'}</span>
-                </button>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontWeight: '700', color: '#ffffff' }}>
-                  <span style={{
-                    width: '7px', height: '7px', borderRadius: '50%',
-                    background: checkInComplete ? (activeReport?.status === 'Green' ? '#10B981' : activeReport?.status === 'Yellow' ? '#F59E0B' : '#EF4444') : '#94A3B8',
-                    boxShadow: checkInComplete ? '0 0 8px #10B981' : 'none'
-                  }}></span>
-                  <span>{checkInComplete ? `Triage Status: ${activeReport?.status || 'Green'}` : 'Pending Today’s Log'}</span>
-                </div>
-              </>
-            )}
-
-            {monitorSlideIndex === 1 && (
-              <>
-                <button
-                  type="button"
-                  className="shalom-primary-btn"
-                  onClick={() => setHydrationGlasses(prev => Math.min(8, prev + 1))}
-                >
-                  <Droplets size={13} />
-                  <span>+ Log 1 Glass ({hydrationGlasses}/8)</span>
-                </button>
-
-                <span style={{ fontSize: '11px', fontWeight: '700', color: 'rgba(255,255,255,0.9)' }}>
-                  {hydrationGlasses >= 8 ? 'Hydration Goal Reached!' : `${8 - hydrationGlasses} glasses left today`}
-                </span>
-              </>
-            )}
-
-            {monitorSlideIndex === 2 && (
-              <>
-                <button
-                  type="button"
-                  className="shalom-primary-btn"
-                  onClick={() => {
-                    setActiveTab('plan');
-                    setPlanCategoryFilter('activity');
-                  }}
-                >
-                  <Activity size={13} />
-                  <span>Open PT Exercises</span>
-                </button>
-
-                <span style={{ fontSize: '11px', fontWeight: '700', color: 'rgba(255,255,255,0.9)' }}>
-                  {todayTasks.filter(t => t.type === 'activity' && t.completed).length} of {todayTasks.filter(t => t.type === 'activity').length} exercises completed
-                </span>
-              </>
-            )}
-
-            {monitorSlideIndex === 3 && (
-              <>
-                <button
-                  type="button"
-                  className="shalom-primary-btn"
-                  onClick={() => {
-                    setActiveTab('plan');
-                    setPlanCategoryFilter('wound');
-                  }}
-                >
-                  <ShieldAlert size={13} />
-                  <span>View Wound Protocol</span>
-                </button>
-
-                <span style={{ fontSize: '11px', fontWeight: '700', color: 'rgba(255,255,255,0.9)' }}>
-                  Next cold compress: 02:30 PM
-                </span>
-              </>
-            )}
-          </div>
-
-          {/* 15s Countdown Progress line */}
-          <div className="shalom-timer-bar" style={{ width: `${monitorProgress}%` }}></div>
+        {/* 4 Core Recovery Dashboard Cards Grid (Reference-Inspired) */}
+        <div className="recovery-plan-grid">
+          {renderShalomRecoverCard()}
+          {renderPhysicalActivityCard()}
+          {renderDailyWaterCard()}
+          {renderIncisionSafetyCard()}
         </div>
 
         {/* Talk to Shalom AI - Compact Horizontal Link Card */}
@@ -1023,7 +1382,7 @@ function App() {
           borderRadius: '18px',
           border: '1.5px solid var(--border-glass)',
           background: 'linear-gradient(135deg, rgba(79, 70, 229, 0.05) 0%, rgba(6, 182, 212, 0.03) 100%)',
-          marginBottom: '14px',
+          marginBottom: '16px',
           cursor: 'pointer',
           transition: 'all 0.2s ease'
         }} onClick={() => setActiveTab('chat')}>
@@ -1040,196 +1399,107 @@ function App() {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, gap: '2px' }}>
             <strong style={{ fontSize: '12.5px', color: 'var(--text-main)' }}>Talk to Shalom AI</strong>
-            <span style={{ fontSize: '10.5px', color: 'var(--text-muted)', lineHeight: '1.3' }}>Ask anything about recovery instructions or pain limits</span>
+            <span style={{ fontSize: '10.5px', color: 'var(--text-muted)', lineHeight: '1.3' }}>Ask anything about recovery instructions, pain limits, or knee rehab</span>
           </div>
           <ChevronRightIcon size={16} style={{ color: 'var(--primary)' }} />
         </div>
 
-        {/* Today's Tasks Section Header */}
-        <div className="section-header-row" style={{ gridColumn: 'span 2', marginBottom: '10px' }}>
-          <span className="section-title">Clinical Recovery Dashboard</span>
-          <button className="section-link" onClick={() => setActiveTab('plan')}>View full schedule</button>
-        </div>
-
-        {/* 4 Core Recovery Dashboard Cards Grid */}
-        <div className="home-dashboard-4grid">
-          
-          {/* Card 1: Scheduled Medications */}
-          <div className="dashboard-card-pro">
-            <div className="dashboard-card-header">
+        {/* Prescribed Medications & Follow-Up Strip */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: isDesktop ? '1.2fr 0.8fr' : '1fr',
+          gap: '16px',
+          marginTop: '8px'
+        }}>
+          {/* Medications Card */}
+          <div className="glass-card" style={{
+            padding: '16px 20px',
+            borderRadius: '20px',
+            border: '1.5px solid var(--border-glass)',
+            background: 'var(--bg-glass-card)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
-                  <Pill size={14} />
+                <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Pill size={15} />
                 </div>
-                <strong style={{ fontSize: '13px', color: 'var(--text-main)', letterSpacing: '0.2px' }}>
-                  Scheduled Medications
-                </strong>
+                <strong style={{ fontSize: '13px', color: 'var(--text-main)' }}>Prescribed Medications</strong>
               </div>
-              <span className="dashboard-card-badge">
-                {completedMeds} of {totalMeds} completed
+              <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--primary)', background: 'var(--primary-light)', padding: '2px 8px', borderRadius: '10px' }}>
+                {completedMeds} of {totalMeds} taken
               </span>
             </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px' }}>
-              {medicationTasks.map(task => (
-                <div key={task.id} className={`task-card-row ${task.completed ? 'completed' : ''}`} onClick={() => setSelectedTaskId(task.id)}>
-                  <div className="task-card-left">
-                    <div className="task-card-icon-wrap" style={{ backgroundColor: 'var(--primary-light)', color: 'var(--primary)' }}>
-                      <Pill size={13} />
-                    </div>
-                    <div className="task-card-text">
-                      <span className="task-card-title">{task.name}</span>
-                      <span className="task-card-subtitle">{task.dose}</span>
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span className="task-card-time">{task.timeHour}</span>
-                    <span className={`task-checkbox-indicator ${task.completed ? 'checked' : ''}`} onClick={(e) => {
-                      e.stopPropagation();
-                      toggleTaskCompleted(task.id);
-                    }}>
-                      {task.completed ? '✓' : ''}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Card 2: Activities & Limits */}
-          <div className="dashboard-card-pro">
-            <div className="dashboard-card-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(6, 182, 212, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)' }}>
-                  <Activity size={14} />
-                </div>
-                <strong style={{ fontSize: '13px', color: 'var(--text-main)', letterSpacing: '0.2px' }}>
-                  Activities &amp; Limits
-                </strong>
-              </div>
-              <span className="dashboard-card-badge" style={{ background: 'rgba(6, 182, 212, 0.1)', color: 'var(--accent-dark)' }}>
-                {activityTasks.filter(t => t.completed).length} of {activityTasks.length} done
-              </span>
-            </div>
-            
-            {/* Exercises items */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px' }}>
-              {activityTasks.map(task => (
-                <div key={task.id} className={`task-card-row ${task.completed ? 'completed' : ''}`} onClick={() => setSelectedTaskId(task.id)} style={{ padding: '10px' }}>
-                  <div className="task-card-left">
-                    <span className={`task-checkbox-indicator ${task.completed ? 'checked' : ''}`} style={{ marginRight: '8px' }} onClick={(e) => {
-                      e.stopPropagation();
-                      toggleTaskCompleted(task.id);
-                    }}>
-                      {task.completed ? '✓' : ''}
-                    </span>
-                    <div className="task-card-text">
-                      <span className="task-card-title" style={{ fontSize: '11.5px' }}>{task.name}</span>
-                    </div>
-                  </div>
-                  <span className="task-card-time" style={{ fontSize: '10px' }}>{task.timeHour}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* Restrictions list */}
-            <div style={{ background: 'rgba(217, 119, 6, 0.06)', padding: '10px 12px', borderRadius: '14px', border: '1px solid rgba(217, 119, 6, 0.15)', marginTop: '8px' }}>
-              <strong style={{ fontSize: '10.5px', color: 'var(--color-yellow)', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
-                <AlertTriangle size={12} />
-                <span>Active Restrictions</span>
-              </strong>
-              <ul style={{ paddingLeft: '14px', margin: 0, fontSize: '10.5px', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                <li>Do not lift objects heavier than 10 lbs.</li>
-                <li>Do not drive while taking pain medication.</li>
-                <li>Keep walking to flat surfaces. No running.</li>
-              </ul>
-            </div>
-          </div>
-
-          {/* Card 3: Incision Care & Dressing */}
-          <div className="dashboard-card-pro">
-            <div className="dashboard-card-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(239, 68, 68, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-red)' }}>
-                  <ShieldAlert size={14} />
-                </div>
-                <strong style={{ fontSize: '13px', color: 'var(--text-main)', letterSpacing: '0.2px' }}>
-                  Incision Care &amp; Dressing
-                </strong>
-              </div>
-              <span className="dashboard-card-badge" style={{ background: 'rgba(239, 68, 68, 0.08)', color: 'var(--color-red)' }}>
-                Next due: 6:00 PM
-              </span>
-            </div>
-
-            <p style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.4', margin: '8px 0 10px 0' }}>
-              Dressing change due at <strong>6:00 PM</strong>. Follow surgical sterile steps:
-            </p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <div className="task-card-row" style={{ padding: '8px 12px' }}>
-                <span style={{ fontSize: '11px', color: 'var(--text-main)', fontWeight: '600' }}>1. Wash hands thoroughly with soap &amp; warm water</span>
-              </div>
-              <div className="task-card-row" style={{ padding: '8px 12px' }}>
-                <span style={{ fontSize: '11px', color: 'var(--text-main)', fontWeight: '600' }}>2. Inspect wound for excess redness or fluid drainage</span>
-              </div>
-              <div className="task-card-row" style={{ padding: '8px 12px' }}>
-                <span style={{ fontSize: '11px', color: 'var(--text-main)', fontWeight: '600' }}>3. Clean gently with sterile saline &amp; apply fresh dry gauze</span>
-              </div>
-              <div className="task-card-row" style={{ padding: '8px 12px' }}>
-                <span style={{ fontSize: '11px', color: 'var(--text-main)', fontWeight: '600' }}>4. Keep incision completely dry during sponge bathing</span>
-              </div>
-            </div>
-
-            <div style={{ background: 'var(--bg-green)', padding: '8px 12px', borderRadius: '12px', border: '1px solid rgba(5, 150, 105, 0.15)', marginTop: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--color-green)' }}></span>
-              <span style={{ fontSize: '10.5px', color: 'var(--color-green)', fontWeight: '700' }}>Status: Incision clean &amp; healing normally (Day 6)</span>
+              {medicationTasks.slice(0, 3).map(task => (
+                <div 
+                  key={task.id}
+                  className={`task-card-row ${task.completed ? 'completed' : ''}`}
+                  onClick={() => setSelectedTaskId(task.id)}
+                  style={{ padding: '8px 12px', cursor: 'pointer' }}
+                >
+                  <div className="task-card-left">
+                    <span className="task-card-title" style={{ fontSize: '12px' }}>{task.name}</span>
+                    <span className="task-card-subtitle" style={{ fontSize: '10.5px' }}>{task.dose}</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span className="task-card-time" style={{ fontSize: '10.5px' }}>{task.timeHour}</span>
+                    <span 
+                      className={`task-checkbox-indicator ${task.completed ? 'checked' : ''}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleTaskCompleted(task.id);
+                      }}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      {task.completed ? '✓' : ''}
+                    </span>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* Card 4: Follow-Up Appointments */}
-          <div className="dashboard-card-pro">
-            <div className="dashboard-card-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
-                  <Calendar size={14} />
+          {/* Follow-Up Card */}
+          <div className="glass-card" style={{
+            padding: '16px 20px',
+            borderRadius: '20px',
+            border: '1.5px solid var(--border-glass)',
+            background: 'var(--bg-glass-card)',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between'
+          }}>
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'rgba(79, 70, 229, 0.1)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Calendar size={15} />
+                  </div>
+                  <strong style={{ fontSize: '13px', color: 'var(--text-main)' }}>Follow-Up Appointment</strong>
                 </div>
-                <strong style={{ fontSize: '13px', color: 'var(--text-main)', letterSpacing: '0.2px' }}>
-                  Follow-Up Appointments
-                </strong>
+                <span style={{ fontSize: '10.5px', fontWeight: 700, color: 'var(--primary)', background: 'var(--primary-light)', padding: '2px 8px', borderRadius: '8px' }}>
+                  In 6 Days
+                </span>
               </div>
-              <span className="dashboard-card-badge">
-                In 6 Days
-              </span>
-            </div>
 
-            <div style={{ background: 'var(--primary-light)', padding: '12px 14px', borderRadius: '16px', border: '1px solid var(--border-glass)', margin: '10px 0 12px 0' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                <strong style={{ fontSize: '12.5px', color: 'var(--text-main)' }}>Dr. Robert Smith</strong>
-                <span style={{ fontSize: '10px', color: 'var(--primary)', fontWeight: '700', background: '#ffffff', padding: '2px 8px', borderRadius: '8px' }}>Orthopedic Surgical</span>
+              <div style={{ background: 'var(--primary-light)', padding: '10px 12px', borderRadius: '12px', marginBottom: '8px' }}>
+                <strong style={{ fontSize: '12px', color: 'var(--text-main)', display: 'block' }}>Dr. James Carter, MD</strong>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                  Sept 5, 2026 at 10:30 AM &bull; Suite 400
+                </span>
               </div>
-              <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px', lineHeight: '1.4' }}>
-                <Calendar size={12} style={{ color: 'var(--primary)', flexShrink: 0 }} />
-                <span><strong>Sept 5, 2026 at 10:30 AM</strong> • Orthopedic Clinic Suite 400</span>
-              </span>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '12px' }}>
-              <span style={{ fontSize: '10.5px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                <ClipboardList size={12} style={{ color: 'var(--primary)', flexShrink: 0 }} />
-                <span><strong>Preparation Checklist:</strong> Bring current medications &amp; symptom logs from Days 3–5.</span>
-              </span>
-            </div>
-
-            <button 
+            <button
+              type="button"
               className="meds-action-btn"
-              style={{ fontSize: '11.5px', padding: '10px 14px', width: '100%', textTransform: 'none', borderRadius: '14px' }}
+              style={{ fontSize: '11.5px', padding: '9px 12px', width: '100%', borderRadius: '12px' }}
               onClick={() => setShowAppointmentSummaryModal(true)}
             >
-              Prep Instructions &amp; Pre-Visit Report
+              Pre-Visit Instructions &rarr;
             </button>
           </div>
-
         </div>
       </div>
     );
@@ -1335,6 +1605,20 @@ function App() {
 
           <div className="plan-progress-bar-bg">
             <div className="plan-progress-bar-fill" style={{ width: `${progressPercent}%` }}></div>
+          </div>
+        </div>
+
+        {/* Interactive Recovery Plan 4-Card Dashboard */}
+        <div style={{ marginTop: '16px', marginBottom: '8px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+            <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--text-main)' }}>Interactive Recovery Dashboard</span>
+            <span style={{ fontSize: '10.5px', color: 'var(--primary)', fontWeight: 700 }}>4 Core Milestones</span>
+          </div>
+          <div className="recovery-plan-grid">
+            {renderShalomRecoverCard()}
+            {renderPhysicalActivityCard()}
+            {renderDailyWaterCard()}
+            {renderIncisionSafetyCard()}
           </div>
         </div>
 
@@ -5159,8 +5443,38 @@ function App() {
           </div>
         </div>
       )}
+
+      {/* Incision & Wound Safety Check Modal */}
+      {renderIncisionCheckModal()}
+
+      {/* Toast Notification Alert */}
+      {toastNotification && (
+        <div style={{
+          position: 'fixed',
+          bottom: '24px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: 'rgba(15, 23, 42, 0.95)',
+          color: '#ffffff',
+          padding: '10px 20px',
+          borderRadius: '20px',
+          border: '1px solid rgba(99, 102, 241, 0.4)',
+          boxShadow: '0 12px 30px rgba(0, 0, 0, 0.35)',
+          fontSize: '12px',
+          fontWeight: 700,
+          zIndex: 99999,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          animation: 'fadeIn 0.25s ease-out'
+        }}>
+          <Sparkles size={14} style={{ color: '#A855F7' }} />
+          <span>{toastNotification}</span>
+        </div>
+      )}
     </div>
   );
 }
 
 export default App;
+
