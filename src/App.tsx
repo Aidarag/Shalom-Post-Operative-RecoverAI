@@ -22,7 +22,6 @@ import {
   Thermometer,
   Moon,
   Info,
-  Palette,
   Sparkles,
   Droplets,
   Volume2,
@@ -33,7 +32,6 @@ import {
   Leaf,
   Zap,
   Feather,
-  Sun,
   PhoneCall,
   X,
   Trophy,
@@ -41,7 +39,9 @@ import {
   Target,
   Star,
   Award,
-  TrendingDown
+  TrendingDown,
+  Bell,
+  BellOff
 } from 'lucide-react';
 import { ChatInterface } from './components/ChatInterface';
 import { type CheckInAnswers, type CareTeamReport, normalizePatientRecord } from './utils/shalomAgent';
@@ -80,14 +80,12 @@ interface ChartLog {
 function App() {
   const [activeTab, setActiveTab] = useState<TabType>('home');
   const [isDesktop, setIsDesktop] = useState<boolean>(typeof window !== 'undefined' ? window.innerWidth >= 768 : true);
-  const [currentTheme, setCurrentTheme] = useState<string>(() => {
-    return localStorage.getItem('shalom_theme') || 'bio-iris';
-  });
+  const currentTheme = 'bio-iris';
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', currentTheme);
     localStorage.setItem('shalom_theme', currentTheme);
-  }, [currentTheme]);
+  }, []);
 
   useEffect(() => {
     const handleResize = () => setIsDesktop(window.innerWidth >= 768);
@@ -146,6 +144,19 @@ function App() {
   const [progressSubTab, setProgressSubTab] = useState<'overview' | 'trends'>('overview');
   const [planCategoryFilter, setPlanCategoryFilter] = useState<'all' | 'medication' | 'activity' | 'wound' | 'checkin'>('all');
   const [showFullHistoryPage, setShowFullHistoryPage] = useState<boolean>(false);
+  const [showSurgeryDetailPage, setShowSurgeryDetailPage] = useState<boolean>(false);
+  const [showNotificationSettingsPage, setShowNotificationSettingsPage] = useState<boolean>(false);
+  const [remindersEnabled, setRemindersEnabled] = useState<boolean>(true);
+  const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(true);
+  const [individualReminders, setIndividualReminders] = useState<{ [key: string]: boolean }>({
+    morningCheckin: true,
+    medicationDoses: true,
+    physicalTherapy: true,
+    hydrationGoals: true,
+    careTeamMessages: true,
+    soundAlerts: true
+  });
+  const [taskReminders, setTaskReminders] = useState<{ [key: string]: boolean }>({});
   
   // Sliders Form State (Screen 3)
   const [showCheckInForm, setShowCheckInForm] = useState<boolean>(false);
@@ -2810,9 +2821,730 @@ function App() {
   };
 
   // ==========================================
+  // STRUCTURED SURGERY DETAILS PAGE
+  // ==========================================
+  const renderSurgeryDetailPage = () => {
+    const normalized = normalizePatientRecord(medicalHistory);
+    const surgeryTitle = normalized?.surgeryType || 'Total Knee Replacement';
+    const surgeonName = 'Dr. James Carter, MD, FAAOS';
+    const clinicPhone = '(555) 234-8901';
+    const surgeryDate = 'May 6, 2025';
+
+    return (
+      <div className="detail-scroller" style={{ animation: 'fadeIn 0.28s ease-out' }}>
+        {/* Top Navigation Bar */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
+          <button 
+            type="button"
+            className="choice-pill-btn" 
+            onClick={() => setShowSurgeryDetailPage(false)}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 16px', fontWeight: 700, fontSize: '12px' }}
+          >
+            <ChevronLeft size={16} /> Back to Profile
+          </button>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ 
+              fontSize: '11px', fontWeight: 700, padding: '3px 10px', borderRadius: '10px',
+              background: 'rgba(0, 140, 140, 0.08)', color: 'var(--primary)'
+            }}>
+              Surgical Case: #ORT-2025-0506 &bull; Aïda Garba
+            </span>
+          </div>
+        </div>
+
+        {/* Page Title & Clinical Subtitle */}
+        <div style={{ marginBottom: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
+            <div style={{
+              width: '38px', height: '38px', borderRadius: '10px',
+              background: 'rgba(0, 140, 140, 0.1)', color: 'var(--primary)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0
+            }}>
+              <Activity size={22} />
+            </div>
+            <div>
+              <h2 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-main)', margin: 0, letterSpacing: '-0.3px' }}>
+                Surgery &amp; Provider Details
+              </h2>
+              <span style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>
+                Organized documentation of your surgical procedure, lead care team &amp; clinical contact numbers
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Hero Clinical Snapshot Grid */}
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: isDesktop ? 'repeat(4, 1fr)' : 'repeat(2, 1fr)', 
+          gap: '12px', 
+          marginBottom: '24px' 
+        }}>
+          <div className="glass-card" style={{ padding: '14px', borderRadius: '16px', border: '1px solid var(--border-glass)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+              <Activity size={13} style={{ color: 'var(--primary)' }} />
+              <span style={{ fontSize: '10.5px', color: 'var(--text-muted)', fontWeight: 600 }}>Surgery Type</span>
+            </div>
+            <strong style={{ fontSize: '14px', color: 'var(--text-main)', display: 'block' }}>{surgeryTitle}</strong>
+            <span style={{ fontSize: '9.5px', color: '#218C74', fontWeight: 700, display: 'block', marginTop: '2px' }}>
+              Left Knee &bull; Primary Joint
+            </span>
+          </div>
+
+          <div className="glass-card" style={{ padding: '14px', borderRadius: '16px', border: '1px solid var(--border-glass)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+              <User size={13} style={{ color: '#0284C7' }} />
+              <span style={{ fontSize: '10.5px', color: 'var(--text-muted)', fontWeight: 600 }}>Lead Surgeon</span>
+            </div>
+            <strong style={{ fontSize: '14px', color: 'var(--text-main)', display: 'block' }}>Dr. James Carter</strong>
+            <span style={{ fontSize: '9.5px', color: 'var(--text-muted)', fontWeight: 600, display: 'block', marginTop: '2px' }}>
+              MD, FAAOS &bull; Orthopedic Lead
+            </span>
+          </div>
+
+          <div className="glass-card" style={{ padding: '14px', borderRadius: '16px', border: '1px solid var(--border-glass)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+              <Calendar size={13} style={{ color: '#D97706' }} />
+              <span style={{ fontSize: '10.5px', color: 'var(--text-muted)', fontWeight: 600 }}>Surgery Date</span>
+            </div>
+            <strong style={{ fontSize: '14px', color: 'var(--text-main)', display: 'block' }}>{surgeryDate}</strong>
+            <span style={{ fontSize: '9.5px', color: '#218C74', fontWeight: 700, display: 'block', marginTop: '2px' }}>
+              Day 6 Post-Operative
+            </span>
+          </div>
+
+          <div className="glass-card" style={{ padding: '14px', borderRadius: '16px', border: '1px solid var(--border-glass)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+              <PhoneCall size={13} style={{ color: 'var(--primary)' }} />
+              <span style={{ fontSize: '10.5px', color: 'var(--text-muted)', fontWeight: 600 }}>Clinic Direct Line</span>
+            </div>
+            <strong style={{ fontSize: '14px', color: 'var(--primary)', display: 'block' }}>{clinicPhone}</strong>
+            <span style={{ fontSize: '9.5px', color: '#218C74', fontWeight: 700, display: 'block', marginTop: '2px' }}>
+              Mon-Fri 8:00 AM - 4:30 PM
+            </span>
+          </div>
+        </div>
+
+        {/* Section 1: Lead Surgeon & Contact Card */}
+        <div className="glass-card" style={{ padding: '20px', borderRadius: '20px', border: '1px solid var(--border-glass)', marginBottom: '16px', background: 'var(--bg-glass-card)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{
+                width: '46px', height: '46px', borderRadius: '50%',
+                background: 'linear-gradient(135deg, rgba(0, 140, 140, 0.15) 0%, rgba(0, 140, 140, 0.25) 100%)',
+                color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '16px'
+              }}>
+                JC
+              </div>
+              <div>
+                <h3 style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
+                  {surgeonName}
+                </h3>
+                <span style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>
+                  Chief of Adult Joint Reconstruction &bull; St. Jude Orthopedic Specialty Center
+                </span>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <a 
+                href={`tel:${clinicPhone.replace(/[^0-9]/g, '')}`}
+                className="choice-pill-btn"
+                style={{ background: 'var(--primary)', color: '#ffffff', fontWeight: 700, fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '6px', textDecoration: 'none', padding: '8px 14px' }}
+              >
+                <PhoneCall size={14} /> Call Office
+              </a>
+              <button 
+                type="button"
+                className="choice-pill-btn"
+                onClick={() => {
+                  setShowSurgeryDetailPage(false);
+                  setActiveTab('chat');
+                }}
+                style={{ fontWeight: 700, fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 14px' }}
+              >
+                <Sparkles size={14} style={{ color: 'var(--primary)' }} /> Message AI
+              </button>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(3, 1fr)' : '1fr', gap: '10px', paddingTop: '12px', borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+            <div>
+              <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Clinic Phone</span>
+              <strong style={{ fontSize: '13px', color: 'var(--text-main)', display: 'block' }}>{clinicPhone}</strong>
+            </div>
+            <div>
+              <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Hospital Extension</span>
+              <strong style={{ fontSize: '13px', color: 'var(--text-main)', display: 'block' }}>Ext. 4410 (Orthopedic OR Suite)</strong>
+            </div>
+            <div>
+              <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Clinic Location</span>
+              <strong style={{ fontSize: '13px', color: 'var(--text-main)', display: 'block' }}>Suite 400, Pavilion B, St. Jude Hospital</strong>
+            </div>
+          </div>
+        </div>
+
+        {/* Section 2: Detailed Surgical Procedure Records */}
+        <div className="glass-card" style={{ padding: '20px', borderRadius: '20px', border: '1px solid var(--border-glass)', marginBottom: '16px', background: 'var(--bg-glass-card)' }}>
+          <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '8px' }}>
+            Operative Procedure Specifications
+          </span>
+
+          <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(2, 1fr)' : '1fr', gap: '14px' }}>
+            <div style={{ background: 'rgba(255, 255, 255, 0.7)', border: '1px solid var(--border-glass)', borderRadius: '14px', padding: '14px' }}>
+              <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Full Procedure Name</span>
+              <strong style={{ fontSize: '13.5px', color: 'var(--text-main)', display: 'block', marginTop: '2px' }}>
+                Primary Total Knee Arthroplasty (Left Leg)
+              </strong>
+              <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px', display: 'block' }}>
+                Performed under regional block with complete joint surface resurfacing
+              </span>
+            </div>
+
+            <div style={{ background: 'rgba(255, 255, 255, 0.7)', border: '1px solid var(--border-glass)', borderRadius: '14px', padding: '14px' }}>
+              <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Date &amp; Facility</span>
+              <strong style={{ fontSize: '13.5px', color: 'var(--text-main)', display: 'block', marginTop: '2px' }}>
+                Tuesday, May 6, 2025 &bull; OR Suite 4
+              </strong>
+              <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px', display: 'block' }}>
+                St. Jude Orthopedic Specialty Hospital &bull; Inpatient recovery 2 days
+              </span>
+            </div>
+
+            <div style={{ background: 'rgba(255, 255, 255, 0.7)', border: '1px solid var(--border-glass)', borderRadius: '14px', padding: '14px' }}>
+              <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Anesthesia Protocol</span>
+              <strong style={{ fontSize: '13.5px', color: 'var(--text-main)', display: 'block', marginTop: '2px' }}>
+                Spinal + Continuous Adductor Canal Nerve Block
+              </strong>
+              <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px', display: 'block' }}>
+                Motor-sparing analgesia for expedited day-of-surgery mobilization
+              </span>
+            </div>
+
+            <div style={{ background: 'rgba(255, 255, 255, 0.7)', border: '1px solid var(--border-glass)', borderRadius: '14px', padding: '14px' }}>
+              <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Incision &amp; Wound Dressing</span>
+              <strong style={{ fontSize: '13.5px', color: 'var(--text-main)', display: 'block', marginTop: '2px' }}>
+                6-Inch Anterior Midline Incision
+              </strong>
+              <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px', display: 'block' }}>
+                Dermabond Prineo waterproof skin closure system (keep dry until Day 14)
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Section 3: Multidisciplinary Care Team Directory */}
+        <div className="glass-card" style={{ padding: '20px', borderRadius: '20px', border: '1px solid var(--border-glass)', marginBottom: '16px', background: 'var(--bg-glass-card)' }}>
+          <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '8px' }}>
+            Care Team Direct Contacts
+          </span>
+
+          <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(3, 1fr)' : '1fr', gap: '10px' }}>
+            <div style={{ background: 'rgba(255, 255, 255, 0.7)', border: '1px solid var(--border-glass)', borderRadius: '14px', padding: '12px 14px' }}>
+              <strong style={{ fontSize: '12.5px', color: 'var(--text-main)', display: 'block' }}>Emily Zhang, PA-C</strong>
+              <span style={{ fontSize: '10.5px', color: 'var(--text-muted)', display: 'block' }}>Surgical Physician Assistant</span>
+              <a href="tel:5552348915" style={{ fontSize: '12px', color: 'var(--primary)', fontWeight: 700, marginTop: '6px', display: 'inline-flex', alignItems: 'center', gap: '4px', textDecoration: 'none' }}>
+                <PhoneCall size={12} /> (555) 234-8915
+              </a>
+            </div>
+
+            <div style={{ background: 'rgba(255, 255, 255, 0.7)', border: '1px solid var(--border-glass)', borderRadius: '14px', padding: '12px 14px' }}>
+              <strong style={{ fontSize: '12.5px', color: 'var(--text-main)', display: 'block' }}>Marcus Vance, PT, DPT</strong>
+              <span style={{ fontSize: '10.5px', color: 'var(--text-muted)', display: 'block' }}>Lead Physical Therapist</span>
+              <a href="tel:5558821920" style={{ fontSize: '12px', color: 'var(--primary)', fontWeight: 700, marginTop: '6px', display: 'inline-flex', alignItems: 'center', gap: '4px', textDecoration: 'none' }}>
+                <PhoneCall size={12} /> (555) 882-1920
+              </a>
+            </div>
+
+            <div style={{ background: 'rgba(255, 255, 255, 0.7)', border: '1px solid var(--border-glass)', borderRadius: '14px', padding: '12px 14px' }}>
+              <strong style={{ fontSize: '12.5px', color: 'var(--text-main)', display: 'block' }}>Sarah Jenkins, RN</strong>
+              <span style={{ fontSize: '10.5px', color: 'var(--text-muted)', display: 'block' }}>Post-Op Care Coordinator</span>
+              <a href="tel:5552348920" style={{ fontSize: '12px', color: 'var(--primary)', fontWeight: 700, marginTop: '6px', display: 'inline-flex', alignItems: 'center', gap: '4px', textDecoration: 'none' }}>
+                <PhoneCall size={12} /> (555) 234-8920
+              </a>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom Actions */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '16px', borderTop: '1px solid var(--border-glass)', flexWrap: 'wrap', gap: '10px' }}>
+          <button 
+            type="button"
+            className="choice-pill-btn" 
+            onClick={() => setShowSurgeryDetailPage(false)}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 18px', fontWeight: 700 }}
+          >
+            <ChevronLeft size={16} /> Back to Profile
+          </button>
+
+          <button 
+            type="button"
+            className="choice-pill-btn"
+            onClick={() => {
+              setShowSurgeryDetailPage(false);
+              setActiveTab('chat');
+            }}
+            style={{ padding: '8px 18px', background: 'var(--primary)', color: '#ffffff', fontWeight: 700 }}
+          >
+            Ask Shalom AI About My Surgery
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  // ==========================================
+  // REMINDERS & NOTIFICATIONS SETTINGS PAGE
+  // ==========================================
+  const renderNotificationSettingsPage = () => {
+    const toggleGranular = (key: string) => {
+      setIndividualReminders(prev => ({
+        ...prev,
+        [key]: !prev[key]
+      }));
+    };
+
+    return (
+      <div className="detail-scroller" style={{ animation: 'fadeIn 0.28s ease-out' }}>
+        {/* Header Bar */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
+          <button 
+            type="button"
+            className="choice-pill-btn" 
+            onClick={() => setShowNotificationSettingsPage(false)}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 16px', fontWeight: 700, fontSize: '12px' }}
+          >
+            <ChevronLeft size={16} /> Back to Profile
+          </button>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ 
+              fontSize: '11px', fontWeight: 700, padding: '3px 10px', borderRadius: '10px',
+              background: remindersEnabled && notificationsEnabled ? 'rgba(33, 140, 116, 0.12)' : 'rgba(217, 119, 6, 0.12)', 
+              color: remindersEnabled && notificationsEnabled ? '#218C74' : '#D97706'
+            }}>
+              {remindersEnabled && notificationsEnabled ? 'All Systems Active' : 'Partially Muted'}
+            </span>
+          </div>
+        </div>
+
+        {/* Page Title & Subtitle */}
+        <div style={{ marginBottom: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
+            <div style={{
+              width: '38px', height: '38px', borderRadius: '10px',
+              background: 'rgba(79, 70, 229, 0.1)', color: 'var(--primary)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0
+            }}>
+              <Bell size={20} />
+            </div>
+            <div>
+              <h2 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-main)', margin: 0, letterSpacing: '-0.3px' }}>
+                Reminders &amp; Notifications
+              </h2>
+              <span style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>
+                Switch and customize alerts for medications, daily check-ins, walking sessions &amp; doctor messages
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Master Control Cards */}
+        <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(2, 1fr)' : '1fr', gap: '14px', marginBottom: '24px' }}>
+          {/* Master Reminders Switch Card */}
+          <div className="glass-card" style={{ padding: '16px 18px', borderRadius: '18px', border: '1px solid var(--border-glass)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg-glass-card)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{
+                width: '36px', height: '36px', borderRadius: '10px',
+                background: remindersEnabled ? 'rgba(0, 140, 140, 0.12)' : 'rgba(100, 116, 139, 0.12)',
+                color: remindersEnabled ? 'var(--primary)' : 'var(--text-muted)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+              }}>
+                <Clock size={18} />
+              </div>
+              <div>
+                <strong style={{ fontSize: '14px', color: 'var(--text-main)', display: 'block' }}>Recovery Reminders</strong>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                  {remindersEnabled ? 'All scheduled check-ins & meds active' : 'All recovery reminders paused'}
+                </span>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '11px', fontWeight: 800, color: remindersEnabled ? 'var(--primary)' : 'var(--text-muted)' }}>
+                {remindersEnabled ? 'ON' : 'OFF'}
+              </span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={remindersEnabled}
+                onClick={() => setRemindersEnabled(prev => !prev)}
+                style={{
+                  width: '46px', height: '26px', borderRadius: '13px',
+                  background: remindersEnabled ? 'var(--primary)' : '#CBD5E1',
+                  border: 'none', padding: '2px', cursor: 'pointer', position: 'relative',
+                  display: 'flex', alignItems: 'center', transition: 'background 0.2s ease', flexShrink: 0
+                }}
+                title={remindersEnabled ? "Switch Reminders Off" : "Switch Reminders On"}
+              >
+                <span style={{
+                  width: '22px', height: '22px', borderRadius: '50%', background: '#ffffff',
+                  boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
+                  transform: remindersEnabled ? 'translateX(20px)' : 'translateX(0)',
+                  transition: 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)', display: 'block'
+                }} />
+              </button>
+            </div>
+          </div>
+
+          {/* Master Notifications Switch Card */}
+          <div className="glass-card" style={{ padding: '16px 18px', borderRadius: '18px', border: '1px solid var(--border-glass)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg-glass-card)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{
+                width: '36px', height: '36px', borderRadius: '10px',
+                background: notificationsEnabled ? 'rgba(79, 70, 229, 0.12)' : 'rgba(100, 116, 139, 0.12)',
+                color: notificationsEnabled ? 'var(--primary)' : 'var(--text-muted)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+              }}>
+                {notificationsEnabled ? <Bell size={18} /> : <BellOff size={18} />}
+              </div>
+              <div>
+                <strong style={{ fontSize: '14px', color: 'var(--text-main)', display: 'block' }}>Care Team Alerts</strong>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                  {notificationsEnabled ? 'Critical alerts & doctor updates active' : 'Push and triage alerts muted'}
+                </span>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '11px', fontWeight: 800, color: notificationsEnabled ? 'var(--primary)' : 'var(--text-muted)' }}>
+                {notificationsEnabled ? 'ON' : 'OFF'}
+              </span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={notificationsEnabled}
+                onClick={() => setNotificationsEnabled(prev => !prev)}
+                style={{
+                  width: '46px', height: '26px', borderRadius: '13px',
+                  background: notificationsEnabled ? 'var(--primary)' : '#CBD5E1',
+                  border: 'none', padding: '2px', cursor: 'pointer', position: 'relative',
+                  display: 'flex', alignItems: 'center', transition: 'background 0.2s ease', flexShrink: 0
+                }}
+                title={notificationsEnabled ? "Switch Notifications Off" : "Switch Notifications On"}
+              >
+                <span style={{
+                  width: '22px', height: '22px', borderRadius: '50%', background: '#ffffff',
+                  boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
+                  transform: notificationsEnabled ? 'translateX(20px)' : 'translateX(0)',
+                  transition: 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)', display: 'block'
+                }} />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Section 1: Daily Recovery Reminders */}
+        <div className="glass-card" style={{ padding: '20px', borderRadius: '20px', border: '1px solid var(--border-glass)', marginBottom: '16px', background: 'var(--bg-glass-card)' }}>
+          <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '12px' }}>
+            Daily Recovery Reminders
+          </span>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {/* 1. Morning Check-In */}
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.75)', border: '1px solid var(--border-glass)',
+              borderRadius: '14px', padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(0, 140, 140, 0.1)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Heart size={16} />
+                </div>
+                <div>
+                  <strong style={{ fontSize: '13px', color: 'var(--text-main)', display: 'block' }}>Daily Morning Check-In</strong>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Daily at 8:30 AM &bull; Pain score, temperature &amp; symptom triage</span>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '10.5px', fontWeight: 800, color: (individualReminders.morningCheckin && remindersEnabled) ? 'var(--primary)' : 'var(--text-muted)' }}>
+                  {(individualReminders.morningCheckin && remindersEnabled) ? 'ON' : 'OFF'}
+                </span>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={individualReminders.morningCheckin && remindersEnabled}
+                  onClick={() => toggleGranular('morningCheckin')}
+                  style={{
+                    width: '42px', height: '24px', borderRadius: '12px',
+                    background: (individualReminders.morningCheckin && remindersEnabled) ? 'var(--primary)' : '#CBD5E1',
+                    border: 'none', padding: '2px', cursor: 'pointer', position: 'relative',
+                    display: 'flex', alignItems: 'center', transition: 'background 0.2s ease', flexShrink: 0
+                  }}
+                >
+                  <span style={{
+                    width: '20px', height: '20px', borderRadius: '50%', background: '#ffffff',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                    transform: (individualReminders.morningCheckin && remindersEnabled) ? 'translateX(18px)' : 'translateX(0)',
+                    transition: 'transform 0.2s ease', display: 'block'
+                  }} />
+                </button>
+              </div>
+            </div>
+
+            {/* 2. Scheduled Medications */}
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.75)', border: '1px solid var(--border-glass)',
+              borderRadius: '14px', padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(33, 140, 116, 0.1)', color: '#218C74', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Pill size={16} />
+                </div>
+                <div>
+                  <strong style={{ fontSize: '13px', color: 'var(--text-main)', display: 'block' }}>Scheduled Medications</strong>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Every 6 hours &bull; Oxycodone, Lisinopril, Aspirin with meals</span>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '10.5px', fontWeight: 800, color: (individualReminders.medicationDoses && remindersEnabled) ? 'var(--primary)' : 'var(--text-muted)' }}>
+                  {(individualReminders.medicationDoses && remindersEnabled) ? 'ON' : 'OFF'}
+                </span>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={individualReminders.medicationDoses && remindersEnabled}
+                  onClick={() => toggleGranular('medicationDoses')}
+                  style={{
+                    width: '42px', height: '24px', borderRadius: '12px',
+                    background: (individualReminders.medicationDoses && remindersEnabled) ? 'var(--primary)' : '#CBD5E1',
+                    border: 'none', padding: '2px', cursor: 'pointer', position: 'relative',
+                    display: 'flex', alignItems: 'center', transition: 'background 0.2s ease', flexShrink: 0
+                  }}
+                >
+                  <span style={{
+                    width: '20px', height: '20px', borderRadius: '50%', background: '#ffffff',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                    transform: (individualReminders.medicationDoses && remindersEnabled) ? 'translateX(18px)' : 'translateX(0)',
+                    transition: 'transform 0.2s ease', display: 'block'
+                  }} />
+                </button>
+              </div>
+            </div>
+
+            {/* 3. Physical Therapy & Walking */}
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.75)', border: '1px solid var(--border-glass)',
+              borderRadius: '14px', padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(79, 70, 229, 0.1)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Activity size={16} />
+                </div>
+                <div>
+                  <strong style={{ fontSize: '13px', color: 'var(--text-main)', display: 'block' }}>Physical Therapy &amp; Walking</strong>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>10:00 AM, 2:30 PM, 6:00 PM &bull; Ankle pumps, quad sets &amp; 15-min walk</span>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '10.5px', fontWeight: 800, color: (individualReminders.physicalTherapy && remindersEnabled) ? 'var(--primary)' : 'var(--text-muted)' }}>
+                  {(individualReminders.physicalTherapy && remindersEnabled) ? 'ON' : 'OFF'}
+                </span>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={individualReminders.physicalTherapy && remindersEnabled}
+                  onClick={() => toggleGranular('physicalTherapy')}
+                  style={{
+                    width: '42px', height: '24px', borderRadius: '12px',
+                    background: (individualReminders.physicalTherapy && remindersEnabled) ? 'var(--primary)' : '#CBD5E1',
+                    border: 'none', padding: '2px', cursor: 'pointer', position: 'relative',
+                    display: 'flex', alignItems: 'center', transition: 'background 0.2s ease', flexShrink: 0
+                  }}
+                >
+                  <span style={{
+                    width: '20px', height: '20px', borderRadius: '50%', background: '#ffffff',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                    transform: (individualReminders.physicalTherapy && remindersEnabled) ? 'translateX(18px)' : 'translateX(0)',
+                    transition: 'transform 0.2s ease', display: 'block'
+                  }} />
+                </button>
+              </div>
+            </div>
+
+            {/* 4. Hydration & Ice Pack Elevation */}
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.75)', border: '1px solid var(--border-glass)',
+              borderRadius: '14px', padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(2, 132, 199, 0.1)', color: '#0284C7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Droplets size={16} />
+                </div>
+                <div>
+                  <strong style={{ fontSize: '13px', color: 'var(--text-main)', display: 'block' }}>Hydration &amp; Ice Pack Elevation</strong>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Every 2 hours &bull; 8-glass water goal &amp; 20-min ice sessions</span>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '10.5px', fontWeight: 800, color: (individualReminders.hydrationGoals && remindersEnabled) ? 'var(--primary)' : 'var(--text-muted)' }}>
+                  {(individualReminders.hydrationGoals && remindersEnabled) ? 'ON' : 'OFF'}
+                </span>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={individualReminders.hydrationGoals && remindersEnabled}
+                  onClick={() => toggleGranular('hydrationGoals')}
+                  style={{
+                    width: '42px', height: '24px', borderRadius: '12px',
+                    background: (individualReminders.hydrationGoals && remindersEnabled) ? 'var(--primary)' : '#CBD5E1',
+                    border: 'none', padding: '2px', cursor: 'pointer', position: 'relative',
+                    display: 'flex', alignItems: 'center', transition: 'background 0.2s ease', flexShrink: 0
+                  }}
+                >
+                  <span style={{
+                    width: '20px', height: '20px', borderRadius: '50%', background: '#ffffff',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                    transform: (individualReminders.hydrationGoals && remindersEnabled) ? 'translateX(18px)' : 'translateX(0)',
+                    transition: 'transform 0.2s ease', display: 'block'
+                  }} />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Section 2: Care Team & Critical Notifications */}
+        <div className="glass-card" style={{ padding: '20px', borderRadius: '20px', border: '1px solid var(--border-glass)', marginBottom: '20px', background: 'var(--bg-glass-card)' }}>
+          <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '12px' }}>
+            Care Team &amp; Clinical Notifications
+          </span>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {/* 1. Care Team Messages */}
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.75)', border: '1px solid var(--border-glass)',
+              borderRadius: '14px', padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(79, 70, 229, 0.1)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <User size={16} />
+                </div>
+                <div>
+                  <strong style={{ fontSize: '13px', color: 'var(--text-main)', display: 'block' }}>Dr. Carter &amp; Care Team Alerts</strong>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Direct post-op clinical updates, lab results &amp; nurse notes</span>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '10.5px', fontWeight: 800, color: (individualReminders.careTeamMessages && notificationsEnabled) ? 'var(--primary)' : 'var(--text-muted)' }}>
+                  {(individualReminders.careTeamMessages && notificationsEnabled) ? 'ON' : 'OFF'}
+                </span>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={individualReminders.careTeamMessages && notificationsEnabled}
+                  onClick={() => toggleGranular('careTeamMessages')}
+                  style={{
+                    width: '42px', height: '24px', borderRadius: '12px',
+                    background: (individualReminders.careTeamMessages && notificationsEnabled) ? 'var(--primary)' : '#CBD5E1',
+                    border: 'none', padding: '2px', cursor: 'pointer', position: 'relative',
+                    display: 'flex', alignItems: 'center', transition: 'background 0.2s ease', flexShrink: 0
+                  }}
+                >
+                  <span style={{
+                    width: '20px', height: '20px', borderRadius: '50%', background: '#ffffff',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                    transform: (individualReminders.careTeamMessages && notificationsEnabled) ? 'translateX(18px)' : 'translateX(0)',
+                    transition: 'transform 0.2s ease', display: 'block'
+                  }} />
+                </button>
+              </div>
+            </div>
+
+            {/* 2. Voice Chimes & Audible Alerts */}
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.75)', border: '1px solid var(--border-glass)',
+              borderRadius: '14px', padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(217, 119, 6, 0.1)', color: '#D97706', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Volume2 size={16} />
+                </div>
+                <div>
+                  <strong style={{ fontSize: '13px', color: 'var(--text-main)', display: 'block' }}>Voice Chimes &amp; Spoken Guidance</strong>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Gentle audible chime when new reminder or triage advice arrives</span>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '10.5px', fontWeight: 800, color: (individualReminders.soundAlerts && notificationsEnabled) ? 'var(--primary)' : 'var(--text-muted)' }}>
+                  {(individualReminders.soundAlerts && notificationsEnabled) ? 'ON' : 'OFF'}
+                </span>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={individualReminders.soundAlerts && notificationsEnabled}
+                  onClick={() => toggleGranular('soundAlerts')}
+                  style={{
+                    width: '42px', height: '24px', borderRadius: '12px',
+                    background: (individualReminders.soundAlerts && notificationsEnabled) ? 'var(--primary)' : '#CBD5E1',
+                    border: 'none', padding: '2px', cursor: 'pointer', position: 'relative',
+                    display: 'flex', alignItems: 'center', transition: 'background 0.2s ease', flexShrink: 0
+                  }}
+                >
+                  <span style={{
+                    width: '20px', height: '20px', borderRadius: '50%', background: '#ffffff',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                    transform: (individualReminders.soundAlerts && notificationsEnabled) ? 'translateX(18px)' : 'translateX(0)',
+                    transition: 'transform 0.2s ease', display: 'block'
+                  }} />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom Actions */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '16px', borderTop: '1px solid var(--border-glass)', flexWrap: 'wrap', gap: '10px' }}>
+          <button 
+            type="button"
+            className="choice-pill-btn" 
+            onClick={() => setShowNotificationSettingsPage(false)}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 18px', fontWeight: 700 }}
+          >
+            <ChevronLeft size={16} /> Back to Profile
+          </button>
+
+          <button 
+            type="button"
+            className="choice-pill-btn"
+            onClick={() => setShowNotificationSettingsPage(false)}
+            style={{ padding: '8px 22px', background: 'var(--primary)', color: '#ffffff', fontWeight: 700 }}
+          >
+            Save Preferences
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  // ==========================================
   // RENDER TAB 5: Profile (Settings - Screen 10)
   // ==========================================
   const renderSettingsTab = () => {
+    if (showSurgeryDetailPage) {
+      return renderSurgeryDetailPage();
+    }
+    if (showNotificationSettingsPage) {
+      return renderNotificationSettingsPage();
+    }
     if (showFullHistoryPage) {
       return renderFullHistoryPage();
     }
@@ -2846,21 +3578,56 @@ function App() {
           </button>
         </div>
 
-        {/* My Recovery details section */}
+        {/* Surgery Details Entry Card (Clickable to open Structured Surgery Details Page) */}
         <div className="profile-menu-section">
-          <span className="profile-menu-title">My Recovery</span>
-          <div className="profile-menu-card">
-            <div className="profile-menu-row">
-              <span className="profile-menu-left">Surgery Details</span>
-              <span className="profile-menu-value">{normalized?.surgeryType || 'ACL Reconstruction'}</span>
+          <span className="profile-menu-title">Surgical Information</span>
+          <div 
+            className="profile-menu-card history-entry-card" 
+            onClick={() => setShowSurgeryDetailPage(true)}
+            style={{ 
+              padding: '16px 18px', 
+              cursor: 'pointer',
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'space-between',
+              transition: 'all 0.2s ease',
+              background: 'linear-gradient(135deg, rgba(255,255,255,0.88) 0%, rgba(0, 140, 140, 0.05) 100%)',
+              border: '1px solid rgba(0, 140, 140, 0.15)'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+              <div style={{
+                width: '42px', height: '42px', borderRadius: '12px',
+                background: 'rgba(0, 140, 140, 0.1)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: 'var(--primary)',
+                flexShrink: 0
+              }}>
+                <Activity size={22} />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                <span style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-main)' }}>
+                  Surgery Details
+                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                    {normalized?.surgeryType || 'Total Knee Replacement'} &bull; Dr. James Carter &bull; (555) 234-8901 &bull; May 6, 2025
+                  </span>
+                  <span style={{ 
+                    fontSize: '9.5px', fontWeight: 700, padding: '1px 6px', borderRadius: '6px', 
+                    background: 'rgba(33, 140, 116, 0.12)', color: '#218C74' 
+                  }}>
+                    Day 6 Post-Op
+                  </span>
+                </div>
+              </div>
             </div>
-            <div className="profile-menu-row">
-              <span className="profile-menu-left">Surgeon</span>
-              <span className="profile-menu-value">Dr. James Carter</span>
-            </div>
-            <div className="profile-menu-row">
-              <span className="profile-menu-left">Surgery Date</span>
-              <span className="profile-menu-value">May 6, 2025</span>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+              <span style={{ fontSize: '11.5px', fontWeight: 700, color: 'var(--primary)' }}>
+                View Details
+              </span>
+              <ChevronRightIcon size={16} style={{ color: 'var(--primary)' }} />
             </div>
           </div>
         </div>
@@ -2878,16 +3645,16 @@ function App() {
               alignItems: 'center', 
               justifyContent: 'space-between',
               transition: 'all 0.2s ease',
-              background: 'linear-gradient(135deg, rgba(255,255,255,0.85) 0%, rgba(0, 140, 140, 0.05) 100%)',
-              border: '1px solid rgba(0, 140, 140, 0.15)'
+              background: 'linear-gradient(135deg, rgba(255,255,255,0.88) 0%, rgba(33, 140, 116, 0.05) 100%)',
+              border: '1px solid rgba(33, 140, 116, 0.15)'
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
               <div style={{
                 width: '42px', height: '42px', borderRadius: '12px',
-                background: 'rgba(0, 140, 140, 0.1)',
+                background: 'rgba(33, 140, 116, 0.1)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: 'var(--primary)',
+                color: '#218C74',
                 flexShrink: 0
               }}>
                 <ClipboardList size={22} />
@@ -2898,23 +3665,23 @@ function App() {
                 </span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                   <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                    {historyLogs.length} logs recorded &bull; Latest: Pain {historyLogs[historyLogs.length - 1]?.painLevel || 4}/10
+                    {historyLogs.length} verified clinical records &bull; Latest pain: {historyLogs[historyLogs.length - 1]?.painLevel ?? 4}/10
                   </span>
                   <span style={{ 
                     fontSize: '9.5px', fontWeight: 700, padding: '1px 6px', borderRadius: '6px', 
                     background: 'rgba(33, 140, 116, 0.12)', color: '#218C74' 
                   }}>
-                    Active Track
+                    Normal Vitals
                   </span>
                 </div>
               </div>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-              <span style={{ fontSize: '11.5px', fontWeight: 700, color: 'var(--primary)' }}>
+              <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#218C74' }}>
                 View Full History
               </span>
-              <ChevronRightIcon size={16} style={{ color: 'var(--primary)' }} />
+              <ChevronRightIcon size={16} style={{ color: '#218C74' }} />
             </div>
           </div>
         </div>
@@ -2958,69 +3725,197 @@ function App() {
           )}
         </div>
 
-        {/* Aesthetic Theme Palette section */}
+        {/* Reminders & Notifications Section with On/Off Switches */}
         <div className="profile-menu-section">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px', paddingLeft: '4px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', paddingLeft: '4px' }}>
             <span className="profile-menu-title" style={{ margin: 0, padding: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Palette size={13} style={{ color: 'var(--primary)' }} />
-              Aesthetic &amp; Color Palette
+              <Bell size={13} style={{ color: 'var(--primary)' }} />
+              Reminders &amp; Notifications
             </span>
-            <span style={{ fontSize: '10px', color: 'var(--primary)', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <Sparkles size={12} /> Live Switcher
-            </span>
+            <button
+              type="button"
+              onClick={() => setShowNotificationSettingsPage(true)}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--primary)',
+                fontSize: '11px',
+                fontWeight: '700',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '2px'
+              }}
+            >
+              Configure <ChevronRightIcon size={12} />
+            </button>
           </div>
-          <div className="profile-menu-card" style={{ padding: '14px' }}>
-            <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '0 0 10px 0', lineHeight: '1.4' }}>
-              Customize your visual healing sanctuary with curated medical color harmonies:
-            </p>
-            <div className="theme-picker-grid">
-              <button 
-                type="button"
-                className={`theme-chip-btn ${currentTheme === 'bio-iris' ? 'active' : ''}`}
-                onClick={() => setCurrentTheme('bio-iris')}
-              >
-                <span className="theme-swatch" style={{ background: 'linear-gradient(135deg, #4F46E5 0%, #06B6D4 100%)' }}></span>
-                <div>
-                  <span className="theme-chip-name" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Sparkles size={11} /> Bio-Iris</span>
-                  <span className="theme-chip-desc">Indigo &amp; Cyan</span>
-                </div>
-              </button>
 
-              <button 
-                type="button"
-                className={`theme-chip-btn ${currentTheme === 'nordic-sage' ? 'active' : ''}`}
-                onClick={() => setCurrentTheme('nordic-sage')}
-              >
-                <span className="theme-swatch" style={{ background: 'linear-gradient(135deg, #0D9488 0%, #10B981 100%)' }}></span>
-                <div>
-                  <span className="theme-chip-name" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Leaf size={11} /> Bio-Sage</span>
-                  <span className="theme-chip-desc">Pine &amp; Jade</span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {/* Reminders Card with On/Off Switch */}
+            <div 
+              className="profile-menu-card history-entry-card"
+              style={{ 
+                padding: '14px 16px',
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'space-between',
+                cursor: 'pointer',
+                background: 'var(--bg-glass-card)'
+              }}
+              onClick={() => setShowNotificationSettingsPage(true)}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{
+                  width: '38px', height: '38px', borderRadius: '10px',
+                  background: remindersEnabled ? 'rgba(0, 140, 140, 0.1)' : 'rgba(100, 116, 139, 0.1)',
+                  color: remindersEnabled ? 'var(--primary)' : 'var(--text-muted)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0
+                }}>
+                  <Clock size={18} />
                 </div>
-              </button>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <strong style={{ fontSize: '13.5px', color: 'var(--text-main)' }}>Recovery Reminders</strong>
+                    <span style={{ 
+                      fontSize: '9.5px', fontWeight: 800, padding: '2px 7px', borderRadius: '6px',
+                      background: remindersEnabled ? 'rgba(33, 140, 116, 0.12)' : 'rgba(100, 116, 139, 0.12)',
+                      color: remindersEnabled ? '#218C74' : 'var(--text-muted)'
+                    }}>
+                      {remindersEnabled ? 'ACTIVE' : 'PAUSED'}
+                    </span>
+                  </div>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginTop: '1px' }}>
+                    Daily check-ins, scheduled medications &amp; physical therapy prompts
+                  </span>
+                </div>
+              </div>
 
-              <button 
-                type="button"
-                className={`theme-chip-btn ${currentTheme === 'cosmic-aurora' ? 'active' : ''}`}
-                onClick={() => setCurrentTheme('cosmic-aurora')}
-              >
-                <span className="theme-swatch" style={{ background: 'linear-gradient(135deg, #8B5CF6 0%, #00E5FF 100%)' }}></span>
-                <div>
-                  <span className="theme-chip-name" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Palette size={11} /> Aurora</span>
-                  <span className="theme-chip-desc">Violet &amp; Neon</span>
-                </div>
-              </button>
+              {/* On / Off Switch Button */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 800, color: remindersEnabled ? 'var(--primary)' : 'var(--text-muted)' }}>
+                  {remindersEnabled ? 'ON' : 'OFF'}
+                </span>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={remindersEnabled}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setRemindersEnabled(prev => !prev);
+                  }}
+                  style={{
+                    width: '46px',
+                    height: '26px',
+                    borderRadius: '13px',
+                    background: remindersEnabled ? 'var(--primary)' : '#CBD5E1',
+                    border: 'none',
+                    padding: '2px',
+                    cursor: 'pointer',
+                    position: 'relative',
+                    display: 'flex',
+                    alignItems: 'center',
+                    transition: 'background 0.2s ease',
+                    flexShrink: 0
+                  }}
+                  title={remindersEnabled ? "Switch Reminders Off" : "Switch Reminders On"}
+                >
+                  <span style={{
+                    width: '22px',
+                    height: '22px',
+                    borderRadius: '50%',
+                    background: '#ffffff',
+                    boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
+                    transform: remindersEnabled ? 'translateX(20px)' : 'translateX(0)',
+                    transition: 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                    display: 'block'
+                  }} />
+                </button>
+              </div>
+            </div>
 
-              <button 
-                type="button"
-                className={`theme-chip-btn ${currentTheme === 'rose-sanctuary' ? 'active' : ''}`}
-                onClick={() => setCurrentTheme('rose-sanctuary')}
-              >
-                <span className="theme-swatch" style={{ background: 'linear-gradient(135deg, #E11D48 0%, #F59E0B 100%)' }}></span>
-                <div>
-                  <span className="theme-chip-name" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Sun size={11} /> Sanctuary</span>
-                  <span className="theme-chip-desc">Rose &amp; Amber</span>
+            {/* Notifications Card with On/Off Switch */}
+            <div 
+              className="profile-menu-card history-entry-card"
+              style={{ 
+                padding: '14px 16px',
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'space-between',
+                cursor: 'pointer',
+                background: 'var(--bg-glass-card)'
+              }}
+              onClick={() => setShowNotificationSettingsPage(true)}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{
+                  width: '38px', height: '38px', borderRadius: '10px',
+                  background: notificationsEnabled ? 'rgba(79, 70, 229, 0.1)' : 'rgba(100, 116, 139, 0.1)',
+                  color: notificationsEnabled ? 'var(--primary)' : 'var(--text-muted)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0
+                }}>
+                  {notificationsEnabled ? <Bell size={18} /> : <BellOff size={18} />}
                 </div>
-              </button>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <strong style={{ fontSize: '13.5px', color: 'var(--text-main)' }}>Push &amp; Sound Notifications</strong>
+                    <span style={{ 
+                      fontSize: '9.5px', fontWeight: 800, padding: '2px 7px', borderRadius: '6px',
+                      background: notificationsEnabled ? 'rgba(33, 140, 116, 0.12)' : 'rgba(100, 116, 139, 0.12)',
+                      color: notificationsEnabled ? '#218C74' : 'var(--text-muted)'
+                    }}>
+                      {notificationsEnabled ? 'ENABLED' : 'MUTED'}
+                    </span>
+                  </div>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginTop: '1px' }}>
+                    Doctor Carter alerts, triage threshold warnings &amp; voice updates
+                  </span>
+                </div>
+              </div>
+
+              {/* On / Off Switch Button */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 800, color: notificationsEnabled ? 'var(--primary)' : 'var(--text-muted)' }}>
+                  {notificationsEnabled ? 'ON' : 'OFF'}
+                </span>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={notificationsEnabled}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setNotificationsEnabled(prev => !prev);
+                  }}
+                  style={{
+                    width: '46px',
+                    height: '26px',
+                    borderRadius: '13px',
+                    background: notificationsEnabled ? 'var(--primary)' : '#CBD5E1',
+                    border: 'none',
+                    padding: '2px',
+                    cursor: 'pointer',
+                    position: 'relative',
+                    display: 'flex',
+                    alignItems: 'center',
+                    transition: 'background 0.2s ease',
+                    flexShrink: 0
+                  }}
+                  title={notificationsEnabled ? "Switch Notifications Off" : "Switch Notifications On"}
+                >
+                  <span style={{
+                    width: '22px',
+                    height: '22px',
+                    borderRadius: '50%',
+                    background: '#ffffff',
+                    boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
+                    transform: notificationsEnabled ? 'translateX(20px)' : 'translateX(0)',
+                    transition: 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                    display: 'block'
+                  }} />
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -3100,21 +3995,18 @@ function App() {
           </div>
         </div>
 
-        {/* Preferences section */}
+        {/* Privacy & Security Section */}
         <div className="profile-menu-section">
-          <span className="profile-menu-title">Preferences</span>
           <div className="profile-menu-card">
-            <div className="profile-menu-row">
-              <span className="profile-menu-left">Reminders</span>
-              <ChevronRightIcon size={14} style={{ color: 'var(--text-muted)' }} />
-            </div>
-            <div className="profile-menu-row">
-              <span className="profile-menu-left">Notifications</span>
-              <ChevronRightIcon size={14} style={{ color: 'var(--text-muted)' }} />
-            </div>
-            <div className="profile-menu-row">
-              <span className="profile-menu-left">Privacy &amp; Security</span>
-              <ChevronRightIcon size={14} style={{ color: 'var(--text-muted)' }} />
+            <div 
+              className="profile-menu-row" 
+              style={{ cursor: 'pointer', padding: '12px 14px' }} 
+              onClick={() => alert("HIPAA Compliant & End-to-End Encrypted: Your post-operative recovery data is strictly protected.")}
+            >
+              <span className="profile-menu-left" style={{ fontWeight: 600 }}>Privacy &amp; Security</span>
+              <span style={{ fontSize: '10.5px', color: '#218C74', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                <CheckCircle2 size={12} /> HIPAA Protected
+              </span>
             </div>
           </div>
         </div>
@@ -3315,10 +4207,49 @@ function App() {
           </div>
         </div>
 
-        {/* Reminder bottom box */}
-        <div className="reminder-footer-card">
-          <Clock size={14} style={{ color: 'var(--primary)' }} />
-          <span>REMINDER: <strong>{task.timeHour || '8:30 AM'} &bull; Daily</strong></span>
+        {/* Reminder bottom box with on/off switch */}
+        <div className="reminder-footer-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Clock size={14} style={{ color: 'var(--primary)' }} />
+            <span>REMINDER: <strong>{task.timeHour || '8:30 AM'} &bull; Daily</strong></span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ fontSize: '10.5px', fontWeight: 800, color: (taskReminders[task.id] !== false && remindersEnabled) ? 'var(--primary)' : 'var(--text-muted)' }}>
+              {(taskReminders[task.id] !== false && remindersEnabled) ? 'ON' : 'OFF'}
+            </span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={taskReminders[task.id] !== false && remindersEnabled}
+              onClick={() => setTaskReminders(prev => ({ ...prev, [task.id]: prev[task.id] === false }))}
+              style={{
+                width: '42px',
+                height: '24px',
+                borderRadius: '12px',
+                background: (taskReminders[task.id] !== false && remindersEnabled) ? 'var(--primary)' : '#CBD5E1',
+                border: 'none',
+                padding: '2px',
+                cursor: 'pointer',
+                position: 'relative',
+                display: 'flex',
+                alignItems: 'center',
+                transition: 'background 0.2s ease',
+                flexShrink: 0
+              }}
+              title={(taskReminders[task.id] !== false && remindersEnabled) ? "Switch Reminder Off" : "Switch Reminder On"}
+            >
+              <span style={{
+                width: '20px',
+                height: '20px',
+                borderRadius: '50%',
+                background: '#ffffff',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                transform: (taskReminders[task.id] !== false && remindersEnabled) ? 'translateX(18px)' : 'translateX(0)',
+                transition: 'transform 0.2s ease',
+                display: 'block'
+              }} />
+            </button>
+          </div>
         </div>
 
         <button 
