@@ -129,52 +129,6 @@ function App() {
   const [toastNotification, setToastNotification] = useState<string | null>(null);
   const [showAppointmentSummaryModal, setShowAppointmentSummaryModal] = useState<boolean>(false);
 
-  // Recovery Plan Single Carousel State & Swipe Logic
-  const [carouselIndex, setCarouselIndex] = useState<number>(0);
-  const touchStartXRef = useRef<number | null>(null);
-  const touchDeltaXRef = useRef<number>(0);
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartXRef.current = e.touches[0].clientX;
-    touchDeltaXRef.current = 0;
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (touchStartXRef.current !== null) {
-      touchDeltaXRef.current = e.touches[0].clientX - touchStartXRef.current;
-    }
-  };
-
-  const handleTouchEnd = () => {
-    if (touchStartXRef.current !== null) {
-      if (touchDeltaXRef.current < -40) {
-        // Swiped left -> next card
-        setCarouselIndex(prev => (prev + 1) % 4);
-      } else if (touchDeltaXRef.current > 40) {
-        // Swiped right -> prev card
-        setCarouselIndex(prev => (prev === 0 ? 3 : prev - 1));
-      }
-    }
-    touchStartXRef.current = null;
-    touchDeltaXRef.current = 0;
-  };
-
-  const nextCarouselCard = () => {
-    setCarouselIndex(prev => (prev + 1) % 4);
-  };
-
-  const prevCarouselCard = () => {
-    setCarouselIndex(prev => (prev === 0 ? 3 : prev - 1));
-  };
-
-  const handleCarouselKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'ArrowLeft') {
-      prevCarouselCard();
-    } else if (e.key === 'ArrowRight') {
-      nextCarouselCard();
-    }
-  };
-
   const triggerToast = (msg: string) => {
     setToastNotification(msg);
     setTimeout(() => {
@@ -723,496 +677,6 @@ function App() {
   };
 
   // ==========================================
-  // CARD 1: SHALOM RECOVER AI (REFERENCE CARD 1)
-  // ==========================================
-  const renderShalomRecoverCard = () => {
-    let dynamicMessage = "Your recovery is on track today.";
-    let dynamicCta = "✦ Continue today's recovery →";
-    let dynamicAction = () => {
-      const nextPending = todayTasks.find(t => !t.completed);
-      if (nextPending) {
-        setSelectedTaskId(nextPending.id);
-      } else {
-        setActiveTab('plan');
-      }
-    };
-
-    if (!checkInComplete) {
-      dynamicMessage = "Your Day 6 recovery check-in is pending. Let's record your pain score & temperature.";
-      dynamicCta = "✦ Start morning check-in →";
-      dynamicAction = () => setShowCheckInForm(true);
-    } else {
-      const pendingActivity = todayTasks.find(t => t.type === 'activity' && !t.completed);
-      if (pendingActivity) {
-        dynamicMessage = `Morning check-in verified (Pain: ${historyLogs[historyLogs.length - 1]?.painLevel || 4}/10). Next up: your physical therapy walk.`;
-        dynamicCta = "✦ Start physical activity →";
-        dynamicAction = () => {
-          toggleTaskCompleted(pendingActivity.id);
-          triggerToast(`Physical activity logged: ${pendingActivity.name}`);
-        };
-      } else if (hydrationGlasses < 8) {
-        dynamicMessage = "Physical therapy on track! Keep sipping water steadily toward your 8-glass goal.";
-        dynamicCta = "✦ Log a glass of water →";
-        dynamicAction = () => {
-          setHydrationGlasses(prev => {
-            const n = Math.min(12, prev + 1);
-            triggerToast(`Logged a glass of water (${n}/8)`);
-            return n;
-          });
-        };
-      } else if (!woundCheckDone) {
-        dynamicMessage = "Remember to inspect your surgical incision and dressing.";
-        dynamicCta = "✦ Check my incision →";
-        dynamicAction = () => setShowIncisionCheckModal(true);
-      } else {
-        dynamicMessage = "Outstanding work today, Aïda! All recovery milestones completed. Keep your leg elevated.";
-        dynamicCta = "✦ Review recovery wins →";
-        dynamicAction = () => setActiveTab('trends');
-      }
-    }
-
-    const currentStatus = activeReport?.status || (checkInComplete ? 'Green' : 'Pending');
-
-    return (
-      <div key="slide-shalom-ai" className="carousel-slide">
-        {/* Top Header */}
-        <div className="plan-card-top-row">
-          <div className="plan-card-badge-left">
-            <div className="plan-card-icon-box" style={{ background: 'linear-gradient(135deg, #3730A3 0%, #4F46E5 100%)', borderColor: 'rgba(99, 102, 241, 0.4)', boxShadow: '0 0 16px rgba(79, 70, 229, 0.4)' }}>
-              <Heart size={16} fill="#E0E7FF" color="#E0E7FF" />
-            </div>
-            <div>
-              <span style={{ fontSize: '13px', fontWeight: 800, color: '#FFFFFF', display: 'block' }}>
-                Shalom Recover AI
-              </span>
-              <span style={{ fontSize: '10.5px', color: '#94A3B8', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: currentStatus === 'Green' ? '#10B981' : currentStatus === 'Yellow' ? '#F59E0B' : '#EF4444', boxShadow: '0 0 6px #10B981' }}></span>
-                {checkInComplete ? `Triage: ${currentStatus}` : 'Online & Monitoring'}
-              </span>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => toggleHeroSpeech(dynamicMessage)}
-            style={{
-              background: 'rgba(255, 255, 255, 0.06)',
-              border: '1px solid rgba(255, 255, 255, 0.12)',
-              borderRadius: '20px',
-              padding: '4px 10px',
-              color: '#C4B5FD',
-              fontSize: '11px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '5px',
-              cursor: 'pointer'
-            }}
-            title={isSpeakingHero ? "Stop speaking" : "Listen to Shalom AI"}
-          >
-            {isSpeakingHero ? <VolumeX size={12} /> : <Volume2 size={12} />}
-            <span>{isSpeakingHero ? "Mute" : "Listen"}</span>
-          </button>
-        </div>
-
-        {/* Speech Bubble pointing right to orb */}
-        <div 
-          className="plan-card-speech-bubble" 
-          onClick={() => toggleHeroSpeech(dynamicMessage)}
-          title="Tap to listen"
-          style={{ cursor: 'pointer' }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
-            <Sparkles size={13} style={{ color: '#C084FC' }} />
-            <strong style={{ fontSize: '13.5px', color: '#FFFFFF' }}>
-              Good morning, <span className="plan-card-headline-accent">Aïda.</span>
-            </strong>
-          </div>
-          <p style={{ fontSize: '11.5px', color: '#94A3B8', margin: 0, lineHeight: '1.45' }}>
-            {dynamicMessage}
-          </p>
-        </div>
-
-        {/* Action Button */}
-        <button 
-          type="button" 
-          className="plan-card-cta-btn" 
-          onClick={dynamicAction}
-        >
-          <span>{dynamicCta}</span>
-        </button>
-
-        {/* 3D Glowing Iridescent Spherical Orb (Reference 1) */}
-        <div className="plan-card-orb-container">
-          <div className="plan-orb-reflection"></div>
-          <div className="plan-orb-ring-1"></div>
-          <div className="plan-orb-ring-2"></div>
-          <div className="plan-orb-sphere">
-            {/* Atmospheric inner glow */}
-            <div style={{
-              width: '120px', height: '120px', borderRadius: '50%',
-              background: 'radial-gradient(circle at 35% 35%, rgba(216, 180, 254, 0.35) 0%, rgba(99, 102, 241, 0.15) 50%, transparent 80%)',
-              filter: 'blur(10px)', position: 'absolute'
-            }} />
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // ==========================================
-  // CARD 2: PHYSICAL ACTIVITY (REFERENCE CARD 2)
-  // ==========================================
-  const renderPhysicalActivityCard = () => {
-    const ptTasks = todayTasks.filter(t => t.type === 'activity');
-    const ptDone = ptTasks.filter(t => t.completed).length;
-    const ptTotal = ptTasks.length || 3;
-    const nextActivity = ptTasks.find(t => !t.completed) || ptTasks[0];
-
-    const handleToggleActivity = () => {
-      if (nextActivity) {
-        toggleTaskCompleted(nextActivity.id);
-        const nextDone = ptDone + (nextActivity.completed ? -1 : 1);
-        triggerToast(`Activity updated: ${nextActivity.name} (${Math.max(0, nextDone)}/${ptTotal} done)`);
-      }
-    };
-
-    return (
-      <div key="slide-physical-activity" className="carousel-slide">
-        {/* Top Header */}
-        <div className="plan-card-top-row">
-          <div className="plan-card-badge-left">
-            <div className="plan-card-icon-box">
-              <Activity size={16} />
-            </div>
-            <span className="plan-card-title-track">PHYSICAL ACTIVITY</span>
-          </div>
-
-          <div className="plan-card-status-pill">
-            <Clock size={12} style={{ color: '#C084FC' }} />
-            <span>{nextActivity?.timeHour || '09:00 AM'}</span>
-          </div>
-        </div>
-
-        {/* Headline & Dynamic Text */}
-        <div>
-          <h3 className="plan-card-headline">
-            Time to move,<br />
-            <span className="plan-card-headline-accent">Aïda.</span>
-          </h3>
-
-          <p className="plan-card-subtitle">
-            {ptDone === 0 && "A short walk and your exercises will help your recovery."}
-            {ptDone > 0 && ptDone < ptTotal && `${ptDone} of ${ptTotal} sessions completed. Great job keeping your knee mobile!`}
-            {ptDone >= ptTotal && "All mobility sessions completed today! Fantastic dedication to healing."}
-          </p>
-        </div>
-
-        {/* Nested Plan Card */}
-        <div 
-          className="plan-card-nested-row"
-          onClick={() => nextActivity && setSelectedTaskId(nextActivity.id)}
-          title="Click to view full exercise instructions"
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div className="plan-card-nested-icon" style={{ background: ptDone > 0 ? '#10B981' : 'linear-gradient(135deg, #7C3AED 0%, #A855F7 100%)' }}>
-              {ptDone > 0 ? <Check size={16} /> : `${ptDone}/${ptTotal}`}
-            </div>
-            <div>
-              <strong className="plan-card-nested-title">Today’s plan</strong>
-              <span className="plan-card-nested-desc">
-                {nextActivity?.name || 'Walk 5–10 minutes'} &bull; {ptDone} of {ptTotal} today
-              </span>
-            </div>
-          </div>
-          <ChevronRightIcon size={16} style={{ color: '#64748B' }} />
-        </div>
-
-        {/* Action Button */}
-        <button 
-          type="button" 
-          className="plan-card-cta-btn"
-          onClick={handleToggleActivity}
-        >
-          <span>{ptDone >= ptTotal ? 'All activity completed today ✓' : 'Start your activity →'}</span>
-        </button>
-
-        {/* 3D Glowing Orb with Line-Art Walking Woman (Reference 2) */}
-        <div className="plan-card-orb-container">
-          <div className="plan-orb-reflection"></div>
-          <div className="plan-orb-ring-1"></div>
-          <div className="plan-orb-ring-2"></div>
-          <div className="plan-orb-sphere">
-            {/* SVG Line-Art Walking Woman */}
-            <svg width="86" height="106" viewBox="0 0 100 120" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ filter: 'drop-shadow(0 0 5px rgba(255, 255, 255, 0.85))' }}>
-              {/* Head & Ponytail */}
-              <circle cx="48" cy="18" r="7" stroke="#FFFFFF" strokeWidth="1.8" />
-              <path d="M43 16C40 14 36 17 34 22C37 22 41 20 43 18" stroke="#FFFFFF" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-              {/* Torso */}
-              <path d="M47 25L46 45M50 25L52 45" stroke="#FFFFFF" strokeWidth="1.8" strokeLinecap="round" />
-              <path d="M43 31L35 39M54 31L63 40" stroke="#FFFFFF" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-              {/* Left Arm forward */}
-              <path d="M63 40L68 52" stroke="#FFFFFF" strokeWidth="1.8" strokeLinecap="round" />
-              {/* Right Arm back */}
-              <path d="M35 39L28 48" stroke="#FFFFFF" strokeWidth="1.8" strokeLinecap="round" />
-              {/* Left Leg forward in stride */}
-              <path d="M52 45L62 70L74 95L80 97" stroke="#FFFFFF" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-              {/* Right Leg back in stride */}
-              <path d="M46 45L38 70L28 92L23 93" stroke="#FFFFFF" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-              {/* Left Shoe */}
-              <path d="M74 95L82 98C84 99 83 101 80 101L72 98Z" stroke="#FFFFFF" strokeWidth="1.8" strokeLinejoin="round" />
-              {/* Right Shoe */}
-              <path d="M28 92L21 94C19 95 19 97 22 97L29 94Z" stroke="#FFFFFF" strokeWidth="1.8" strokeLinejoin="round" />
-            </svg>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // ==========================================
-  // CARD 3: DAILY WATER LOG (REFERENCE CARD 3)
-  // ==========================================
-  const renderDailyWaterCard = () => {
-    const handleAddWater = () => {
-      setHydrationGlasses(prev => {
-        const next = Math.min(12, prev + 1);
-        if (next >= 8) {
-          const hydTask = todayTasks.find(t => t.type === 'hydration');
-          if (hydTask && !hydTask.completed) {
-            toggleTaskCompleted(hydTask.id);
-          }
-          triggerToast("Goal reached! 8 of 8 glasses logged today. Excellent tissue recovery!");
-        } else {
-          triggerToast(`Logged a glass of water (${next} of 8 glasses)`);
-        }
-        return next;
-      });
-    };
-
-    const handleSubtractWater = (e: React.MouseEvent) => {
-      e.stopPropagation();
-      setHydrationGlasses(prev => Math.max(0, prev - 1));
-    };
-
-    return (
-      <div key="slide-daily-water" className="carousel-slide">
-        {/* Top Header */}
-        <div className="plan-card-top-row">
-          <div className="plan-card-badge-left">
-            <div className="plan-card-icon-box" style={{ borderColor: 'rgba(56, 189, 248, 0.35)', color: '#38BDF8' }}>
-              <Droplets size={16} />
-            </div>
-            <span className="plan-card-title-track">DAILY WATER LOG</span>
-          </div>
-
-          <div className="plan-card-status-pill" style={{ borderColor: 'rgba(56, 189, 248, 0.3)' }}>
-            <Droplets size={12} style={{ color: '#38BDF8' }} />
-            <span>{hydrationGlasses} of 8 glasses</span>
-          </div>
-        </div>
-
-        {/* Headline & Dynamic Text */}
-        <div>
-          <h3 className="plan-card-headline">
-            Hydrate,<br />
-            <span className="plan-card-headline-accent">Aïda.</span>
-          </h3>
-
-          <p className="plan-card-subtitle">
-            {hydrationGlasses < 8 
-              ? `You’ve had ${hydrationGlasses} glasses today. Let’s hit your goal of 8!` 
-              : `Goal achieved! You've had 8 glasses today. Hydration supports optimal tissue recovery!`}
-          </p>
-        </div>
-
-        {/* Nested Reminder Card */}
-        <div className="plan-card-nested-row">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div className="plan-card-nested-icon" style={{ background: 'linear-gradient(135deg, #0284C7 0%, #38BDF8 100%)' }}>
-              <Droplets size={16} />
-            </div>
-            <div>
-              <strong className="plan-card-nested-title">Next reminder</strong>
-              <span className="plan-card-nested-desc">2:00 PM &bull; Every 2 hours</span>
-            </div>
-          </div>
-          <ChevronRightIcon size={16} style={{ color: '#64748B' }} />
-        </div>
-
-        {/* Action Button Row with quick add & undo */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', position: 'relative', zIndex: 2 }}>
-          <button 
-            type="button" 
-            className="plan-card-cta-btn"
-            onClick={handleAddWater}
-          >
-            <Plus size={14} />
-            <span>Log a glass of water &rarr;</span>
-          </button>
-
-          {hydrationGlasses > 0 && (
-            <button
-              type="button"
-              onClick={handleSubtractWater}
-              style={{
-                background: 'rgba(255, 255, 255, 0.06)',
-                border: '1px solid rgba(255, 255, 255, 0.12)',
-                borderRadius: '50%',
-                width: '32px',
-                height: '32px',
-                color: '#94A3B8',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '14px',
-                fontWeight: 'bold'
-              }}
-              title="Undo last glass"
-            >
-              -
-            </button>
-          )}
-        </div>
-
-        {/* 3D Glowing Orb with Line-Art Water Droplet (Reference 3) */}
-        <div className="plan-card-orb-container">
-          <div className="plan-orb-reflection"></div>
-          <div className="plan-orb-ring-1"></div>
-          <div className="plan-orb-ring-2"></div>
-          <div className="plan-orb-sphere">
-            {/* SVG Line-Art Water Droplet */}
-            <svg width="74" height="74" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ filter: 'drop-shadow(0 0 6px rgba(56, 189, 248, 0.9))' }}>
-              <path d="M50 16C50 16 23 52 23 68C23 82.9 35.1 95 50 95C64.9 95 77 82.9 77 68C77 52 50 16 50 16Z" stroke="#FFFFFF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-              {/* Droplet Reflection Arc */}
-              <path d="M62 84C68 79 71 71 71 63" stroke="#FFFFFF" strokeWidth="2.2" strokeLinecap="round" />
-            </svg>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // ==========================================
-  // CARD 4: INCISION & WOUND SAFETY (REFERENCE CARD 4)
-  // ==========================================
-  const renderIncisionSafetyCard = () => {
-    return (
-      <div key="slide-wound-safety" className="carousel-slide">
-        {/* Top Header */}
-        <div className="plan-card-top-row">
-          <div className="plan-card-badge-left">
-            <div className="plan-card-icon-box" style={{ borderColor: 'rgba(168, 85, 247, 0.35)' }}>
-              <ShieldCheck size={16} />
-            </div>
-            <div>
-              <span className="plan-card-title-track" style={{ display: 'block' }}>INCISION &amp; WOUND SAFETY</span>
-              <span style={{ fontSize: '10.5px', color: '#94A3B8', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10B981', boxShadow: '0 0 6px #10B981' }}></span>
-                Protection is progress.
-              </span>
-            </div>
-          </div>
-
-          <div className="plan-card-status-pill">
-            {woundStatus === 'clear' ? (
-              <CheckCircle2 size={12} style={{ color: '#10B981' }} />
-            ) : (
-              <AlertTriangle size={12} style={{ color: '#F59E0B' }} />
-            )}
-            <span>{woundStatus === 'clear' ? 'All clear today' : 'Needs review'}</span>
-            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: woundStatus === 'clear' ? '#10B981' : '#F59E0B' }}></span>
-          </div>
-        </div>
-
-        {/* Headline & Dynamic Text */}
-        <div>
-          <h3 className="plan-card-headline">
-            Let’s keep your<br />
-            <span className="plan-card-headline-accent">healing on track, Aïda.</span>
-          </h3>
-
-          <p className="plan-card-subtitle">
-            {woundStatus === 'clear' 
-              ? "Clean, protect, and watch for any changes. You’re doing great. 💜" 
-              : "Inspect dressing for any warmth, spreading redness, or fluid discharge."}
-          </p>
-        </div>
-
-        {/* Nested Reminder Card */}
-        <div 
-          className="plan-card-nested-row"
-          onClick={() => setShowIncisionCheckModal(true)}
-          title="Click to check incision safety"
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div className="plan-card-nested-icon" style={{ background: 'linear-gradient(135deg, #7C3AED 0%, #C084FC 100%)' }}>
-              <Sparkles size={16} />
-            </div>
-            <div>
-              <strong className="plan-card-nested-title">Next check-in reminder</strong>
-              <span className="plan-card-nested-desc">12:00 PM today &bull; Visual inspection</span>
-            </div>
-          </div>
-          <ChevronRightIcon size={16} style={{ color: '#64748B' }} />
-        </div>
-
-        {/* Action Button */}
-        <button 
-          type="button" 
-          className="plan-card-cta-btn"
-          onClick={() => setShowIncisionCheckModal(true)}
-        >
-          <ShieldCheck size={14} />
-          <span>{woundStatus === 'clear' ? 'Check my incision →' : 'Review incision status →'}</span>
-        </button>
-
-        {/* Bottom Full-Width Tip Banner (Reference 4) */}
-        <div className="plan-card-tip-banner">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div style={{ width: '26px', height: '26px', borderRadius: '50%', background: 'rgba(168, 85, 247, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#C084FC', flexShrink: 0 }}>
-              <Info size={13} />
-            </div>
-            <div>
-              <strong style={{ fontSize: '10.5px', color: '#C4B5FD', display: 'block' }}>Tip of the day</strong>
-              <span style={{ fontSize: '10.5px', color: '#94A3B8' }}>
-                Keep the area clean and dry. Avoid soaking in water until cleared by your care team.
-              </span>
-            </div>
-          </div>
-          <span style={{ fontSize: '10.5px', color: '#C084FC', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }} onClick={() => { setActiveTab('plan'); setPlanCategoryFilter('wound'); }}>
-            Learn more &gt;
-          </span>
-        </div>
-
-        {/* 3D Glowing Orb with Shield & Stitches (Reference 4) */}
-        <div className="plan-card-orb-container" style={{ top: '42%' }}>
-          <div className="plan-orb-reflection"></div>
-          <div className="plan-orb-ring-1"></div>
-          <div className="plan-orb-ring-2"></div>
-          <div className="plan-orb-sphere">
-            {/* SVG Line-Art Shield with Stitches and Sparkle Star */}
-            <svg width="78" height="88" viewBox="0 0 100 110" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ filter: 'drop-shadow(0 0 5px rgba(216, 180, 254, 0.85))' }}>
-              {/* Shield Outline */}
-              <path d="M50 14L24 26V54C24 74 35 90 50 98C65 90 76 74 76 54V26L50 14Z" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              {/* Incision Line */}
-              <path d="M50 32C49 43 51 55 49 76" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" />
-              {/* Horizontal Stitches */}
-              <path d="M43 38L57 38" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" />
-              <path d="M42 47L58 47" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" />
-              <path d="M41 56L59 56" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" />
-              <path d="M43 65L57 65" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" />
-              <path d="M44 73L56 73" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" />
-              {/* Sparkle Star */}
-              <path d="M66 60L67.5 64L71.5 65.5L67.5 67L66 71L64.5 67L60.5 65.5L64.5 64L66 60Z" fill="#FFFFFF" />
-            </svg>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // ==========================================
   // INCISION & WOUND SAFETY CHECK MODAL
   // ==========================================
   const renderIncisionCheckModal = () => {
@@ -1367,79 +831,209 @@ function App() {
   };
 
   // ==========================================
-  // RECOVERY PLAN DASHBOARD CAROUSEL (ONE CARD)
+  // UNIFIED RECOVERY MASTER CARD (SINGLE CARD WITH ALL 4 PILLARS DISPLAYED)
   // ==========================================
-  const renderRecoveryPlanCarousel = () => {
-    const carouselTabs = [
-      { id: 0, label: 'Shalom AI', icon: <Heart size={12} fill="currentColor" /> },
-      { id: 1, label: 'Physical Activity', icon: <Activity size={12} /> },
-      { id: 2, label: 'Daily Water Log', icon: <Droplets size={12} /> },
-      { id: 3, label: 'Incision & Wound Safety', icon: <ShieldCheck size={12} /> }
-    ];
+  const renderUnifiedRecoveryMasterCard = () => {
+    const ptTasks = todayTasks.filter(t => t.type === 'activity');
+    const ptDone = ptTasks.filter(t => t.completed).length;
+    const ptTotal = ptTasks.length || 3;
+    const nextActivity = ptTasks.find(t => !t.completed) || ptTasks[0];
+
+    const currentStatus = activeReport?.status || (checkInComplete ? 'Green' : 'Pending');
 
     return (
       <div 
-        className="recovery-carousel-card"
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        onKeyDown={handleCarouselKeyDown}
-        tabIndex={0}
+        className="recovery-master-card"
         role="region"
-        aria-label="Recovery Plan Dashboard Carousel"
+        aria-label="Recovery Plan Master Overview"
       >
-        {/* Top Header Controls: Pagination Tabs + Navigation Arrows */}
-        <div className="carousel-header-controls">
-          <div className="carousel-dots-row">
-            {carouselTabs.map((tab) => (
+        {/* Master Header: Brand + Speech Greeting + Signature 3D Glowing Orb */}
+        <div className="recovery-master-header">
+          <div className="recovery-master-brand-box">
+            <div className="recovery-master-brand-row">
+              <div className="recovery-master-icon-badge">
+                <Heart size={16} fill="#FFFFFF" color="#FFFFFF" />
+              </div>
+              <span className="recovery-master-title">Shalom Recover AI</span>
+              <div className="recovery-master-live-badge">
+                <span className="carousel-live-dot" />
+                <span>Continuous AI Care &bull; Day 6</span>
+              </div>
               <button
-                key={tab.id}
                 type="button"
-                className={`carousel-tab-btn ${carouselIndex === tab.id ? 'active' : ''}`}
-                onClick={() => setCarouselIndex(tab.id)}
-                title={tab.label}
-                aria-label={`Go to slide ${tab.id + 1}: ${tab.label}`}
+                onClick={() => toggleHeroSpeech("Good morning, Aïda. Your swelling is mild and your recovery is progressing beautifully. Let’s keep your healing on track today.")}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.06)',
+                  border: '1px solid rgba(255, 255, 255, 0.12)',
+                  borderRadius: '16px',
+                  padding: '2px 8px',
+                  color: '#C4B5FD',
+                  fontSize: '10.5px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  cursor: 'pointer'
+                }}
+                title={isSpeakingHero ? "Stop speaking" : "Listen to Shalom AI"}
               >
-                <span className={`carousel-dot-indicator ${carouselIndex === tab.id ? 'active' : ''}`} />
-                <span className="carousel-tab-icon">{tab.icon}</span>
-                <span className="carousel-tab-title">{tab.label}</span>
+                {isSpeakingHero ? <VolumeX size={11} /> : <Volume2 size={11} />}
+                <span>{isSpeakingHero ? "Mute" : "Listen"}</span>
               </button>
-            ))}
+            </div>
+            <div className="recovery-master-speech">
+              <Sparkles size={13} style={{ color: '#C084FC', display: 'inline', marginRight: '6px', verticalAlign: '-2px' }} />
+              <strong>Good morning, Aïda.</strong> Your swelling is mild and your recovery is progressing beautifully. Let’s keep your healing on track today.
+            </div>
           </div>
 
-          <div className="carousel-arrows-row">
-            <button
-              type="button"
-              className="carousel-arrow-btn"
-              onClick={prevCarouselCard}
-              title="Previous card"
-              aria-label="Previous card"
-            >
-              <ChevronLeft size={16} />
-            </button>
-            <span className="carousel-counter">{carouselIndex + 1} of 4</span>
-            <button
-              type="button"
-              className="carousel-arrow-btn"
-              onClick={nextCarouselCard}
-              title="Next card"
-              aria-label="Next card"
-            >
-              <ChevronRightIcon size={16} />
-            </button>
+          {/* Signature Animated Luminous 3D Orb */}
+          <div className="recovery-master-orb-wrap">
+            <div className="recovery-master-orb-reflection" />
+            <div className="recovery-master-orb-ring" />
+            <div className="recovery-master-orb">
+              <div style={{
+                width: '36px', height: '36px', borderRadius: '50%',
+                background: 'radial-gradient(circle at 35% 35%, rgba(216, 180, 254, 0.45) 0%, rgba(99, 102, 241, 0.2) 50%, transparent 80%)',
+                filter: 'blur(4px)', position: 'absolute'
+              }} />
+            </div>
           </div>
         </div>
 
-        {/* Viewport & Track: Only Content Slides */}
-        <div className="carousel-viewport">
-          <div 
-            className="carousel-track" 
-            style={{ transform: `translateX(-${carouselIndex * 100}%)` }}
-          >
-            {renderShalomRecoverCard()}
-            {renderPhysicalActivityCard()}
-            {renderDailyWaterCard()}
-            {renderIncisionSafetyCard()}
+        {/* 4 Matching Sub-Cards in ONE single cohesive grid */}
+        <div className="recovery-uniform-grid">
+          {/* Subcard 1: Shalom AI */}
+          <div className="recovery-subcard" onClick={() => setActiveTab('trends')} style={{ cursor: 'pointer' }}>
+            <div className="recovery-subcard-top">
+              <div className="recovery-subcard-badge">
+                <div className="recovery-subcard-icon" style={{ background: 'linear-gradient(135deg, #3730A3 0%, #4F46E5 100%)', color: '#FFFFFF' }}>
+                  <Heart size={14} fill="#FFFFFF" color="#FFFFFF" />
+                </div>
+                <span className="recovery-subcard-track">SHALOM AI</span>
+              </div>
+              <span className="recovery-subcard-pill" style={{ background: 'rgba(99, 102, 241, 0.18)', color: '#C7D2FE', border: '1px solid rgba(99, 102, 241, 0.3)' }}>
+                {currentStatus === 'Green' ? 'Stable' : 'Day 6'}
+              </span>
+            </div>
+            <div className="recovery-subcard-body">
+              <h4 className="recovery-subcard-headline">Recovery On Track</h4>
+              <p className="recovery-subcard-subtitle">Pain: 4/10 &bull; Mild Swelling</p>
+            </div>
+            <div>
+              <div className="recovery-subcard-meter-bg">
+                <div className="recovery-subcard-meter-fill" style={{ width: '100%', background: 'linear-gradient(90deg, #4F46E5, #818CF8)' }} />
+              </div>
+              <div className="recovery-subcard-footer">
+                <span>Clinical Protocol</span>
+                <span>Normal &amp; Stable</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Subcard 2: Physical Activity */}
+          <div className="recovery-subcard" onClick={() => nextActivity && setSelectedTaskId(nextActivity.id)} style={{ cursor: 'pointer' }}>
+            <div className="recovery-subcard-top">
+              <div className="recovery-subcard-badge">
+                <div className="recovery-subcard-icon" style={{ background: 'linear-gradient(135deg, #7C3AED 0%, #A855F7 100%)', color: '#FFFFFF' }}>
+                  <Activity size={14} color="#FFFFFF" />
+                </div>
+                <span className="recovery-subcard-track">ACTIVITY</span>
+              </div>
+              <span className="recovery-subcard-pill" style={{ background: 'rgba(168, 85, 247, 0.18)', color: '#E9D5FF', border: '1px solid rgba(168, 85, 247, 0.3)' }}>
+                {ptDone} of {ptTotal} Done
+              </span>
+            </div>
+            <div className="recovery-subcard-body">
+              <h4 className="recovery-subcard-headline">Time to Move</h4>
+              <p className="recovery-subcard-subtitle">{nextActivity?.name || 'Walk 5–10 min'} &bull; 3x today</p>
+            </div>
+            <div>
+              <div className="recovery-subcard-meter-bg">
+                <div 
+                  className="recovery-subcard-meter-fill" 
+                  style={{ 
+                    width: `${Math.min(100, Math.round((ptDone / ptTotal) * 100))}%`, 
+                    background: 'linear-gradient(90deg, #7C3AED, #C084FC)' 
+                  }} 
+                />
+              </div>
+              <div className="recovery-subcard-footer">
+                <span>Prescribed Routine</span>
+                <span>Next: {nextActivity?.timeHour || '10:00 AM'}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Subcard 3: Daily Water Log */}
+          <div className="recovery-subcard" onClick={() => {
+            setHydrationGlasses(prev => {
+              const next = Math.min(12, prev + 1);
+              triggerToast(`Logged a glass of water (${next} of 8 glasses)`);
+              return next;
+            });
+          }} style={{ cursor: 'pointer' }} title="Click to log a glass of water">
+            <div className="recovery-subcard-top">
+              <div className="recovery-subcard-badge">
+                <div className="recovery-subcard-icon" style={{ background: 'linear-gradient(135deg, #0284C7 0%, #38BDF8 100%)', color: '#FFFFFF' }}>
+                  <Droplets size={14} color="#FFFFFF" />
+                </div>
+                <span className="recovery-subcard-track">WATER LOG</span>
+              </div>
+              <span className="recovery-subcard-pill" style={{ background: 'rgba(56, 189, 248, 0.18)', color: '#BAE6FD', border: '1px solid rgba(56, 189, 248, 0.3)' }}>
+                {hydrationGlasses} of 8 Glasses
+              </span>
+            </div>
+            <div className="recovery-subcard-body">
+              <h4 className="recovery-subcard-headline">Stay Hydrated</h4>
+              <p className="recovery-subcard-subtitle">{hydrationGlasses < 8 ? `${8 - hydrationGlasses} glasses to daily goal` : 'Daily goal achieved!'}</p>
+            </div>
+            <div>
+              <div className="recovery-subcard-meter-bg">
+                <div 
+                  className="recovery-subcard-meter-fill" 
+                  style={{ 
+                    width: `${Math.min(100, Math.round((hydrationGlasses / 8) * 100))}%`, 
+                    background: 'linear-gradient(90deg, #0284C7, #38BDF8)' 
+                  }} 
+                />
+              </div>
+              <div className="recovery-subcard-footer">
+                <span>Tissue Recovery</span>
+                <span>Next: 2:00 PM</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Subcard 4: Incision & Wound Safety */}
+          <div className="recovery-subcard" onClick={() => setShowIncisionCheckModal(true)} style={{ cursor: 'pointer' }} title="Click to review incision checklist">
+            <div className="recovery-subcard-top">
+              <div className="recovery-subcard-badge">
+                <div className="recovery-subcard-icon" style={{ background: 'linear-gradient(135deg, #059669 0%, #10B981 100%)', color: '#FFFFFF' }}>
+                  <ShieldCheck size={14} color="#FFFFFF" />
+                </div>
+                <span className="recovery-subcard-track">WOUND SAFETY</span>
+              </div>
+              <span className="recovery-subcard-pill" style={{ 
+                background: woundStatus === 'clear' ? 'rgba(16, 185, 129, 0.18)' : 'rgba(245, 158, 11, 0.18)', 
+                color: woundStatus === 'clear' ? '#A7F3D0' : '#FDE68A', 
+                border: `1px solid ${woundStatus === 'clear' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(245, 158, 11, 0.3)'}` 
+              }}>
+                {woundStatus === 'clear' ? 'All Clear' : 'Needs Review'}
+              </span>
+            </div>
+            <div className="recovery-subcard-body">
+              <h4 className="recovery-subcard-headline">Incision Secure</h4>
+              <p className="recovery-subcard-subtitle">Dressing Clean &amp; Dry &bull; No Swelling</p>
+            </div>
+            <div>
+              <div className="recovery-subcard-meter-bg">
+                <div className="recovery-subcard-meter-fill" style={{ width: '100%', background: 'linear-gradient(90deg, #059669, #10B981)' }} />
+              </div>
+              <div className="recovery-subcard-footer">
+                <span>Infection Defense</span>
+                <span>{woundCheckDone ? 'Checked Today ✓' : 'Next: 12:00 PM'}</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -1481,18 +1075,13 @@ function App() {
         </div>
 
         {/* Recovery Plan Dashboard Section Header */}
-        <div className="section-header-row" style={{ gridColumn: 'span 2', marginBottom: '12px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span className="section-title">Recovery Plan Dashboard</span>
-            <span style={{ fontSize: '10.5px', fontWeight: 800, color: 'var(--primary)', background: 'rgba(79, 70, 229, 0.1)', padding: '2px 8px', borderRadius: '8px' }}>
-              Card {carouselIndex + 1} of 4
-            </span>
-          </div>
+        <div className="section-header-row" style={{ gridColumn: 'span 2', marginBottom: '8px' }}>
+          <span className="section-title">Recovery Plan Dashboard</span>
           <button className="section-link" onClick={() => setActiveTab('plan')}>View full schedule &rarr;</button>
         </div>
 
-        {/* Single Carousel Card (Shalom AI → Physical Activity → Water Log → Incision Safety) */}
-        {renderRecoveryPlanCarousel()}
+        {/* Unified Single Master Card (All 4 Pillars Displayed) */}
+        {renderUnifiedRecoveryMasterCard()}
 
         {/* Talk to Shalom AI - Compact Horizontal Link Card */}
         <div className="glass-card talk-shalom-bar" style={{
@@ -1729,13 +1318,12 @@ function App() {
           </div>
         </div>
 
-        {/* Interactive Recovery Plan Carousel Card */}
+        {/* Unified Single Master Card (All 4 Pillars Displayed) */}
         <div style={{ marginTop: '16px', marginBottom: '8px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--text-main)' }}>Interactive Recovery Dashboard</span>
-            <span style={{ fontSize: '10.5px', color: 'var(--primary)', fontWeight: 700 }}>Card {carouselIndex + 1} of 4</span>
+            <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--text-main)' }}>Recovery Plan Dashboard</span>
           </div>
-          {renderRecoveryPlanCarousel()}
+          {renderUnifiedRecoveryMasterCard()}
         </div>
 
         {/* Category Filters Bar */}
