@@ -2086,97 +2086,226 @@ function App() {
       </div>
     );
 
-    // Personalized "Look How Far You've Come" Shalom AI Letter Component
-    const renderShalomLetter = () => (
-      <div className="shalom-letter-card">
-        <div className="shalom-letter-quote">“</div>
+    // Recovery Status Card Component
+    const renderRecoveryStatusCard = () => {
+      // Determine dynamic status
+      const latestStatus = historyLogs[historyLogs.length - 1]?.status || 'Green';
+      const statusCategory: 'great' | 'effort' | 'attention' = 
+        latestStatus === 'Green' ? 'great' : latestStatus === 'Yellow' ? 'effort' : 'attention';
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '16px', position: 'relative', zIndex: 2 }}>
-          <div style={{
-            width: '46px', height: '46px', borderRadius: '50%',
-            background: 'radial-gradient(circle at 35% 35%, #ffffff 0%, #e6f7ff 35%, #00BFFF 70%, #008C8C 100%)',
-            boxShadow: '0 8px 18px rgba(0, 140, 140, 0.25), inset -2px -2px 6px rgba(0, 140, 140, 0.3)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
-          }}>
-            <Sparkles size={20} style={{ color: '#ffffff' }} />
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <strong style={{ fontSize: '15px', color: 'var(--text-main)', fontWeight: 800 }}>Shalom (AI Assistant)</strong>
-              <span style={{ 
-                fontSize: '9.5px', fontWeight: 800, padding: '2px 8px', borderRadius: '8px', 
-                background: 'rgba(0, 140, 140, 0.1)', color: 'var(--primary)', textTransform: 'uppercase' 
+      const handleSeeProgress = () => {
+        if (!isDesktop) {
+          setProgressSubTab('trends');
+        }
+        const el = document.getElementById('trajectory-section') || document.querySelector('.trajectory-card');
+        el?.scrollIntoView({ behavior: 'smooth' });
+      };
+
+      return (
+        <div className="shalom-letter-card" style={{ padding: '22px 24px' }}>
+          {/* Header Row: Hi [Name] & Dynamic Recovery Status Badge */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '18px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{
+                width: '42px', height: '42px', borderRadius: '50%',
+                background: 'radial-gradient(circle at 35% 35%, #ffffff 0%, #e6f7ff 35%, #00BFFF 70%, #008C8C 100%)',
+                boxShadow: '0 8px 18px rgba(0, 140, 140, 0.25), inset -2px -2px 6px rgba(0, 140, 140, 0.3)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
               }}>
-                Recovery Letter
-              </span>
+                <Sparkles size={20} style={{ color: '#ffffff' }} />
+              </div>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-main)', margin: 0, letterSpacing: '-0.3px' }}>
+                    Hi Aïda
+                  </h3>
+                  <Smile size={18} style={{ color: 'var(--primary)' }} />
+                </div>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 500 }}>
+                  Day 6 Post-Op &bull; Knee Recovery Status
+                </span>
+              </div>
             </div>
-            <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 500 }}>
-              Personalized Milestone Review &bull; August 28, 2026
+
+            {/* Status Indicator Badge */}
+            <div>
+              {statusCategory === 'great' ? (
+                <span style={{ 
+                  display: 'inline-flex', alignItems: 'center', gap: '6px', 
+                  padding: '6px 14px', borderRadius: '12px', 
+                  background: 'rgba(33, 140, 116, 0.12)', color: '#218C74', 
+                  fontWeight: 800, fontSize: '12px' 
+                }}>
+                  <CheckCircle2 size={15} /> You’re doing great
+                </span>
+              ) : statusCategory === 'effort' ? (
+                <span style={{ 
+                  display: 'inline-flex', alignItems: 'center', gap: '6px', 
+                  padding: '6px 14px', borderRadius: '12px', 
+                  background: 'rgba(217, 119, 6, 0.12)', color: '#D97706', 
+                  fontWeight: 800, fontSize: '12px' 
+                }}>
+                  <AlertCircle size={15} /> Needs more effort
+                </span>
+              ) : (
+                <span style={{ 
+                  display: 'inline-flex', alignItems: 'center', gap: '6px', 
+                  padding: '6px 14px', borderRadius: '12px', 
+                  background: 'rgba(220, 38, 38, 0.12)', color: '#DC2626', 
+                  fontWeight: 800, fontSize: '12px' 
+                }}>
+                  <ShieldAlert size={15} /> Needs attention
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* 3 Short Personalized Recovery Wins */}
+          <div style={{ marginBottom: '16px' }}>
+            <span style={{ fontSize: '10.5px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.4px', display: 'block', marginBottom: '8px' }}>
+              Personalized Wins
             </span>
+            <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(3, 1fr)' : '1fr', gap: '10px' }}>
+              <div style={{
+                background: 'rgba(255, 255, 255, 0.75)',
+                border: '1px solid var(--border-glass)',
+                borderRadius: '14px',
+                padding: '12px 14px',
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '10px'
+              }}>
+                <div style={{
+                  width: '28px', height: '28px', borderRadius: '8px',
+                  background: 'rgba(33, 140, 116, 0.12)', color: '#218C74',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0
+                }}>
+                  <CheckCircle2 size={15} />
+                </div>
+                <div>
+                  <strong style={{ fontSize: '12.5px', color: 'var(--text-main)', display: 'block' }}>
+                    15-Min Walk
+                  </strong>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                    Completed morning stroll unassisted
+                  </span>
+                </div>
+              </div>
+
+              <div style={{
+                background: 'rgba(255, 255, 255, 0.75)',
+                border: '1px solid var(--border-glass)',
+                borderRadius: '14px',
+                padding: '12px 14px',
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '10px'
+              }}>
+                <div style={{
+                  width: '28px', height: '28px', borderRadius: '8px',
+                  background: 'rgba(0, 140, 140, 0.12)', color: 'var(--primary)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0
+                }}>
+                  <Target size={15} />
+                </div>
+                <div>
+                  <strong style={{ fontSize: '12.5px', color: 'var(--text-main)', display: 'block' }}>
+                    75° Flexion
+                  </strong>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                    Exceeded 40° initial bend limit
+                  </span>
+                </div>
+              </div>
+
+              <div style={{
+                background: 'rgba(255, 255, 255, 0.75)',
+                border: '1px solid var(--border-glass)',
+                borderRadius: '14px',
+                padding: '12px 14px',
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '10px'
+              }}>
+                <div style={{
+                  width: '28px', height: '28px', borderRadius: '8px',
+                  background: 'rgba(2, 132, 199, 0.12)', color: '#0284C7',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0
+                }}>
+                  <Clock size={15} />
+                </div>
+                <div>
+                  <strong style={{ fontSize: '12.5px', color: 'var(--text-main)', display: 'block' }}>
+                    6-Day Streak
+                  </strong>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                    100% on-time meds &amp; check-ins
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
 
-        <div style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <h4 style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-main)', margin: 0, letterSpacing: '-0.2px' }}>
-              Look how far you've come, Aïda!
-            </h4>
-            <Sparkles size={16} style={{ color: 'var(--primary)' }} />
-          </div>
-
-          <p style={{ fontSize: '12.5px', lineHeight: '1.65', color: 'var(--text-main)', margin: 0, fontWeight: 400 }}>
-            Take a moment to pause and reflect on <strong>Day 1</strong>. Getting out of bed was an uphill struggle, standing for two minutes pushed your pain to a 7/10, and taking every medicine on time felt exhausting.
-          </p>
-
-          <p style={{ fontSize: '12.5px', lineHeight: '1.65', color: 'var(--text-main)', margin: 0, fontWeight: 400 }}>
-            Look at where you stand today on <strong>Day 6</strong>:
-          </p>
-
-          <div style={{ 
-            background: 'rgba(0, 140, 140, 0.04)', 
-            borderLeft: '3px solid var(--primary)', 
-            padding: '10px 14px', 
-            borderRadius: '0 12px 12px 0',
-            display: 'flex', 
-            flexDirection: 'column', 
-            gap: '6px',
-            fontSize: '12px',
-            color: 'var(--text-main)'
+          {/* One Short Encouraging "Shalom Says" Message */}
+          <div style={{
+            background: 'linear-gradient(135deg, rgba(0, 140, 140, 0.05) 0%, rgba(255, 255, 255, 0.85) 100%)',
+            border: '1px solid rgba(0, 140, 140, 0.15)',
+            borderRadius: '14px',
+            padding: '12px 16px',
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '10px',
+            marginBottom: '18px'
           }}>
-            <div>• <strong>15-Minute Unassisted Walks:</strong> You completed your indoor morning walking routine with confidence.</div>
-            <div>• <strong>75° Knee Flexion:</strong> You surpassed your initial 40° restriction, moving closer to the 90° target.</div>
-            <div>• <strong>Unbroken 6-Day Check-in Streak:</strong> Giving your surgical team crystal-clear visibility into your healing trajectory.</div>
-          </div>
-
-          <p style={{ fontSize: '12.5px', lineHeight: '1.65', color: 'var(--text-main)', margin: 0, fontWeight: 400 }}>
-            Recovery is not simply waiting for days to pass — it is the patience, hydration, and gentle movement you show yourself every morning. Dr. Smith’s care team will be delighted to review this at your upcoming Day 14 surgical evaluation.
-          </p>
-
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px', paddingTop: '12px', borderTop: '1px solid rgba(0,0,0,0.06)', flexWrap: 'wrap', gap: '10px' }}>
-            <span style={{ fontSize: '12px', fontStyle: 'italic', color: 'var(--primary-dark)', fontWeight: 600 }}>
-              With pride & clinical care, your Shalom AI Assistant
-            </span>
-
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button 
-                className="choice-pill-btn" 
-                style={{ fontSize: '11px', padding: '6px 14px', background: 'var(--primary)', color: '#ffffff', fontWeight: 700 }}
-                onClick={() => setShowAppointmentSummaryModal(true)}
-              >
-                View Pre-Visit Report
-              </button>
-              <button 
-                className="choice-pill-btn" 
-                style={{ fontSize: '11px', padding: '6px 14px' }}
-                onClick={() => setActiveTab('chat')}
-              >
-                Message Shalom AI
-              </button>
+            <Sparkles size={16} style={{ color: 'var(--primary)', marginTop: '2px', flexShrink: 0 }} />
+            <div>
+              <span style={{ fontSize: '10.5px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--primary-dark)', letterSpacing: '0.4px', display: 'block', marginBottom: '2px' }}>
+                Shalom says
+              </span>
+              <p style={{ fontSize: '12.5px', color: 'var(--text-main)', margin: 0, lineHeight: 1.45, fontWeight: 500 }}>
+                "Every small step you take today is rebuilding your knee's strength. You’re right on track — keep resting and icing when needed!"
+              </p>
             </div>
           </div>
+
+          {/* Action Row: See My Progress Button */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+            <button 
+              type="button"
+              className="choice-pill-btn" 
+              onClick={handleSeeProgress}
+              style={{ 
+                background: 'var(--primary)', 
+                color: '#ffffff', 
+                fontWeight: 700, 
+                padding: '9px 20px', 
+                borderRadius: '12px', 
+                display: 'inline-flex', 
+                alignItems: 'center', 
+                gap: '8px', 
+                fontSize: '12.5px' 
+              }}
+            >
+              <TrendingUp size={15} />
+              See my progress
+              <ChevronRightIcon size={14} />
+            </button>
+
+            <button 
+              type="button"
+              className="choice-pill-btn" 
+              onClick={() => setActiveTab('chat')}
+              style={{ fontSize: '11.5px', padding: '8px 16px', fontWeight: 600 }}
+            >
+              Ask Shalom AI
+            </button>
+          </div>
         </div>
-      </div>
-    );
+      );
+    };
 
     // ==========================================
     // DESKTOP LAYOUT (>= 1024px)
@@ -2184,11 +2313,11 @@ function App() {
     if (isDesktop) {
       return (
         <div className="progress-desktop-layout" style={{ display: 'grid', gridTemplateColumns: '1.05fr 1fr', gap: '32px', animation: 'fadeIn 0.3s ease-out' }}>
-          {/* Left Column: Hero Celebration, Weekly Wins & Shalom Letter */}
+          {/* Left Column: Hero Celebration, Weekly Wins & Recovery Status Card */}
           <div className="progress-left-col" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             {renderCelebrationHero()}
             {renderWeeklyWins()}
-            {renderShalomLetter()}
+            {renderRecoveryStatusCard()}
           </div>
 
           {/* Right Column: Milestones Roadmap & Healing Trajectory */}
@@ -2229,7 +2358,7 @@ function App() {
             {renderWeeklyWins()}
             {renderRecoveryJourney()}
             {renderSimpleTrends()}
-            {renderShalomLetter()}
+            {renderRecoveryStatusCard()}
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
