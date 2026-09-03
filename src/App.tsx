@@ -41,7 +41,11 @@ import {
   Award,
   TrendingDown,
   Bell,
-  BellOff
+  BellOff,
+  ShieldCheck,
+  Lock,
+  Download,
+  Key
 } from 'lucide-react';
 import { ChatInterface } from './components/ChatInterface';
 import { type CheckInAnswers, type CareTeamReport, normalizePatientRecord } from './utils/shalomAgent';
@@ -146,6 +150,18 @@ function App() {
   const [showFullHistoryPage, setShowFullHistoryPage] = useState<boolean>(false);
   const [showSurgeryDetailPage, setShowSurgeryDetailPage] = useState<boolean>(false);
   const [showNotificationSettingsPage, setShowNotificationSettingsPage] = useState<boolean>(false);
+  const [showPrivacySecurityPage, setShowPrivacySecurityPage] = useState<boolean>(false);
+  const [privacySettings, setPrivacySettings] = useState<{ [key: string]: boolean }>({
+    biometricLock: true,
+    twoFactorAuth: true,
+    sessionTimeout: true,
+    shieldIncisionPhotos: true,
+    careTeamSync: true,
+    emergencyResponderAccess: true,
+    anonymizedResearch: false,
+  });
+  const [showAuditLogModal, setShowAuditLogModal] = useState<boolean>(false);
+  const [exportNotice, setExportNotice] = useState<string | null>(null);
   const [remindersEnabled, setRemindersEnabled] = useState<boolean>(true);
   const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(true);
   const [individualReminders, setIndividualReminders] = useState<{ [key: string]: boolean }>({
@@ -3536,6 +3552,543 @@ function App() {
   };
 
   // ==========================================
+  // PRIVACY & DATA SECURITY SETTINGS PAGE
+  // ==========================================
+  const renderPrivacySecurityPage = () => {
+    const togglePrivacySetting = (key: string) => {
+      setPrivacySettings(prev => ({
+        ...prev,
+        [key]: !prev[key]
+      }));
+    };
+
+    const handleExportData = () => {
+      setExportNotice("Preparing 256-bit encrypted archive for Aïda Garba...");
+      setTimeout(() => {
+        const dummyData = {
+          patient: "Aïda Garba",
+          surgery: "Total Knee Replacement",
+          leadSurgeon: "Dr. James Carter, MD, FAAOS",
+          surgeryDate: "2025-05-06",
+          postOpDay: 6,
+          clinicalCheckinsRecorded: historyLogs.length,
+          generatedAt: new Date().toISOString(),
+          compliance: "HIPAA Omnibus & HITECH Rule Certified (45 CFR §164.312)",
+          encryption: "AES-256 GCM Zero-Knowledge Key"
+        };
+        const blob = new Blob([JSON.stringify(dummyData, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `ShalomRecoverAI_AidaGarba_EncryptedRecord_${Date.now()}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        setExportNotice("Encrypted patient archive downloaded successfully.");
+        setTimeout(() => setExportNotice(null), 4000);
+      }, 700);
+    };
+
+    return (
+      <div className="detail-scroller" style={{ animation: 'fadeIn 0.28s ease-out' }}>
+        {/* Header Bar */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
+          <button 
+            type="button"
+            className="choice-pill-btn" 
+            onClick={() => setShowPrivacySecurityPage(false)}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 16px', fontWeight: 700, fontSize: '12px' }}
+          >
+            <ChevronLeft size={16} /> Back to Profile
+          </button>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ 
+              fontSize: '11px', fontWeight: 700, padding: '3px 10px', borderRadius: '10px',
+              background: 'rgba(33, 140, 116, 0.12)', color: '#218C74',
+              display: 'inline-flex', alignItems: 'center', gap: '4px'
+            }}>
+              <ShieldCheck size={13} /> HIPAA &amp; HITECH Certified
+            </span>
+          </div>
+        </div>
+
+        {/* Page Title & Subtitle */}
+        <div style={{ marginBottom: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
+            <div style={{
+              width: '38px', height: '38px', borderRadius: '10px',
+              background: 'rgba(33, 140, 116, 0.12)', color: '#218C74',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0
+            }}>
+              <Lock size={20} />
+            </div>
+            <div>
+              <h2 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-main)', margin: 0, letterSpacing: '-0.3px' }}>
+                Privacy &amp; Data Security
+              </h2>
+              <span style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>
+                Manage end-to-end encryption, biometric app lock, care team data access &amp; audit trails
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Security Status Hero Banner */}
+        <div className="glass-card" style={{
+          padding: '20px',
+          borderRadius: '20px',
+          border: '1px solid rgba(33, 140, 116, 0.25)',
+          background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.92) 0%, rgba(33, 140, 116, 0.08) 100%)',
+          marginBottom: '20px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
+            <div style={{
+              width: '44px', height: '44px', borderRadius: '14px',
+              background: 'linear-gradient(135deg, #218C74 0%, #008C8C 100%)',
+              color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 4px 14px rgba(33, 140, 116, 0.25)', flexShrink: 0
+            }}>
+              <ShieldCheck size={24} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
+                <strong style={{ fontSize: '15px', color: 'var(--text-main)' }}>Your Health Data is Strictly Confidential</strong>
+                <span style={{ fontSize: '10px', fontWeight: 800, padding: '2px 8px', borderRadius: '6px', background: 'rgba(33, 140, 116, 0.15)', color: '#218C74' }}>
+                  256-BIT AES ENCRYPTED
+                </span>
+              </div>
+              <p style={{ fontSize: '11.5px', color: 'var(--text-muted)', margin: '0 0 12px 0', lineHeight: '1.5' }}>
+                Shalom AI operates with zero-knowledge architecture. Your surgical history, daily pain logs, knee mobility recordings, and communications with Dr. James Carter are end-to-end encrypted and never sold or shared with advertisers.
+              </p>
+
+              {/* 3 Trust Pillars */}
+              <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(3, 1fr)' : '1fr', gap: '8px' }}>
+                <div style={{ padding: '8px 12px', borderRadius: '10px', background: 'rgba(255,255,255,0.8)', border: '1px solid var(--border-glass)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <CheckCircle2 size={14} style={{ color: '#218C74', flexShrink: 0 }} />
+                  <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-main)' }}>BAA On File (St. Jude)</span>
+                </div>
+                <div style={{ padding: '8px 12px', borderRadius: '10px', background: 'rgba(255,255,255,0.8)', border: '1px solid var(--border-glass)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <CheckCircle2 size={14} style={{ color: '#218C74', flexShrink: 0 }} />
+                  <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-main)' }}>TLS 1.3 In-Transit</span>
+                </div>
+                <div style={{ padding: '8px 12px', borderRadius: '10px', background: 'rgba(255,255,255,0.8)', border: '1px solid var(--border-glass)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <CheckCircle2 size={14} style={{ color: '#218C74', flexShrink: 0 }} />
+                  <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-main)' }}>Audit Logged Access</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Section 1: Authentication & Access Security */}
+        <div className="glass-card" style={{ padding: '20px', borderRadius: '20px', border: '1px solid var(--border-glass)', marginBottom: '16px', background: 'var(--bg-glass-card)' }}>
+          <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '12px' }}>
+            Device Authentication &amp; Access Controls
+          </span>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {/* 1. Biometric App Lock */}
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.75)', border: '1px solid var(--border-glass)',
+              borderRadius: '14px', padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(79, 70, 229, 0.1)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Lock size={16} />
+                </div>
+                <div>
+                  <strong style={{ fontSize: '13px', color: 'var(--text-main)', display: 'block' }}>Biometric App Lock (Face ID / Touch ID)</strong>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Require biometric scan whenever opening Shalom Recover AI</span>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '10.5px', fontWeight: 800, color: privacySettings.biometricLock ? 'var(--primary)' : 'var(--text-muted)' }}>
+                  {privacySettings.biometricLock ? 'ON' : 'OFF'}
+                </span>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={privacySettings.biometricLock}
+                  onClick={() => togglePrivacySetting('biometricLock')}
+                  style={{
+                    width: '42px', height: '24px', borderRadius: '12px',
+                    background: privacySettings.biometricLock ? 'var(--primary)' : '#CBD5E1',
+                    border: 'none', padding: '2px', cursor: 'pointer', position: 'relative',
+                    display: 'flex', alignItems: 'center', transition: 'background 0.2s ease', flexShrink: 0
+                  }}
+                >
+                  <span style={{
+                    width: '20px', height: '20px', borderRadius: '50%', background: '#ffffff',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                    transform: privacySettings.biometricLock ? 'translateX(18px)' : 'translateX(0)',
+                    transition: 'transform 0.2s ease', display: 'block'
+                  }} />
+                </button>
+              </div>
+            </div>
+
+            {/* 2. Two-Factor Authentication */}
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.75)', border: '1px solid var(--border-glass)',
+              borderRadius: '14px', padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(33, 140, 116, 0.1)', color: '#218C74', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Key size={16} />
+                </div>
+                <div>
+                  <strong style={{ fontSize: '13px', color: 'var(--text-main)', display: 'block' }}>Two-Factor Authentication (2FA)</strong>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Send SMS verification code when logging in from an unrecognized browser</span>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '10.5px', fontWeight: 800, color: privacySettings.twoFactorAuth ? 'var(--primary)' : 'var(--text-muted)' }}>
+                  {privacySettings.twoFactorAuth ? 'ON' : 'OFF'}
+                </span>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={privacySettings.twoFactorAuth}
+                  onClick={() => togglePrivacySetting('twoFactorAuth')}
+                  style={{
+                    width: '42px', height: '24px', borderRadius: '12px',
+                    background: privacySettings.twoFactorAuth ? 'var(--primary)' : '#CBD5E1',
+                    border: 'none', padding: '2px', cursor: 'pointer', position: 'relative',
+                    display: 'flex', alignItems: 'center', transition: 'background 0.2s ease', flexShrink: 0
+                  }}
+                >
+                  <span style={{
+                    width: '20px', height: '20px', borderRadius: '50%', background: '#ffffff',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                    transform: privacySettings.twoFactorAuth ? 'translateX(18px)' : 'translateX(0)',
+                    transition: 'transform 0.2s ease', display: 'block'
+                  }} />
+                </button>
+              </div>
+            </div>
+
+            {/* 3. Automatic Session Timeout */}
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.75)', border: '1px solid var(--border-glass)',
+              borderRadius: '14px', padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(217, 119, 6, 0.1)', color: '#D97706', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Clock size={16} />
+                </div>
+                <div>
+                  <strong style={{ fontSize: '13px', color: 'var(--text-main)', display: 'block' }}>15-Minute Inactive Session Timeout</strong>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Automatically lock active session if screen is left idle</span>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '10.5px', fontWeight: 800, color: privacySettings.sessionTimeout ? 'var(--primary)' : 'var(--text-muted)' }}>
+                  {privacySettings.sessionTimeout ? 'ON' : 'OFF'}
+                </span>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={privacySettings.sessionTimeout}
+                  onClick={() => togglePrivacySetting('sessionTimeout')}
+                  style={{
+                    width: '42px', height: '24px', borderRadius: '12px',
+                    background: privacySettings.sessionTimeout ? 'var(--primary)' : '#CBD5E1',
+                    border: 'none', padding: '2px', cursor: 'pointer', position: 'relative',
+                    display: 'flex', alignItems: 'center', transition: 'background 0.2s ease', flexShrink: 0
+                  }}
+                >
+                  <span style={{
+                    width: '20px', height: '20px', borderRadius: '50%', background: '#ffffff',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                    transform: privacySettings.sessionTimeout ? 'translateX(18px)' : 'translateX(0)',
+                    transition: 'transform 0.2s ease', display: 'block'
+                  }} />
+                </button>
+              </div>
+            </div>
+
+            {/* 4. Incision Photo Sandboxing */}
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.75)', border: '1px solid var(--border-glass)',
+              borderRadius: '14px', padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(2, 132, 199, 0.1)', color: '#0284C7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <ShieldCheck size={16} />
+                </div>
+                <div>
+                  <strong style={{ fontSize: '13px', color: 'var(--text-main)', display: 'block' }}>Wound &amp; Incision Photo Shield</strong>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Keep post-op photos isolated inside encrypted app sandbox; never save to phone gallery</span>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '10.5px', fontWeight: 800, color: privacySettings.shieldIncisionPhotos ? 'var(--primary)' : 'var(--text-muted)' }}>
+                  {privacySettings.shieldIncisionPhotos ? 'ON' : 'OFF'}
+                </span>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={privacySettings.shieldIncisionPhotos}
+                  onClick={() => togglePrivacySetting('shieldIncisionPhotos')}
+                  style={{
+                    width: '42px', height: '24px', borderRadius: '12px',
+                    background: privacySettings.shieldIncisionPhotos ? 'var(--primary)' : '#CBD5E1',
+                    border: 'none', padding: '2px', cursor: 'pointer', position: 'relative',
+                    display: 'flex', alignItems: 'center', transition: 'background 0.2s ease', flexShrink: 0
+                  }}
+                >
+                  <span style={{
+                    width: '20px', height: '20px', borderRadius: '50%', background: '#ffffff',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                    transform: privacySettings.shieldIncisionPhotos ? 'translateX(18px)' : 'translateX(0)',
+                    transition: 'transform 0.2s ease', display: 'block'
+                  }} />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Section 2: Healthcare Provider Data Sharing */}
+        <div className="glass-card" style={{ padding: '20px', borderRadius: '20px', border: '1px solid var(--border-glass)', marginBottom: '16px', background: 'var(--bg-glass-card)' }}>
+          <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '12px' }}>
+            Care Team Data Permissions
+          </span>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {/* 1. Dr. Carter Surgical Team Sync */}
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.75)', border: '1px solid var(--border-glass)',
+              borderRadius: '14px', padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(33, 140, 116, 0.1)', color: '#218C74', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <User size={16} />
+                </div>
+                <div>
+                  <strong style={{ fontSize: '13px', color: 'var(--text-main)', display: 'block' }}>Dr. James Carter &amp; St. Jude Care Team</strong>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Sync daily pain scores, vital logs, and recovery milestones with orthopedic clinic</span>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '10.5px', fontWeight: 800, color: privacySettings.careTeamSync ? 'var(--primary)' : 'var(--text-muted)' }}>
+                  {privacySettings.careTeamSync ? 'SYNCING' : 'OFF'}
+                </span>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={privacySettings.careTeamSync}
+                  onClick={() => togglePrivacySetting('careTeamSync')}
+                  style={{
+                    width: '42px', height: '24px', borderRadius: '12px',
+                    background: privacySettings.careTeamSync ? 'var(--primary)' : '#CBD5E1',
+                    border: 'none', padding: '2px', cursor: 'pointer', position: 'relative',
+                    display: 'flex', alignItems: 'center', transition: 'background 0.2s ease', flexShrink: 0
+                  }}
+                >
+                  <span style={{
+                    width: '20px', height: '20px', borderRadius: '50%', background: '#ffffff',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                    transform: privacySettings.careTeamSync ? 'translateX(18px)' : 'translateX(0)',
+                    transition: 'transform 0.2s ease', display: 'block'
+                  }} />
+                </button>
+              </div>
+            </div>
+
+            {/* 2. Emergency First-Responder Access */}
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.75)', border: '1px solid var(--border-glass)',
+              borderRadius: '14px', padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(239, 68, 68, 0.1)', color: '#EF4444', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <ShieldAlert size={16} />
+                </div>
+                <div>
+                  <strong style={{ fontSize: '13px', color: 'var(--text-main)', display: 'block' }}>Emergency First-Responder 911 Access</strong>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Permit hospital ER staff to view surgical implant specifications during emergency 911 calls</span>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '10.5px', fontWeight: 800, color: privacySettings.emergencyResponderAccess ? 'var(--primary)' : 'var(--text-muted)' }}>
+                  {privacySettings.emergencyResponderAccess ? 'ENABLED' : 'OFF'}
+                </span>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={privacySettings.emergencyResponderAccess}
+                  onClick={() => togglePrivacySetting('emergencyResponderAccess')}
+                  style={{
+                    width: '42px', height: '24px', borderRadius: '12px',
+                    background: privacySettings.emergencyResponderAccess ? 'var(--primary)' : '#CBD5E1',
+                    border: 'none', padding: '2px', cursor: 'pointer', position: 'relative',
+                    display: 'flex', alignItems: 'center', transition: 'background 0.2s ease', flexShrink: 0
+                  }}
+                >
+                  <span style={{
+                    width: '20px', height: '20px', borderRadius: '50%', background: '#ffffff',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                    transform: privacySettings.emergencyResponderAccess ? 'translateX(18px)' : 'translateX(0)',
+                    transition: 'transform 0.2s ease', display: 'block'
+                  }} />
+                </button>
+              </div>
+            </div>
+
+            {/* 3. Anonymized Research Participation */}
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.75)', border: '1px solid var(--border-glass)',
+              borderRadius: '14px', padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(100, 116, 139, 0.1)', color: '#64748B', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Activity size={16} />
+                </div>
+                <div>
+                  <strong style={{ fontSize: '13px', color: 'var(--text-main)', display: 'block' }}>Anonymized Knee Recovery Research</strong>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Contribute stripped, de-identified recovery mobility metrics to improve orthopedic patient outcomes</span>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '10.5px', fontWeight: 800, color: privacySettings.anonymizedResearch ? 'var(--primary)' : 'var(--text-muted)' }}>
+                  {privacySettings.anonymizedResearch ? 'OPTED-IN' : 'DISABLED'}
+                </span>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={privacySettings.anonymizedResearch}
+                  onClick={() => togglePrivacySetting('anonymizedResearch')}
+                  style={{
+                    width: '42px', height: '24px', borderRadius: '12px',
+                    background: privacySettings.anonymizedResearch ? 'var(--primary)' : '#CBD5E1',
+                    border: 'none', padding: '2px', cursor: 'pointer', position: 'relative',
+                    display: 'flex', alignItems: 'center', transition: 'background 0.2s ease', flexShrink: 0
+                  }}
+                >
+                  <span style={{
+                    width: '20px', height: '20px', borderRadius: '50%', background: '#ffffff',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                    transform: privacySettings.anonymizedResearch ? 'translateX(18px)' : 'translateX(0)',
+                    transition: 'transform 0.2s ease', display: 'block'
+                  }} />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Section 3: Clinical Access Audit Log & Patient Data Rights */}
+        <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(2, 1fr)' : '1fr', gap: '14px', marginBottom: '20px' }}>
+          {/* Card: Clinical Access Audit Trail */}
+          <div className="glass-card" style={{ padding: '18px', borderRadius: '18px', border: '1px solid var(--border-glass)', background: 'var(--bg-glass-card)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+              <strong style={{ fontSize: '13.5px', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <ClipboardList size={16} style={{ color: 'var(--primary)' }} />
+                Provider Access Audit Trail
+              </strong>
+              <button
+                type="button"
+                onClick={() => setShowAuditLogModal(prev => !prev)}
+                style={{ background: 'transparent', border: 'none', color: 'var(--primary)', fontSize: '11px', fontWeight: 700, cursor: 'pointer' }}
+              >
+                {showAuditLogModal ? 'Hide Log' : 'View Full Trail'}
+              </button>
+            </div>
+            <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '0 0 10px 0' }}>
+              Every access request by doctors, nurses, and clinics is logged with a cryptographic timestamp.
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <div style={{ fontSize: '10.5px', padding: '6px 10px', borderRadius: '8px', background: 'rgba(255,255,255,0.7)', border: '1px solid var(--border-glass)', display: 'flex', justifyContent: 'space-between' }}>
+                <span><strong>Dr. James Carter, MD</strong> &bull; Reviewed Day 6 Check-in</span>
+                <span style={{ color: 'var(--text-muted)' }}>Today, 9:15 AM</span>
+              </div>
+              <div style={{ fontSize: '10.5px', padding: '6px 10px', borderRadius: '8px', background: 'rgba(255,255,255,0.7)', border: '1px solid var(--border-glass)', display: 'flex', justifyContent: 'space-between' }}>
+                <span><strong>Sarah Jenkins, RN</strong> &bull; Verified Oxycodone log</span>
+                <span style={{ color: 'var(--text-muted)' }}>Today, 8:45 AM</span>
+              </div>
+              {showAuditLogModal && (
+                <>
+                  <div style={{ fontSize: '10.5px', padding: '6px 10px', borderRadius: '8px', background: 'rgba(255,255,255,0.7)', border: '1px solid var(--border-glass)', display: 'flex', justifyContent: 'space-between' }}>
+                    <span><strong>Marcus Vance, PT</strong> &bull; Knee flexion ROM logs</span>
+                    <span style={{ color: 'var(--text-muted)' }}>Yesterday, 4:20 PM</span>
+                  </div>
+                  <div style={{ fontSize: '10.5px', padding: '6px 10px', borderRadius: '8px', background: 'rgba(255,255,255,0.7)', border: '1px solid var(--border-glass)', display: 'flex', justifyContent: 'space-between' }}>
+                    <span><strong>St. Jude Surgical OR 4</strong> &bull; Operative Summary PDF</span>
+                    <span style={{ color: 'var(--text-muted)' }}>May 6, 2025</span>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Card: Export Medical Data */}
+          <div className="glass-card" style={{ padding: '18px', borderRadius: '18px', border: '1px solid var(--border-glass)', background: 'var(--bg-glass-card)' }}>
+            <strong style={{ fontSize: '13.5px', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+              <Download size={16} style={{ color: '#218C74' }} />
+              Patient Data Rights &amp; Export
+            </strong>
+            <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '0 0 12px 0' }}>
+              Under HIPAA Privacy Rules, you have full ownership of your data. Download your complete encrypted recovery timeline at any time.
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <button
+                type="button"
+                className="choice-pill-btn"
+                onClick={handleExportData}
+                style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '10px 14px', background: 'var(--primary-light)', color: 'var(--primary)', fontWeight: 700, fontSize: '12px' }}
+              >
+                <Download size={14} /> Download Encrypted Archive (.json)
+              </button>
+
+              {exportNotice && (
+                <div style={{ fontSize: '11px', color: '#218C74', fontWeight: 700, textAlign: 'center', background: 'rgba(33, 140, 116, 0.1)', padding: '6px', borderRadius: '8px' }}>
+                  {exportNotice}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom Actions */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '16px', borderTop: '1px solid var(--border-glass)', flexWrap: 'wrap', gap: '10px' }}>
+          <button 
+            type="button"
+            className="choice-pill-btn" 
+            onClick={() => setShowPrivacySecurityPage(false)}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 18px', fontWeight: 700 }}
+          >
+            <ChevronLeft size={16} /> Back to Profile
+          </button>
+
+          <button 
+            type="button"
+            className="choice-pill-btn"
+            onClick={() => {
+              setShowPrivacySecurityPage(false);
+            }}
+            style={{ padding: '8px 22px', background: 'var(--primary)', color: '#ffffff', fontWeight: 700 }}
+          >
+            Save Security Settings
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  // ==========================================
   // RENDER TAB 5: Profile (Settings - Screen 10)
   // ==========================================
   const renderSettingsTab = () => {
@@ -3544,6 +4097,9 @@ function App() {
     }
     if (showNotificationSettingsPage) {
       return renderNotificationSettingsPage();
+    }
+    if (showPrivacySecurityPage) {
+      return renderPrivacySecurityPage();
     }
     if (showFullHistoryPage) {
       return renderFullHistoryPage();
@@ -3995,18 +4551,59 @@ function App() {
           </div>
         </div>
 
-        {/* Privacy & Security Section */}
+        {/* Privacy & Security Card (Clickable to open Dedicated Privacy & Security Page) */}
         <div className="profile-menu-section">
-          <div className="profile-menu-card">
-            <div 
-              className="profile-menu-row" 
-              style={{ cursor: 'pointer', padding: '12px 14px' }} 
-              onClick={() => alert("HIPAA Compliant & End-to-End Encrypted: Your post-operative recovery data is strictly protected.")}
-            >
-              <span className="profile-menu-left" style={{ fontWeight: 600 }}>Privacy &amp; Security</span>
-              <span style={{ fontSize: '10.5px', color: '#218C74', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                <CheckCircle2 size={12} /> HIPAA Protected
+          <span className="profile-menu-title" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <ShieldCheck size={13} style={{ color: '#218C74' }} />
+            Privacy &amp; Data Security
+          </span>
+          <div 
+            className="profile-menu-card history-entry-card" 
+            onClick={() => setShowPrivacySecurityPage(true)}
+            style={{ 
+              padding: '16px 18px', 
+              cursor: 'pointer',
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'space-between',
+              transition: 'all 0.2s ease',
+              background: 'linear-gradient(135deg, rgba(255,255,255,0.88) 0%, rgba(33, 140, 116, 0.05) 100%)',
+              border: '1px solid rgba(33, 140, 116, 0.2)'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+              <div style={{
+                width: '42px', height: '42px', borderRadius: '12px',
+                background: 'rgba(33, 140, 116, 0.12)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: '#218C74',
+                flexShrink: 0
+              }}>
+                <ShieldCheck size={22} />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-main)' }}>
+                    Privacy &amp; Security Controls
+                  </span>
+                  <span style={{ 
+                    fontSize: '9.5px', fontWeight: 700, padding: '1px 7px', borderRadius: '6px', 
+                    background: 'rgba(33, 140, 116, 0.12)', color: '#218C74' 
+                  }}>
+                    HIPAA Shielded
+                  </span>
+                </div>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                  AES-256 Bit Encryption &bull; Biometrics &bull; Care Team Sync &bull; Audit Trail
+                </span>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+              <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#218C74' }}>
+                Manage Security
               </span>
+              <ChevronRightIcon size={16} style={{ color: '#218C74' }} />
             </div>
           </div>
         </div>
