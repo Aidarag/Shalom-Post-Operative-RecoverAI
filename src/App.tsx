@@ -584,6 +584,7 @@ function App() {
     setPresetScenarioTrigger(data);
     setActiveTab('chat');
   };
+  void handleTriggerPreset;
 
   const triggerMockCheckInDirect = (type: 'green' | 'yellow' | 'red' | 'emergency') => {
     const answers: CheckInAnswers = PRESET_SCENARIOS[type];
@@ -2782,27 +2783,6 @@ function App() {
               {pdfError}
             </div>
           )}
-        </div>
-
-        {/* Triage Simulator triggers */}
-        <div className="profile-menu-section">
-          <span className="profile-menu-title">Simulation triggers</span>
-          <div className="profile-menu-card" style={{ padding: '14px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Status Log Trigger:</span>
-            <div className="sim-btn-group">
-              <button className="sim-pill green" onClick={() => triggerMockCheckInDirect('green')}>Stable</button>
-              <button className="sim-pill yellow" onClick={() => triggerMockCheckInDirect('yellow')}>Warning</button>
-              <button className="sim-pill red" onClick={() => triggerMockCheckInDirect('red')}>Urgent</button>
-              <button className="sim-pill emergency" onClick={() => triggerMockCheckInDirect('emergency')}>Emergency</button>
-            </div>
-            <span style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '4px' }}>AI Chat Flow Trigger:</span>
-            <div className="sim-btn-group">
-              <button className="sim-pill green" onClick={() => handleTriggerPreset('green')}>Stable Chat</button>
-              <button className="sim-pill yellow" onClick={() => handleTriggerPreset('yellow')}>Warning Chat</button>
-              <button className="sim-pill red" onClick={() => handleTriggerPreset('red')}>Urgent Chat</button>
-              <button className="sim-pill emergency" onClick={() => handleTriggerPreset('emergency')}>Emergency Chat</button>
-            </div>
-          </div>
         </div>
 
         {/* Aesthetic Theme Palette section */}
