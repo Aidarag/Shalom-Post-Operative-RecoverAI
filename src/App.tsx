@@ -905,12 +905,12 @@ function App() {
       <div className="recovery-subcard" onClick={() => setActiveTab('trends')} style={{ cursor: 'pointer' }} title="Click to view recovery trends">
         <div className="recovery-subcard-top">
           <div className="recovery-subcard-badge">
-            <div className="recovery-subcard-icon" style={{ background: 'linear-gradient(135deg, #3730A3 0%, #4F46E5 100%)', color: '#FFFFFF' }}>
+            <div className="recovery-subcard-icon" style={{ background: 'linear-gradient(135deg, #6D28D9 0%, #8B5CF6 100%)', color: '#FFFFFF' }}>
               <Heart size={14} fill="#FFFFFF" color="#FFFFFF" />
             </div>
             <span className="recovery-subcard-track">SHALOM AI</span>
           </div>
-          <span className="recovery-subcard-pill" style={{ background: 'rgba(99, 102, 241, 0.1)', color: '#4338CA', border: '1px solid rgba(99, 102, 241, 0.22)' }}>
+          <span className="recovery-subcard-pill" style={{ background: 'rgba(124, 58, 237, 0.08)', color: '#6D28D9', border: '1px solid rgba(124, 58, 237, 0.2)' }}>
             {currentStatus === 'Green' ? 'Stable' : 'Day 6'}
           </span>
         </div>
@@ -920,7 +920,7 @@ function App() {
         </div>
         <div>
           <div className="recovery-subcard-meter-bg">
-            <div className="recovery-subcard-meter-fill" style={{ width: '100%', background: 'linear-gradient(90deg, #4F46E5, #818CF8)' }} />
+            <div className="recovery-subcard-meter-fill" style={{ width: '100%', background: 'linear-gradient(90deg, #7C3AED, #A855F7)' }} />
           </div>
           <div className="recovery-subcard-footer">
             <span>Clinical Protocol</span>
@@ -945,7 +945,7 @@ function App() {
             </div>
             <span className="recovery-subcard-track">ACTIVITY</span>
           </div>
-          <span className="recovery-subcard-pill" style={{ background: 'rgba(168, 85, 247, 0.1)', color: '#7E22CE', border: '1px solid rgba(168, 85, 247, 0.22)' }}>
+          <span className="recovery-subcard-pill" style={{ background: 'rgba(124, 58, 237, 0.08)', color: '#6D28D9', border: '1px solid rgba(124, 58, 237, 0.2)' }}>
             {ptDone} of {ptTotal} Done
           </span>
         </div>
@@ -983,12 +983,12 @@ function App() {
       }} style={{ cursor: 'pointer' }} title="Click to log a glass of water">
         <div className="recovery-subcard-top">
           <div className="recovery-subcard-badge">
-            <div className="recovery-subcard-icon" style={{ background: 'linear-gradient(135deg, #0284C7 0%, #38BDF8 100%)', color: '#FFFFFF' }}>
+            <div className="recovery-subcard-icon" style={{ background: 'linear-gradient(135deg, #8B5CF6 0%, #C084FC 100%)', color: '#FFFFFF' }}>
               <Droplets size={14} color="#FFFFFF" />
             </div>
             <span className="recovery-subcard-track">WATER LOG</span>
           </div>
-          <span className="recovery-subcard-pill" style={{ background: 'rgba(2, 132, 199, 0.1)', color: '#0284C7', border: '1px solid rgba(2, 132, 199, 0.22)' }}>
+          <span className="recovery-subcard-pill" style={{ background: 'rgba(124, 58, 237, 0.08)', color: '#6D28D9', border: '1px solid rgba(124, 58, 237, 0.2)' }}>
             {hydrationGlasses} of 8 Glasses
           </span>
         </div>
@@ -1002,7 +1002,7 @@ function App() {
               className="recovery-subcard-meter-fill" 
               style={{ 
                 width: `${Math.min(100, Math.round((hydrationGlasses / 8) * 100))}%`, 
-                background: 'linear-gradient(90deg, #0284C7, #38BDF8)' 
+                background: 'linear-gradient(90deg, #8B5CF6, #C084FC)' 
               }} 
             />
           </div>
@@ -1020,15 +1020,15 @@ function App() {
       <div className="recovery-subcard" onClick={() => setShowIncisionCheckModal(true)} style={{ cursor: 'pointer' }} title="Click to review incision checklist">
         <div className="recovery-subcard-top">
           <div className="recovery-subcard-badge">
-            <div className="recovery-subcard-icon" style={{ background: 'linear-gradient(135deg, #059669 0%, #10B981 100%)', color: '#FFFFFF' }}>
+            <div className="recovery-subcard-icon" style={{ background: 'linear-gradient(135deg, #7C3AED 0%, #9333EA 100%)', color: '#FFFFFF' }}>
               <ShieldCheck size={14} color="#FFFFFF" />
             </div>
             <span className="recovery-subcard-track">WOUND SAFETY</span>
           </div>
           <span className="recovery-subcard-pill" style={{ 
-            background: woundStatus === 'clear' ? 'rgba(16, 185, 129, 0.12)' : 'rgba(245, 158, 11, 0.12)', 
-            color: woundStatus === 'clear' ? '#047857' : '#B45309', 
-            border: `1px solid ${woundStatus === 'clear' ? 'rgba(16, 185, 129, 0.25)' : 'rgba(245, 158, 11, 0.25)'}` 
+            background: woundStatus === 'clear' ? 'rgba(124, 58, 237, 0.08)' : 'rgba(245, 158, 11, 0.12)', 
+            color: woundStatus === 'clear' ? '#6D28D9' : '#B45309', 
+            border: `1px solid ${woundStatus === 'clear' ? 'rgba(124, 58, 237, 0.2)' : 'rgba(245, 158, 11, 0.25)'}` 
           }}>
             {woundStatus === 'clear' ? 'All Clear' : 'Needs Review'}
           </span>
@@ -1039,7 +1039,7 @@ function App() {
         </div>
         <div>
           <div className="recovery-subcard-meter-bg">
-            <div className="recovery-subcard-meter-fill" style={{ width: '100%', background: 'linear-gradient(90deg, #059669, #10B981)' }} />
+            <div className="recovery-subcard-meter-fill" style={{ width: '100%', background: 'linear-gradient(90deg, #7C3AED, #A855F7)' }} />
           </div>
           <div className="recovery-subcard-footer">
             <span>Infection Defense</span>
@@ -1682,21 +1682,21 @@ function App() {
       },
       {
         id: 'meds',
-        icon: <Pill size={20} style={{ color: '#008C8C' }} />,
+        icon: <Pill size={20} style={{ color: 'var(--primary)' }} />,
         title: 'Medication Precision',
         metric: '96% On-Time',
         tag: 'Clinical Standard',
         desc: 'Prescribed anti-inflammatories and supplements taken on schedule with meals.',
-        color: '#008C8C'
+        color: 'var(--primary)'
       },
       {
         id: 'pt',
-        icon: <Activity size={20} style={{ color: '#00BFFF' }} />,
+        icon: <Activity size={20} style={{ color: 'var(--accent)' }} />,
         title: 'Mobility & PT Progress',
         metric: '+35% Range',
         tag: 'Ahead of Target',
         desc: 'All 12 prescribed quad extensions and heel slides completed this week.',
-        color: '#00BFFF'
+        color: 'var(--accent)'
       },
       {
         id: 'pain',
@@ -1859,7 +1859,7 @@ function App() {
                       width: '2px', 
                       flexGrow: 1, 
                       minHeight: '28px',
-                      background: isCompleted ? '#218C74' : isCurrent ? 'linear-gradient(to bottom, #008C8C, rgba(0,0,0,0.1))' : 'rgba(0,0,0,0.08)',
+                      background: isCompleted ? 'var(--primary)' : isCurrent ? 'linear-gradient(to bottom, #7C3AED, rgba(124, 58, 237, 0.1))' : 'rgba(0,0,0,0.08)',
                       margin: '6px 0',
                       borderRadius: '1px'
                     }} />
@@ -1904,8 +1904,8 @@ function App() {
                     marginTop: '4px', 
                     padding: '8px 12px', 
                     borderRadius: '12px', 
-                    background: isCurrent ? 'rgba(0, 140, 140, 0.08)' : 'rgba(255, 255, 255, 0.5)',
-                    border: `1px solid ${isCurrent ? 'rgba(0, 140, 140, 0.18)' : 'rgba(0,0,0,0.04)'}`,
+                    background: isCurrent ? 'rgba(124, 58, 237, 0.08)' : 'rgba(255, 255, 255, 0.5)',
+                    border: `1px solid ${isCurrent ? 'rgba(124, 58, 237, 0.18)' : 'rgba(0,0,0,0.04)'}`,
                     fontSize: '11px',
                     color: isCurrent ? 'var(--primary-dark)' : 'var(--text-muted)',
                     lineHeight: 1.45
@@ -1940,8 +1940,8 @@ function App() {
 
         {/* Positive Clinical Affirmation Callout */}
         <div style={{ 
-          background: 'linear-gradient(135deg, rgba(33, 140, 116, 0.08) 0%, rgba(0, 255, 194, 0.04) 100%)',
-          border: '1px solid rgba(33, 140, 116, 0.22)',
+          background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.08) 0%, rgba(168, 85, 247, 0.04) 100%)',
+          border: '1px solid rgba(124, 58, 237, 0.2)',
           borderRadius: '16px',
           padding: '12px 16px',
           marginBottom: '16px',
@@ -1950,13 +1950,13 @@ function App() {
           gap: '12px'
         }}>
           <div style={{ 
-            width: '32px', height: '32px', borderRadius: '50%', background: '#218C74', 
+            width: '32px', height: '32px', borderRadius: '50%', background: 'linear-gradient(135deg, #7C3AED 0%, #A855F7 100%)', 
             color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 
           }}>
             <Sparkles size={16} />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-            <strong style={{ fontSize: '12px', color: '#1B6B58' }}>Ahead of Standard Timeline</strong>
+            <strong style={{ fontSize: '12px', color: '#6D28D9' }}>Ahead of Standard Timeline</strong>
             <span style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: 1.4 }}>
               Your pain level of <strong>4/10</strong> is below the typical Day 6 postoperative baseline (4.8/10). Tissue inflammation is resolving ahead of schedule!
             </span>
@@ -1972,27 +1972,27 @@ function App() {
           gap: '8px', marginTop: '16px', 
           background: 'rgba(255,255,255,0.5)', 
           padding: '12px', borderRadius: '16px',
-          border: '1px solid rgba(0, 140, 140, 0.06)'
+          border: '1px solid var(--border-glass)'
         }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
             <span style={{ fontSize: '9.5px', color: 'var(--text-muted)', fontWeight: 600 }}>Knee Flexion</span>
             <strong style={{ fontSize: '13px', color: 'var(--primary)', marginTop: '2px' }}>75°</strong>
-            <span style={{ fontSize: '8.5px', color: '#218C74', fontWeight: 700 }}>Ahead of avg</span>
+            <span style={{ fontSize: '8.5px', color: 'var(--primary)', fontWeight: 700 }}>Ahead of avg</span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
             <span style={{ fontSize: '9.5px', color: 'var(--text-muted)', fontWeight: 600 }}>Temperature</span>
             <strong style={{ fontSize: '13px', color: 'var(--text-main)', marginTop: '2px' }}>98.6°F</strong>
-            <span style={{ fontSize: '8.5px', color: '#218C74', fontWeight: 700 }}>Optimal</span>
+            <span style={{ fontSize: '8.5px', color: '#059669', fontWeight: 700 }}>Optimal</span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
             <span style={{ fontSize: '9.5px', color: 'var(--text-muted)', fontWeight: 600 }}>Swelling</span>
             <strong style={{ fontSize: '13px', color: 'var(--text-main)', marginTop: '2px' }}>Level 3/10</strong>
-            <span style={{ fontSize: '8.5px', color: '#218C74', fontWeight: 700 }}>-40% since Day 2</span>
+            <span style={{ fontSize: '8.5px', color: 'var(--primary)', fontWeight: 700 }}>-40% since Day 2</span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
             <span style={{ fontSize: '9.5px', color: 'var(--text-muted)', fontWeight: 600 }}>Sleep Quality</span>
             <strong style={{ fontSize: '13px', color: 'var(--text-main)', marginTop: '2px' }}>7.5 hrs</strong>
-            <span style={{ fontSize: '8.5px', color: '#218C74', fontWeight: 700 }}>Restorative</span>
+            <span style={{ fontSize: '8.5px', color: '#059669', fontWeight: 700 }}>Restorative</span>
           </div>
         </div>
 
@@ -2005,8 +2005,8 @@ function App() {
               marginTop: '16px', 
               padding: '14px 16px', 
               borderRadius: '16px', 
-              border: '1px solid rgba(0, 140, 140, 0.1)',
-              background: 'linear-gradient(135deg, rgba(0, 140, 140, 0.03) 0%, rgba(255, 255, 255, 0.6) 100%)'
+              border: '1px solid var(--border-glass)',
+              background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.03) 0%, rgba(255, 255, 255, 0.85) 100%)'
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                 <span style={{ fontSize: '10.5px', fontWeight: '700', textTransform: 'uppercase', color: 'var(--primary-dark)' }}>
@@ -2066,8 +2066,8 @@ function App() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px', position: 'relative', zIndex: 2 }}>
             <div style={{
               width: '42px', height: '42px', borderRadius: '50%',
-              background: 'radial-gradient(circle at 35% 30%, #ffffff 0%, #e0f2fe 20%, #7dd3fc 45%, #0284c7 75%, #0369a1 100%)',
-              boxShadow: '0 8px 18px rgba(2, 132, 199, 0.28), inset -2px -2px 6px rgba(3, 105, 161, 0.35)',
+              background: 'radial-gradient(circle at 35% 30%, #ffffff 0%, #f5f3ff 20%, #c084fc 45%, #7c3aed 75%, #3b0764 100%)',
+              boxShadow: '0 8px 18px rgba(124, 58, 237, 0.28), inset -2px -2px 6px rgba(91, 33, 182, 0.35)',
               position: 'relative', flexShrink: 0
             }}>
               <div style={{
@@ -2082,7 +2082,7 @@ function App() {
                 <strong style={{ fontSize: '15px', color: '#0F172A', fontWeight: 800 }}>Shalom (AI Assistant)</strong>
                 <span style={{ 
                   fontSize: '9.5px', fontWeight: 800, padding: '2px 8px', borderRadius: '6px', 
-                  background: '#EEF2FF', color: '#4F46E5', textTransform: 'uppercase', letterSpacing: '0.4px' 
+                  background: 'var(--primary-light)', color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.4px' 
                 }}>
                   RECOVERY STATUS
                 </span>
@@ -2159,7 +2159,7 @@ function App() {
           {/* 3 WINS THIS WEEK */}
           <div style={{ marginBottom: '20px', position: 'relative', zIndex: 2 }}>
             <span style={{
-              fontSize: '11px', fontWeight: 800, color: '#2563EB', textTransform: 'uppercase',
+              fontSize: '11px', fontWeight: 800, color: 'var(--primary)', textTransform: 'uppercase',
               letterSpacing: '0.6px', display: 'block', marginBottom: '10px'
             }}>
               3 WINS THIS WEEK
@@ -2210,10 +2210,10 @@ function App() {
                 display: 'flex', alignItems: 'center', gap: '12px', boxShadow: '0 2px 6px rgba(15, 23, 42, 0.02)'
               }}>
                 <div style={{
-                  width: '32px', height: '32px', borderRadius: '50%', background: '#E0F2FE', color: '#0284C7',
+                  width: '32px', height: '32px', borderRadius: '50%', background: '#F5F3FF', color: 'var(--primary)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
                 }}>
-                  <Calendar size={16} style={{ color: '#0284C7' }} />
+                  <Calendar size={16} style={{ color: 'var(--primary)' }} />
                 </div>
                 <span style={{ fontSize: '13px', fontWeight: 600, color: '#1E293B' }}>
                   6-day check-in streak
@@ -2226,8 +2226,8 @@ function App() {
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '20px', position: 'relative', zIndex: 2 }}>
             <div style={{
               width: '38px', height: '38px', borderRadius: '50%',
-              background: 'radial-gradient(circle at 35% 30%, #ffffff 0%, #e0f2fe 20%, #7dd3fc 45%, #0284c7 75%, #0369a1 100%)',
-              boxShadow: '0 6px 14px rgba(2, 132, 199, 0.28), inset -2px -2px 6px rgba(3, 105, 161, 0.35)',
+              background: 'radial-gradient(circle at 35% 30%, #ffffff 0%, #f5f3ff 20%, #c084fc 45%, #7c3aed 75%, #3b0764 100%)',
+              boxShadow: '0 6px 14px rgba(124, 58, 237, 0.28), inset -2px -2px 6px rgba(91, 33, 182, 0.35)',
               position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center',
               flexShrink: 0, marginTop: '2px'
             }}>
@@ -2243,20 +2243,20 @@ function App() {
             </div>
 
             <div style={{
-              background: '#F0F6FF',
-              border: '1px solid rgba(59, 130, 246, 0.15)',
+              background: '#FAF5FF',
+              border: '1px solid rgba(124, 58, 237, 0.15)',
               borderRadius: '16px',
               padding: '12px 16px',
               flex: 1,
               position: 'relative'
             }}>
-              <div style={{ fontSize: '11.5px', fontWeight: 700, color: '#1E40AF', marginBottom: '2px' }}>
+              <div style={{ fontSize: '11.5px', fontWeight: 700, color: 'var(--primary-dark)', marginBottom: '2px' }}>
                 Shalom says:
               </div>
               <div style={{ fontSize: '13px', color: '#1E293B', fontWeight: 500, lineHeight: 1.45 }}>
                 Small steps today,<br />
                 stronger you tomorrow.{' '}
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="#2563EB" stroke="#2563EB" style={{ display: 'inline', verticalAlign: 'middle', marginLeft: '3px' }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="var(--primary)" stroke="var(--primary)" style={{ display: 'inline', verticalAlign: 'middle', marginLeft: '3px' }}>
                   <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
                 </svg>
               </div>
@@ -2522,7 +2522,7 @@ function App() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{ 
               fontSize: '11px', fontWeight: 700, padding: '3px 10px', borderRadius: '10px',
-              background: 'rgba(0, 140, 140, 0.08)', color: 'var(--primary)'
+              background: 'var(--primary-light)', color: 'var(--primary)'
             }}>
               Patient Record &bull; Aïda Garba
             </span>
@@ -2534,7 +2534,7 @@ function App() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
             <div style={{
               width: '36px', height: '36px', borderRadius: '10px',
-              background: 'rgba(0, 140, 140, 0.1)', color: 'var(--primary)',
+              background: 'var(--primary-light)', color: 'var(--primary)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               flexShrink: 0
             }}>
@@ -2620,10 +2620,10 @@ function App() {
                 className="glass-card" 
                 style={{
                   background: 'var(--bg-glass-card)',
-                  border: isLatest ? '1.5px solid rgba(0, 140, 140, 0.35)' : '1px solid var(--border-glass)',
+                  border: isLatest ? '1.5px solid rgba(124, 58, 237, 0.35)' : '1px solid var(--border-glass)',
                   padding: '18px 20px',
                   borderRadius: '20px',
-                  boxShadow: isLatest ? '0 8px 24px rgba(0, 140, 140, 0.08)' : '0 4px 12px rgba(15, 23, 42, 0.02)',
+                  boxShadow: isLatest ? '0 8px 24px rgba(124, 58, 237, 0.1)' : '0 4px 12px rgba(15, 23, 42, 0.02)',
                   display: 'flex',
                   flexDirection: 'column',
                   gap: '12px'
@@ -2634,7 +2634,7 @@ function App() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <div style={{
                       width: '32px', height: '32px', borderRadius: '50%',
-                      background: log.status === 'Green' ? 'rgba(33, 140, 116, 0.12)' : log.status === 'Yellow' ? 'rgba(217, 119, 6, 0.12)' : 'rgba(220, 38, 38, 0.12)',
+                      background: log.status === 'Green' ? 'rgba(5, 150, 105, 0.12)' : log.status === 'Yellow' ? 'rgba(217, 119, 6, 0.12)' : 'rgba(225, 29, 72, 0.12)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center'
                     }}>
                       <Smile size={18} style={{ 
@@ -2664,8 +2664,8 @@ function App() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <span style={{ 
                       fontSize: '11.5px', fontWeight: 800, padding: '4px 10px', borderRadius: '10px',
-                      background: log.status === 'Green' ? 'rgba(33, 140, 116, 0.1)' : log.status === 'Yellow' ? 'rgba(217, 119, 6, 0.1)' : 'rgba(220, 38, 38, 0.1)',
-                      color: log.status === 'Green' ? '#218C74' : log.status === 'Yellow' ? '#D97706' : '#DC2626'
+                      background: log.status === 'Green' ? 'rgba(5, 150, 105, 0.1)' : log.status === 'Yellow' ? 'rgba(217, 119, 6, 0.1)' : 'rgba(225, 29, 72, 0.1)',
+                      color: log.status === 'Green' ? '#059669' : log.status === 'Yellow' ? '#D97706' : '#E11D48'
                     }}>
                       Pain {log.painLevel}/10 &bull; {log.status === 'Green' ? 'Stable' : log.status === 'Yellow' ? 'Warning' : 'Urgent'}
                     </span>
@@ -2680,7 +2680,7 @@ function App() {
                   background: 'rgba(255, 255, 255, 0.6)',
                   padding: '10px 14px',
                   borderRadius: '12px',
-                  border: '1px solid rgba(0, 140, 140, 0.05)'
+                  border: '1px solid var(--border-glass)'
                 }}>
                   <div>
                     <span style={{ fontSize: '9.5px', color: 'var(--text-muted)', display: 'block' }}>Pain Level</span>
@@ -2696,14 +2696,14 @@ function App() {
                   </div>
                   <div>
                     <span style={{ fontSize: '9.5px', color: 'var(--text-muted)', display: 'block' }}>Adherence</span>
-                    <strong style={{ fontSize: '12.5px', color: '#218C74' }}>{log.medsAdherence || 100}%</strong>
+                    <strong style={{ fontSize: '12.5px', color: 'var(--primary)' }}>{log.medsAdherence || 100}%</strong>
                   </div>
                 </div>
 
                 {/* Shalom AI Clinical Note */}
                 <div style={{
-                  background: 'linear-gradient(135deg, rgba(0, 140, 140, 0.04) 0%, rgba(255, 255, 255, 0.7) 100%)',
-                  border: '1px solid rgba(0, 140, 140, 0.1)',
+                  background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.04) 0%, rgba(255, 255, 255, 0.8) 100%)',
+                  border: '1px solid var(--border-glass)',
                   borderRadius: '12px',
                   padding: '12px 14px',
                   display: 'flex',
@@ -2778,7 +2778,7 @@ function App() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{ 
               fontSize: '11px', fontWeight: 700, padding: '3px 10px', borderRadius: '10px',
-              background: 'rgba(0, 140, 140, 0.08)', color: 'var(--primary)'
+              background: 'var(--primary-light)', color: 'var(--primary)'
             }}>
               Surgical Case: #ORT-2025-0506 &bull; Aïda Garba
             </span>
@@ -2790,7 +2790,7 @@ function App() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
             <div style={{
               width: '38px', height: '38px', borderRadius: '10px',
-              background: 'rgba(0, 140, 140, 0.1)', color: 'var(--primary)',
+              background: 'var(--primary-light)', color: 'var(--primary)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               flexShrink: 0
             }}>
@@ -2820,14 +2820,14 @@ function App() {
               <span style={{ fontSize: '10.5px', color: 'var(--text-muted)', fontWeight: 600 }}>Surgery Type</span>
             </div>
             <strong style={{ fontSize: '14px', color: 'var(--text-main)', display: 'block' }}>{surgeryTitle}</strong>
-            <span style={{ fontSize: '9.5px', color: '#218C74', fontWeight: 700, display: 'block', marginTop: '2px' }}>
+            <span style={{ fontSize: '9.5px', color: 'var(--primary)', fontWeight: 700, display: 'block', marginTop: '2px' }}>
               Left Knee &bull; Primary Joint
             </span>
           </div>
 
           <div className="glass-card" style={{ padding: '14px', borderRadius: '16px', border: '1px solid var(--border-glass)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
-              <User size={13} style={{ color: '#0284C7' }} />
+              <User size={13} style={{ color: 'var(--primary)' }} />
               <span style={{ fontSize: '10.5px', color: 'var(--text-muted)', fontWeight: 600 }}>Lead Surgeon</span>
             </div>
             <strong style={{ fontSize: '14px', color: 'var(--text-main)', display: 'block' }}>Dr. James Carter</strong>
@@ -2838,11 +2838,11 @@ function App() {
 
           <div className="glass-card" style={{ padding: '14px', borderRadius: '16px', border: '1px solid var(--border-glass)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
-              <Calendar size={13} style={{ color: '#D97706' }} />
+              <Calendar size={13} style={{ color: 'var(--primary)' }} />
               <span style={{ fontSize: '10.5px', color: 'var(--text-muted)', fontWeight: 600 }}>Surgery Date</span>
             </div>
             <strong style={{ fontSize: '14px', color: 'var(--text-main)', display: 'block' }}>{surgeryDate}</strong>
-            <span style={{ fontSize: '9.5px', color: '#218C74', fontWeight: 700, display: 'block', marginTop: '2px' }}>
+            <span style={{ fontSize: '9.5px', color: 'var(--primary)', fontWeight: 700, display: 'block', marginTop: '2px' }}>
               Day 6 Post-Operative
             </span>
           </div>
@@ -2853,7 +2853,7 @@ function App() {
               <span style={{ fontSize: '10.5px', color: 'var(--text-muted)', fontWeight: 600 }}>Clinic Direct Line</span>
             </div>
             <strong style={{ fontSize: '14px', color: 'var(--primary)', display: 'block' }}>{clinicPhone}</strong>
-            <span style={{ fontSize: '9.5px', color: '#218C74', fontWeight: 700, display: 'block', marginTop: '2px' }}>
+            <span style={{ fontSize: '9.5px', color: 'var(--primary)', fontWeight: 700, display: 'block', marginTop: '2px' }}>
               Mon-Fri 8:00 AM - 4:30 PM
             </span>
           </div>
@@ -2865,7 +2865,7 @@ function App() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <div style={{
                 width: '46px', height: '46px', borderRadius: '50%',
-                background: 'linear-gradient(135deg, rgba(0, 140, 140, 0.15) 0%, rgba(0, 140, 140, 0.25) 100%)',
+                background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.12) 0%, rgba(168, 85, 247, 0.22) 100%)',
                 color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '16px'
               }}>
                 JC
@@ -3091,7 +3091,7 @@ function App() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <div style={{
                 width: '36px', height: '36px', borderRadius: '10px',
-                background: remindersEnabled ? 'rgba(0, 140, 140, 0.12)' : 'rgba(100, 116, 139, 0.12)',
+                background: remindersEnabled ? 'var(--primary-light)' : 'rgba(100, 116, 139, 0.12)',
                 color: remindersEnabled ? 'var(--primary)' : 'var(--text-muted)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
               }}>
@@ -3192,7 +3192,7 @@ function App() {
               borderRadius: '14px', padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(0, 140, 140, 0.1)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <Heart size={16} />
                 </div>
                 <div>
@@ -3557,22 +3557,22 @@ function App() {
           padding: '20px',
           borderRadius: '20px',
           border: '1px solid rgba(33, 140, 116, 0.25)',
-          background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.92) 0%, rgba(33, 140, 116, 0.08) 100%)',
+          background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.94) 0%, rgba(124, 58, 237, 0.05) 100%)',
           marginBottom: '20px'
         }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
             <div style={{
               width: '44px', height: '44px', borderRadius: '14px',
-              background: 'linear-gradient(135deg, #218C74 0%, #008C8C 100%)',
+              background: 'linear-gradient(135deg, #7C3AED 0%, #A855F7 100%)',
               color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 4px 14px rgba(33, 140, 116, 0.25)', flexShrink: 0
+              boxShadow: '0 4px 14px var(--primary-glow)', flexShrink: 0
             }}>
               <ShieldCheck size={24} />
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
                 <strong style={{ fontSize: '15px', color: 'var(--text-main)' }}>Your Health Data is Strictly Confidential</strong>
-                <span style={{ fontSize: '10px', fontWeight: 800, padding: '2px 8px', borderRadius: '6px', background: 'rgba(33, 140, 116, 0.15)', color: '#218C74' }}>
+                <span style={{ fontSize: '10px', fontWeight: 800, padding: '2px 8px', borderRadius: '6px', background: 'var(--primary-light)', color: 'var(--primary)' }}>
                   256-BIT AES ENCRYPTED
                 </span>
               </div>
@@ -4063,14 +4063,14 @@ function App() {
               alignItems: 'center', 
               justifyContent: 'space-between',
               transition: 'all 0.2s ease',
-              background: 'linear-gradient(135deg, rgba(255,255,255,0.88) 0%, rgba(0, 140, 140, 0.05) 100%)',
-              border: '1px solid rgba(0, 140, 140, 0.15)'
+              background: 'linear-gradient(135deg, rgba(255,255,255,0.92) 0%, rgba(124, 58, 237, 0.04) 100%)',
+              border: '1px solid var(--border-glass)'
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
               <div style={{
                 width: '42px', height: '42px', borderRadius: '12px',
-                background: 'rgba(0, 140, 140, 0.1)',
+                background: 'var(--primary-light)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 color: 'var(--primary)',
                 flexShrink: 0
@@ -4240,7 +4240,7 @@ function App() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <div style={{
                   width: '38px', height: '38px', borderRadius: '10px',
-                  background: remindersEnabled ? 'rgba(0, 140, 140, 0.1)' : 'rgba(100, 116, 139, 0.1)',
+                  background: remindersEnabled ? 'var(--primary-light)' : 'rgba(100, 116, 139, 0.1)',
                   color: remindersEnabled ? 'var(--primary)' : 'var(--text-muted)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   flexShrink: 0
@@ -4252,8 +4252,8 @@ function App() {
                     <strong style={{ fontSize: '13.5px', color: 'var(--text-main)' }}>Recovery Reminders</strong>
                     <span style={{ 
                       fontSize: '9.5px', fontWeight: 800, padding: '2px 7px', borderRadius: '6px',
-                      background: remindersEnabled ? 'rgba(33, 140, 116, 0.12)' : 'rgba(100, 116, 139, 0.12)',
-                      color: remindersEnabled ? '#218C74' : 'var(--text-muted)'
+                      background: remindersEnabled ? 'var(--primary-light)' : 'rgba(100, 116, 139, 0.12)',
+                      color: remindersEnabled ? 'var(--primary)' : 'var(--text-muted)'
                     }}>
                       {remindersEnabled ? 'ACTIVE' : 'PAUSED'}
                     </span>
