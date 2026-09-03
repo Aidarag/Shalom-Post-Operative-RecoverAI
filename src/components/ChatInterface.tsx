@@ -4,22 +4,22 @@ import {
   AlertTriangle, 
   ShieldAlert, 
   ArrowRight, 
-  Play, 
   CheckCircle, 
   RotateCcw,
-  Volume2,
-  HelpCircle,
-  X,
-  Droplets,
-  Car,
-  TrendingUp,
-  Scissors,
-  Sparkles,
-  Mic,
-  MessageSquare,
-  ClipboardList,
-  ShieldCheck,
-  VolumeX
+  Volume2, 
+  VolumeX,
+  Sparkles, 
+  Mic, 
+  MessageSquare, 
+  ClipboardList, 
+  ShieldCheck, 
+  Check, 
+  Activity, 
+  Calendar, 
+  ChevronRight, 
+  TrendingUp, 
+  Flame,
+  Clock
 } from 'lucide-react';
 import { 
   type Message, 
@@ -27,7 +27,6 @@ import {
   type CareTeamReport,
   classifyRisk, 
   generateCareTeamReport, 
-  getWarmFeedback, 
   evaluateSafety, 
   getGeminiResponse,
   searchFAQDataset,
@@ -50,103 +49,14 @@ interface ChatInterfaceProps {
   selectedVoiceName: string;
   voices: SpeechSynthesisVoice[];
   ttsSpeed?: number;
+  checkInComplete?: boolean;
+  lastCheckInAnswers?: CheckInAnswers | null;
+  currentRecoveryStatus?: 'Green' | 'Yellow' | 'Red' | 'Emergency' | string;
+  onNavigateToProgress?: () => void;
 }
 
-const parseCheckInAnswer = (text: string, step: number): any => {
-  const lower = text.toLowerCase().trim();
-  
-  if (step === 0) { // Pain level (1-10)
-    const match = lower.match(/\b([1-9]|10)\b/);
-    if (match) return parseInt(match[1]);
-    
-    if (lower.includes("no pain") || lower.includes("none") || lower.includes("perfect") || lower.includes("great")) return 1;
-    if (lower.includes("mild") || lower.includes("slight") || lower.includes("little")) return 2;
-    if (lower.includes("moderate") || lower.includes("okay") || lower.includes("ok") || lower.includes("average")) return 5;
-    if (lower.includes("severe") || lower.includes("worst") || lower.includes("unbearable") || lower.includes("intense") || lower.includes("extreme")) return 9;
-    if (lower.includes("bad") || lower.includes("hurts") || lower.includes("aching")) return 6;
-    return null;
-  }
-  
-  if (step === 1) { // Fever (Yes/No & temperature)
-    const hasNoKeywords = ["no", "don't", "dont", "false", "normal", "fine", "negative", "not running"].some(k => lower.includes(k));
-    if (hasNoKeywords) {
-      return { hasFever: false, temperature: 98.6 };
-    }
-    
-    const hasYesKeywords = ["yes", "do", "have", "fever", "hot", "warm", "running a"].some(k => lower.includes(k));
-    const tempMatch = lower.match(/\b(9[7-9]\.[0-9]|10[0-6]\.[0-9])\b/) || lower.match(/\b(9[7-9]|10[0-6])\b/);
-    const temperature = tempMatch ? parseFloat(tempMatch[1]) : null;
-    
-    if (temperature) {
-      return { hasFever: temperature > 99.5, temperature };
-    }
-    if (hasYesKeywords) {
-      return { hasFever: true, temperature: 100.4 };
-    }
-    return null;
-  }
-  
-  if (step === 2) { // Medications (Yes/No)
-    const hasNoKeywords = ["no", "missed", "forgot", "didn't", "didnt", "not taken", "skipped"].some(k => lower.includes(k));
-    if (hasNoKeywords) return false;
-    
-    const hasYesKeywords = ["yes", "took", "did", "taken", "have taken", "all"].some(k => lower.includes(k));
-    if (hasYesKeywords) return true;
-    
-    return null;
-  }
-  
-  if (step === 3) { // Incision site issues
-    if (lower.includes("normal") || lower.includes("fine") || lower.includes("good") || lower.includes("perfect") || lower.includes("ok") || lower.includes("okay")) {
-      return ["Normal"];
-    }
-    
-    const issues: string[] = [];
-    if (lower.includes("red") || lower.includes("redness")) issues.push("Mild Redness");
-    if (lower.includes("swell") || lower.includes("swelling")) issues.push("Swelling");
-    if (lower.includes("drain") || lower.includes("drainage") || lower.includes("discharge") || lower.includes("ooze") || lower.includes("oozing") || lower.includes("leaking")) issues.push("Drainage");
-    if (lower.includes("worse") || lower.includes("worsening")) issues.push("Getting Worse");
-    
-    if (issues.length > 0) return issues;
-    return null;
-  }
-  
-  if (step === 4) { // Mobility
-    if (lower.includes("okay") || lower.includes("ok") || lower.includes("good") || lower.includes("normal") || lower.includes("walking") || lower.includes("fine")) {
-      return "Okay";
-    }
-    if (lower.includes("harder") || lower.includes("hard") || lower.includes("difficult") || lower.includes("struggle") || lower.includes("stiff") || lower.includes("slowing")) {
-      return "Getting harder";
-    }
-    if (lower.includes("restricted") || lower.includes("bed") || lower.includes("chair") || lower.includes("cannot") || lower.includes("can't") || lower.includes("unable") || lower.includes("stuck")) {
-      return "Restricted";
-    }
-    return null;
-  }
-  
-  if (step === 5) { // Unusual symptoms
-    if (lower.includes("none") || lower.includes("no") || lower.includes("good") || lower.includes("fine") || lower.includes("nothing")) {
-      return ["None"];
-    }
-    
-    const symptoms: string[] = [];
-    if (lower.includes("chest pain") || lower.includes("heart pain") || lower.includes("chest")) symptoms.push("Chest pain");
-    if (lower.includes("breathing") || lower.includes("breath") || lower.includes("shortness") || lower.includes("suffocating")) symptoms.push("Difficulty breathing");
-    if (lower.includes("bleeding") || lower.includes("blood")) symptoms.push("Uncontrolled bleeding");
-    if (lower.includes("unconscious") || lower.includes("passed out") || lower.includes("fainted") || lower.includes("faint")) symptoms.push("Loss of consciousness");
-    if (lower.includes("vomit") || lower.includes("vomiting") || lower.includes("sick")) symptoms.push("Severe vomiting");
-    if (lower.includes("dizzy") || lower.includes("dizziness") || lower.includes("giddy")) symptoms.push("Severe dizziness");
-    if (lower.includes("worse") || lower.includes("worsening") || lower.includes("bad")) symptoms.push("Symptoms getting much worse");
-    
-    if (symptoms.length > 0) return symptoms;
-    return null;
-  }
-  
-  return null;
-};
-
-export const ChatInterface: React.FC<ChatInterfaceProps> = ({ 
-  apiKey, 
+export const ChatInterface: React.FC<ChatInterfaceProps> = ({
+  apiKey,
   onCheckInComplete,
   presetScenarioTrigger,
   clearPresetScenarioTrigger,
@@ -156,644 +66,156 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   isTtsEnabled,
   selectedVoiceName,
   voices,
-  ttsSpeed = 0.82
+  ttsSpeed = 1,
+  checkInComplete = false,
+  lastCheckInAnswers,
+  currentRecoveryStatus: _currentRecoveryStatus = 'Green',
+  onNavigateToProgress
 }) => {
+  // Mobile / Tab switch state: 'chat' or 'work'
+  const [mobileSide, setMobileSide] = useState<'chat' | 'work'>('chat');
+
+  // Chat conversation state (strictly for questions & clinical inquiries)
   const [messages, setMessages] = useState<Message[]>([
     {
-      id: 'welcome',
+      id: 'welcome-q',
       sender: 'shalom',
-      text: "Hello! I am Shalom, your AI Post-Operative Recovery Assistant. I am here to help you monitor your recovery, track symptoms, and communicate with your care team.\n\nLet's complete your daily recovery check-in together.",
-      timestamp: new Date(),
+      text: "Hello Aïda! I'm Shalom, your personal Post-Operative Recovery Assistant.\n\nUse this chat side to ask any questions about your medications, icing, swelling, mobility, showering, or recovery timelines. I'm here to support you 24/7!",
+      timestamp: new Date()
     }
   ]);
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [chatMode, setChatMode] = useState<'check-in' | 'faq'>('check-in');
   const [playingMessageId, setPlayingMessageId] = useState<string | null>(null);
-  const activeUtterancesRef = useRef<SpeechSynthesisUtterance[]>([]);
-
-  const stopSpeech = () => {
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      try {
-        window.speechSynthesis.cancel();
-      } catch {
-        // Ignore
-      }
-    }
-    activeUtterancesRef.current = [];
-    setPlayingMessageId(null);
-  };
-
-  const toggleSpeakMessage = (msgId: string, text: string) => {
-    if (playingMessageId === msgId) {
-      stopSpeech();
-    } else {
-      speakText(text, msgId);
-    }
-  };
-
-  const speakText = (text: string, msgId?: string) => {
-    if (!isTtsEnabled || typeof window === 'undefined' || !('speechSynthesis' in window)) return;
-    
-    // Stop any ongoing speech and clear active references
-    try {
-      window.speechSynthesis.cancel();
-      activeUtterancesRef.current = [];
-      if (window.speechSynthesis.paused) {
-        window.speechSynthesis.resume();
-      }
-    } catch {
-      // Ignore
-    }
-
-    // Clean text: strip markdown and emojis for cleaner speech
-    const cleanText = text
-      .replace(/\*\*([^*]+)\*\*/g, '$1') // Strip bold asterisks
-      .replace(/🚨|🟡|🟢|🔴|⚠️|✨|📋|✓/g, '') // Strip emojis
-      .replace(/•/g, '') // Strip bullets
-      .trim();
-
-    if (!cleanText) return;
-
-    if (msgId) {
-      setPlayingMessageId(msgId);
-    }
-
-    const utterance = new SpeechSynthesisUtterance(cleanText);
-    
-    // Configure natural, relaxed, calm and soothing speech parameters
-    utterance.rate = ttsSpeed || 0.82;  // Relaxed comfortable speed (prevents rushed audio)
-    utterance.pitch = 1.0;              // Warm, natural pitch
-    utterance.volume = 1.0;
-    
-    // Dynamically retrieve live voices
-    const freshVoices = window.speechSynthesis.getVoices();
-    const available = freshVoices.length > 0 ? freshVoices : voices;
-
-    let chosenVoice: SpeechSynthesisVoice | undefined;
-    if (selectedVoiceName) {
-      chosenVoice = available.find(v => v.name === selectedVoiceName);
-    }
-    if (!chosenVoice) {
-      chosenVoice = available.find(v => v.lang.startsWith('en') && (v.name.includes('Samantha') || v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Daniel') || v.name.includes('Karen') || v.name.includes('Victoria')))
-        || available.find(v => v.lang.startsWith('en'))
-        || available[0];
-    }
-
-    if (chosenVoice) {
-      utterance.voice = chosenVoice;
-      utterance.lang = chosenVoice.lang;
-    } else {
-      utterance.lang = 'en-US';
-    }
-    
-    // Reference the utterance to prevent garbage collection cutting off the voice mid-speech
-    activeUtterancesRef.current.push(utterance);
-    
-    utterance.onend = () => {
-      activeUtterancesRef.current = activeUtterancesRef.current.filter(u => u !== utterance);
-      if (msgId) setPlayingMessageId(null);
-    };
-    utterance.onerror = (e) => {
-      console.warn("Speech synthesis notice:", e);
-      activeUtterancesRef.current = activeUtterancesRef.current.filter(u => u !== utterance);
-      if (msgId) setPlayingMessageId(null);
-    };
-
-    setTimeout(() => {
-      try {
-        if (window.speechSynthesis.paused) {
-          window.speechSynthesis.resume();
-        }
-        window.speechSynthesis.speak(utterance);
-      } catch (err) {
-        console.error("SpeechSynthesis speak in chat failed:", err);
-        if (msgId) setPlayingMessageId(null);
-      }
-    }, 50);
-  };
-
-  // Guided Check-in Steps: 
-  // -1 = Not started, 0 = Pain, 1 = Fever, 2 = Medications, 3 = Incision, 4 = Mobility, 5 = Unusual Symptoms, 6 = Completed
-  const [checkInStep, setCheckInStep] = useState<number>(-1);
-  const [answers, setAnswers] = useState<CheckInAnswers>({
-    painLevel: 3,
-    hasFever: false,
-    temperature: 98.6,
-    medsTaken: true,
-    incisionIssues: ['Normal'],
-    mobility: 'Okay',
-    unusualSymptoms: ['None']
-  });
-
-  const getSuggestionChips = () => {
-    if (chatMode === 'check-in') {
-      if (checkInStep === -1) {
-        return [
-          { label: "Start Daily Check-in", action: "check-in", icon: <Play size={12} /> },
-          { label: "How does check-in work?", action: "how-checkin", icon: <HelpCircle size={12} /> }
-        ];
-      } else {
-        return [
-          { label: "Reset / Stop Check-in", action: "reset-checkin", icon: <X size={12} /> }
-        ];
-      }
-    } else {
-      return [
-        { label: "Can I take a shower?", action: "shower", icon: <Droplets size={12} /> },
-        { label: "When can I drive again?", action: "drive", icon: <Car size={12} /> },
-        { label: "Is swelling normal?", action: "swelling", icon: <TrendingUp size={12} /> },
-        { label: "How do I clean my incision?", action: "incision", icon: <Scissors size={12} /> }
-      ];
-    }
-  };
-
-  const suggestionChips = getSuggestionChips();
-
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isTyping]);
-
-  // Handle preset scenarios triggered from outside (Home screen)
-  useEffect(() => {
-    if (presetScenarioTrigger) {
-      const answersCopy = { ...presetScenarioTrigger };
-      setAnswers(answersCopy);
-      
-      const status = classifyRisk(answersCopy);
-      const report = generateCareTeamReport(answersCopy, status);
-      
-      const dialogMessages: Message[] = [
-        {
-          id: 'welcome',
-          sender: 'shalom',
-          text: "Hello! I am Shalom, your AI Post-Operative Recovery Assistant. Let's complete your daily recovery check-in together.",
-          timestamp: new Date()
-        }
-      ];
-
-      // Pain
-      dialogMessages.push({
-        id: 'q0',
-        sender: 'shalom',
-        text: "What is your pain level today from 1 to 10?",
-        timestamp: new Date()
-      });
-      dialogMessages.push({
-        id: 'a0',
-        sender: 'user',
-        text: `My pain level is ${answersCopy.painLevel} out of 10.`,
-        timestamp: new Date()
-      });
-      dialogMessages.push({
-        id: 'f0',
-        sender: 'shalom',
-        text: getWarmFeedback(0, answersCopy.painLevel),
-        timestamp: new Date()
-      });
-
-      // Fever
-      dialogMessages.push({
-        id: 'q1',
-        sender: 'shalom',
-        text: "Do you have a fever?",
-        timestamp: new Date()
-      });
-      dialogMessages.push({
-        id: 'a1',
-        sender: 'user',
-        text: answersCopy.hasFever 
-          ? `Yes, I have a fever. My temperature is ${answersCopy.temperature || 100.4}°F.` 
-          : "No, I do not have a fever.",
-        timestamp: new Date()
-      });
-      dialogMessages.push({
-        id: 'f1',
-        sender: 'shalom',
-        text: getWarmFeedback(1, { hasFever: answersCopy.hasFever, temp: answersCopy.temperature }),
-        timestamp: new Date()
-      });
-
-      // Meds
-      dialogMessages.push({
-        id: 'q2',
-        sender: 'shalom',
-        text: "Did you take your medication today?",
-        timestamp: new Date()
-      });
-      dialogMessages.push({
-        id: 'a2',
-        sender: 'user',
-        text: answersCopy.medsTaken 
-          ? "Yes, I took all my scheduled recovery medications today." 
-          : "No, I missed some or all of my recovery medications today.",
-        timestamp: new Date()
-      });
-      dialogMessages.push({
-        id: 'f2',
-        sender: 'shalom',
-        text: getWarmFeedback(2, answersCopy.medsTaken),
-        timestamp: new Date()
-      });
-
-      // Incision
-      dialogMessages.push({
-        id: 'q3',
-        sender: 'shalom',
-        text: "Is your incision red, swollen, draining, or getting worse?",
-        timestamp: new Date()
-      });
-      dialogMessages.push({
-        id: 'a3',
-        sender: 'user',
-        text: `Incision status: ${answersCopy.incisionIssues.join(', ')}`,
-        timestamp: new Date()
-      });
-      dialogMessages.push({
-        id: 'f3',
-        sender: 'shalom',
-        text: getWarmFeedback(3, answersCopy.incisionIssues),
-        timestamp: new Date()
-      });
-
-      // Mobility
-      dialogMessages.push({
-        id: 'q4',
-        sender: 'shalom',
-        text: "How is your mobility today?",
-        timestamp: new Date()
-      });
-      dialogMessages.push({
-        id: 'a4',
-        sender: 'user',
-        text: `My mobility status is: ${answersCopy.mobility === 'Okay' ? 'Okay (moving around normally)' : answersCopy.mobility === 'Getting harder' ? 'Getting harder' : 'Restricted (resting in bed/chair)'}.`,
-        timestamp: new Date()
-      });
-      dialogMessages.push({
-        id: 'f4',
-        sender: 'shalom',
-        text: getWarmFeedback(4, answersCopy.mobility),
-        timestamp: new Date()
-      });
-
-      // Unusual Symptoms
-      dialogMessages.push({
-        id: 'q5',
-        sender: 'shalom',
-        text: "Do you have any unusual symptoms?",
-        timestamp: new Date()
-      });
-      dialogMessages.push({
-        id: 'a5',
-        sender: 'user',
-        text: `Unusual symptoms reported: ${answersCopy.unusualSymptoms.join(', ')}.`,
-        timestamp: new Date()
-      });
-      dialogMessages.push({
-        id: 'f5',
-        sender: 'shalom',
-        text: getWarmFeedback(5, answersCopy.unusualSymptoms),
-        timestamp: new Date()
-      });
-
-      // Final response
-      let finalResponseText = "";
-      const isEmergency = status === 'Emergency';
-      if (isEmergency) {
-        finalResponseText = "** EMERGENCY WARNING **\n\nBased on your reported symptoms (such as chest pain or difficulty breathing), please **call 911 or go to the nearest emergency department immediately**. These symptoms require immediate medical attention.";
-      } else if (status === 'Red') {
-        finalResponseText = "Thank you for sharing that. I'm sorry you are feeling this way. Based on what you reported, **your symptoms may need review by your healthcare team**. Please contact your healthcare provider's office directly today.";
-      } else if (status === 'Yellow') {
-        finalResponseText = "Thank you for sharing that. I'm sorry you are experiencing some difficulties today. Your recovery **needs monitoring**, and I have logged these symptoms for your care team. Please contact your healthcare provider if these symptoms worsen or do not improve.";
-      } else {
-        finalResponseText = "Thank you for sharing. Your answers indicate your recovery is **stable and progressing well**. Continue to rest, take your medications, and follow your discharge instructions.";
-      }
-
-      dialogMessages.push({
-        id: 'final-response',
-        sender: 'shalom',
-        text: finalResponseText,
-        timestamp: new Date(),
-        isEmergency,
-        isMedicalWarning: status === 'Red'
-      });
-
-      setMessages(dialogMessages);
-      setCheckInStep(6);
-      onCheckInComplete(answersCopy, status, report);
-      clearPresetScenarioTrigger();
-      speakText(finalResponseText);
-    }
-  }, [presetScenarioTrigger]);
-
-  // Guided Check-In Questions definitions
-  const checkInQuestions = [
-    "What is your pain level today from 1 to 10?",
-    "Do you have a fever?",
-    "Did you take your medication today?",
-    "Is your incision red, swollen, draining, or getting worse?",
-    "How is your mobility today?",
-    "Do you have any unusual symptoms?"
-  ];
-
-  const handleStartCheckIn = () => {
-    setCheckInStep(0);
-    onResetStatus();
-    
-    // Reset answers
-    setAnswers({
-      painLevel: 3,
+  // Work Side State: Daily Clinical Check-In
+  const [isCheckInSubmitted, setIsCheckInSubmitted] = useState<boolean>(checkInComplete);
+  const [checkInStep, setCheckInStep] = useState<number>(0); // 0 to 5 for the 6 steps
+  const [answers, setAnswers] = useState<CheckInAnswers>(
+    lastCheckInAnswers || {
+      painLevel: 4,
       hasFever: false,
       temperature: 98.6,
       medsTaken: true,
       incisionIssues: ['Normal'],
       mobility: 'Okay',
       unusualSymptoms: ['None']
-    });
+    }
+  );
 
-    setMessages([
-      {
-        id: 'welcome',
-        sender: 'shalom',
-        text: "Hello! I am Shalom, your AI Post-Operative Recovery Assistant. Let's complete your daily recovery check-in together.",
-        timestamp: new Date()
-      },
-      {
-        id: 'start-check-in-q0',
-        sender: 'shalom',
-        text: "Let's begin. " + checkInQuestions[0],
-        timestamp: new Date()
-      }
-    ]);
-    speakText("Hello! I am Shalom, your AI Post-Operative Recovery Assistant. Let's complete your daily recovery check-in together. Let's begin. " + checkInQuestions[0]);
+  // Keep internal answers synced with prop if updated externally
+  useEffect(() => {
+    if (lastCheckInAnswers) {
+      setAnswers(lastCheckInAnswers);
+    }
+    if (checkInComplete) {
+      setIsCheckInSubmitted(true);
+    }
+  }, [lastCheckInAnswers, checkInComplete]);
+
+  // Handle Preset Scenarios trigger
+  useEffect(() => {
+    if (presetScenarioTrigger) {
+      setAnswers(presetScenarioTrigger);
+      const status = classifyRisk(presetScenarioTrigger);
+      const report = generateCareTeamReport(presetScenarioTrigger, status);
+      onCheckInComplete(presetScenarioTrigger, status, report);
+      setIsCheckInSubmitted(true);
+      clearPresetScenarioTrigger();
+    }
+  }, [presetScenarioTrigger, onCheckInComplete, clearPresetScenarioTrigger]);
+
+  // Auto-scroll chat
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isTyping]);
+
+  // Voice synthesis (TTS)
+  const speakText = (text: string) => {
+    if (!isTtsEnabled) return;
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+
+    window.speechSynthesis.cancel();
+    const cleanText = text.replace(/[*_#`]/g, '');
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+
+    if (selectedVoiceName && voices.length > 0) {
+      const voiceObj = voices.find(v => v.name === selectedVoiceName);
+      if (voiceObj) utterance.voice = voiceObj;
+    }
+    utterance.rate = ttsSpeed;
+    window.speechSynthesis.speak(utterance);
   };
 
-  const handleResetCheckIn = () => {
-    setCheckInStep(-1);
-    onResetStatus();
-    setMessages([
-      {
-        id: 'welcome-reset',
-        sender: 'shalom',
-        text: "Hello! I am Shalom, your AI Post-Operative Recovery Assistant. Ready when you are. Would you like to start your daily recovery check-in?",
-        timestamp: new Date(),
+  const toggleSpeakMessage = (id: string, text: string) => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    if (playingMessageId === id) {
+      window.speechSynthesis.cancel();
+      setPlayingMessageId(null);
+    } else {
+      window.speechSynthesis.cancel();
+      setPlayingMessageId(id);
+      const cleanText = text.replace(/[*_#`]/g, '');
+      const utterance = new SpeechSynthesisUtterance(cleanText);
+      if (selectedVoiceName && voices.length > 0) {
+        const voiceObj = voices.find(v => v.name === selectedVoiceName);
+        if (voiceObj) utterance.voice = voiceObj;
       }
-    ]);
-    speakText("Hello! I am Shalom, your AI Post-Operative Recovery Assistant. Ready when you are. Would you like to start your daily recovery check-in?");
+      utterance.rate = ttsSpeed;
+      utterance.onend = () => setPlayingMessageId(null);
+      utterance.onerror = () => setPlayingMessageId(null);
+      window.speechSynthesis.speak(utterance);
+    }
   };
 
-  const handleInteractiveSubmit = (userText: string, updatedAnswers: CheckInAnswers, rawAnswerValue: any) => {
-    setIsTyping(true);
-    
-    // Add user response bubble
-    const userBubble: Message = {
-      id: `user-${Date.now()}`,
-      sender: 'user',
-      text: userText,
-      timestamp: new Date()
-    };
-    
-    setMessages(prev => [...prev, userBubble]);
-
-    const currentStep = checkInStep;
-    const nextStep = checkInStep + 1;
-    setCheckInStep(nextStep);
-
-    setTimeout(() => {
-      // Get empathetic reaction from Shalom
-      const feedbackText = getWarmFeedback(currentStep, rawAnswerValue);
-      const feedbackBubble: Message = {
-        id: `shalom-fb-${Date.now()}`,
-        sender: 'shalom',
-        text: feedbackText,
-        timestamp: new Date()
-      };
-
-      if (nextStep < 6) {
-        // Ask the next question
-        const nextQuestionText = checkInQuestions[nextStep];
-        const nextQuestionBubble: Message = {
-          id: `shalom-q-${Date.now()}`,
-          sender: 'shalom',
-          text: nextQuestionText,
-          timestamp: new Date()
-        };
-        
-        setMessages(prev => [...prev, feedbackBubble, nextQuestionBubble]);
-        setIsTyping(false);
-        speakText(feedbackText + " " + nextQuestionText);
-      } else {
-        // Complete check-in and classify risk
-        const status = classifyRisk(updatedAnswers);
-        const report = generateCareTeamReport(updatedAnswers, status);
-        
-        let finalResponseText = "";
-        const isEmergency = status === 'Emergency';
-        
-        if (isEmergency) {
-          finalResponseText = "** EMERGENCY WARNING **\n\nBased on your reported symptoms (such as chest pain or difficulty breathing), please **call 911 or go to the nearest emergency department immediately**. These symptoms require immediate medical attention.";
-        } else if (status === 'Red') {
-          finalResponseText = "Thank you for sharing that. I'm sorry you are feeling this way. Based on what you reported, **your symptoms may need review by your healthcare team**. Please contact your healthcare provider's office directly today.";
-        } else if (status === 'Yellow') {
-          finalResponseText = "Thank you for sharing that. I'm sorry you are experiencing some difficulties today. Your recovery **needs monitoring**, and I have logged these symptoms for your care team. Please contact your healthcare provider if these symptoms worsen or do not improve.";
-        } else {
-          finalResponseText = "Thank you for sharing. Your answers indicate your recovery is **stable and progressing well**. Continue to rest, take your medications, and follow your discharge instructions.";
-        }
-
-        const finalBubble: Message = {
-          id: `shalom-final-${Date.now()}`,
-          sender: 'shalom',
-          text: finalResponseText,
-          timestamp: new Date(),
-          isEmergency,
-          isMedicalWarning: status === 'Red'
-        };
-
-        setMessages(prev => [...prev, feedbackBubble, finalBubble]);
-        setIsTyping(false);
-        onCheckInComplete(updatedAnswers, status, report);
-        speakText(feedbackText + " " + finalResponseText);
-      }
-    }, 1000);
-  };
-
+  // Chat send message handler (strictly questions & advice)
   const handleSendMessage = async (textToSend: string) => {
     if (!textToSend.trim()) return;
 
-    const lower = textToSend.toLowerCase().trim();
     const faqMatch = searchFAQDataset(textToSend, faqDataset);
     const { isEmergency, isMedicalAdvice } = evaluateSafety(textToSend);
 
-    // Emergency check first
-    if (isEmergency) {
-      const userMessage: Message = {
-        id: `user-msg-${Date.now()}`,
-        sender: 'user',
-        text: textToSend,
-        timestamp: new Date(),
-      };
-      setMessages(prev => [...prev, userMessage]);
-      setInputText('');
-      setIsTyping(true);
-      
-      setTimeout(() => {
-        const resp = "** EMERGENCY WARNING **\n\nBased on your reported symptoms (such as chest pain or difficulty breathing), please **call 911 or go to the nearest emergency department immediately**. These symptoms require immediate medical attention.";
-        setMessages(prev => [...prev, {
-          id: `shalom-resp-${Date.now()}`,
-          sender: 'shalom',
-          text: resp,
-          timestamp: new Date(),
-          isEmergency: true
-        }]);
-        setIsTyping(false);
-        speakText(resp);
-      }, 800);
-      return;
-    }
+    const userMessage: Message = {
+      id: `user-msg-${Date.now()}`,
+      sender: 'user',
+      text: textToSend,
+      timestamp: new Date(),
+    };
 
-    if (checkInStep !== -1) {
-      // User is in the middle of a guided Check-in flow
-      if (faqMatch.matched) {
-        // Asked a general FAQ question during check-in!
-        const userMessage: Message = {
-          id: `user-msg-${Date.now()}`,
-          sender: 'user',
-          text: textToSend,
-          timestamp: new Date(),
-        };
-        setMessages(prev => [...prev, userMessage]);
-        setInputText('');
-        setIsTyping(true);
+    setMessages(prev => [...prev, userMessage]);
+    setInputText('');
+    setIsTyping(true);
 
-        setTimeout(async () => {
-          let responseText = '';
-          const serializedHistory = medicalHistory ? JSON.stringify(medicalHistory, null, 2) : undefined;
-          if (apiKey.trim() && !isMedicalAdvice) {
-            responseText = await getGeminiResponse([...messages, userMessage], apiKey, textToSend, serializedHistory, faqDataset);
-          } else {
-            responseText = faqMatch.response || '';
-          }
+    setTimeout(async () => {
+      let responseText = '';
+      const serializedHistory = medicalHistory ? JSON.stringify(medicalHistory, null, 2) : undefined;
 
-          // Append check-in continuation prompt
-          const continueText = `\n\n*(Continuing your daily check-in)*: Let's resume with step ${checkInStep + 1} of 6.\n**${checkInQuestions[checkInStep]}**`;
-          responseText += continueText;
-
-          setMessages(prev => [...prev, {
-            id: `shalom-resp-${Date.now()}`,
-            sender: 'shalom',
-            text: responseText,
-            timestamp: new Date(),
-            isMedicalWarning: isMedicalAdvice
-          }]);
-          setIsTyping(false);
-          speakText(responseText);
-        }, 800);
+      if (isEmergency) {
+        responseText = "** EMERGENCY DIRECTIVE **\n\nBased on your reported symptoms (such as chest pain or severe shortness of breath), please **call 911 or go to the nearest emergency department immediately**. These signs require urgent, in-person clinical care.";
+      } else if (apiKey.trim() && !isMedicalAdvice) {
+        responseText = await getGeminiResponse([...messages, userMessage], apiKey, textToSend, serializedHistory, faqDataset);
       } else {
-        // Attempt to parse the check-in answer locally
-        const parsedVal = parseCheckInAnswer(textToSend, checkInStep);
-        if (parsedVal !== null) {
-          let formattedUserText = textToSend;
-          let updatedAnswers = { ...answers };
-
-          if (checkInStep === 0) {
-            formattedUserText = `My pain level is ${parsedVal} out of 10.`;
-            updatedAnswers.painLevel = parsedVal;
-          } else if (checkInStep === 1) {
-            formattedUserText = parsedVal.hasFever
-              ? `Yes, I have a fever. My temperature is ${parsedVal.temperature}°F.`
-              : "No, I do not have a fever.";
-            updatedAnswers.hasFever = parsedVal.hasFever;
-            updatedAnswers.temperature = parsedVal.temperature;
-          } else if (checkInStep === 2) {
-            formattedUserText = parsedVal
-              ? "Yes, I took all my scheduled recovery medications today."
-              : "No, I missed some or all of my recovery medications today.";
-            updatedAnswers.medsTaken = parsedVal;
-          } else if (checkInStep === 3) {
-            formattedUserText = `Incision status reported: ${parsedVal.join(', ')}.`;
-            updatedAnswers.incisionIssues = parsedVal;
-          } else if (checkInStep === 4) {
-            formattedUserText = `My mobility is: ${parsedVal === 'Okay' ? 'Okay (moving around normally)' : parsedVal === 'Getting harder' ? 'Getting harder' : 'Restricted (resting in bed/chair)'}.`;
-            updatedAnswers.mobility = parsedVal;
-          } else if (checkInStep === 5) {
-            formattedUserText = `Unusual symptoms reported: ${parsedVal.join(', ')}.`;
-            updatedAnswers.unusualSymptoms = parsedVal;
-          }
-
-          setInputText('');
-          setAnswers(updatedAnswers);
-          handleInteractiveSubmit(formattedUserText, updatedAnswers, checkInStep === 1 ? { hasFever: parsedVal.hasFever, temp: parsedVal.temperature } : parsedVal);
+        if (faqMatch.matched && faqMatch.response) {
+          responseText = faqMatch.response;
         } else {
-          // Could not parse the user answer as a valid response to the current check-in question
-          const userMessage: Message = {
-            id: `user-msg-${Date.now()}`,
-            sender: 'user',
-            text: textToSend,
-            timestamp: new Date(),
-          };
-          setMessages(prev => [...prev, userMessage]);
-          setInputText('');
-          setIsTyping(true);
-
-          setTimeout(() => {
-            const resp = `I couldn't quite parse that as an answer to our check-in question. Please answer: **${checkInQuestions[checkInStep]}** (You can also select from the option controls below).`;
-            setMessages(prev => [...prev, {
-              id: `shalom-resp-${Date.now()}`,
-              sender: 'shalom',
-              text: resp,
-              timestamp: new Date()
-            }]);
-            setIsTyping(false);
-            speakText(resp);
-          }, 800);
+          responseText = getSimulatedResponse(textToSend, [...messages, userMessage], medicalHistory, faqDataset);
         }
       }
-    } else {
-      // User is NOT in check-in flow (FAQ or Idle mode)
-      if (lower.includes('check-in') || lower.includes('start check') || lower.includes('checkin')) {
-        setInputText('');
-        handleStartCheckIn();
-      } else {
-        const userMessage: Message = {
-          id: `user-msg-${Date.now()}`,
-          sender: 'user',
-          text: textToSend,
-          timestamp: new Date(),
-        };
-        setMessages(prev => [...prev, userMessage]);
-        setInputText('');
-        setIsTyping(true);
 
-        setTimeout(async () => {
-          let responseText = '';
-          const serializedHistory = medicalHistory ? JSON.stringify(medicalHistory, null, 2) : undefined;
-          
-          if (apiKey.trim() && !isMedicalAdvice) {
-            // Live RAG via Gemini
-            responseText = await getGeminiResponse([...messages, userMessage], apiKey, textToSend, serializedHistory, faqDataset);
-          } else {
-            // Local simulation RAG or fallback scope check
-            if (faqMatch.matched && faqMatch.response) {
-              responseText = faqMatch.response;
-            } else {
-              responseText = getSimulatedResponse(textToSend, [...messages, userMessage], medicalHistory, faqDataset);
-            }
-          }
+      const botBubble: Message = {
+        id: `shalom-resp-${Date.now()}`,
+        sender: 'shalom',
+        text: responseText,
+        timestamp: new Date(),
+        isEmergency,
+        isMedicalWarning: isMedicalAdvice
+      };
 
-          setMessages(prev => [...prev, {
-            id: `shalom-resp-${Date.now()}`,
-            sender: 'shalom',
-            text: responseText,
-            timestamp: new Date(),
-            isMedicalWarning: isMedicalAdvice
-          }]);
-          setIsTyping(false);
-          speakText(responseText);
-        }, 800);
-      }
-    }
+      setMessages(prev => [...prev, botBubble]);
+      setIsTyping(false);
+      speakText(responseText);
+    }, 700);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -802,543 +224,1125 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }
   };
 
-  const handleChipClick = (action: string) => {
-    if (action === "check-in") {
-      handleStartCheckIn();
-    } else if (action === "how-checkin") {
-      handleSendMessage("How does the daily post-operative recovery check-in work?");
-    } else if (action === "reset-checkin") {
-      handleResetCheckIn();
-    } else if (action === "shower") {
-      handleSendMessage("Can I shower after surgery?");
-    } else if (action === "drive") {
-      handleSendMessage("Can I drive after surgery?");
-    } else if (action === "swelling") {
-      handleSendMessage("Is swelling normal after surgery?");
-    } else if (action === "incision") {
-      handleSendMessage("How do I keep my incision clean?");
-    }
+  const handleClearChat = () => {
+    setMessages([
+      {
+        id: `welcome-${Date.now()}`,
+        sender: 'shalom',
+        text: "Conversation refreshed. Ask me anything about your recovery, exercises, wound care, or medications!",
+        timestamp: new Date()
+      }
+    ]);
   };
 
-  // Renders the interactive custom controls for each step of the check-in
-  const renderInteractiveControls = () => {
-    if (checkInStep === -1) {
-      return (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '16px', flexDirection: 'column', alignItems: 'center', gap: '8px', textAlign: 'center' }}>
-          <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Ready to log your vitals and recovery status?</p>
-          <button className="checkin-submit-btn" onClick={handleStartCheckIn} style={{ padding: '10px 20px', borderRadius: '20px', fontSize: '13px' }}>
-            <Play size={14} /> Start Recovery Check-In
-          </button>
-        </div>
-      );
-    }
+  // Suggested question chips
+  const prebakedQueries = [
+    "Can I shower with my knee dressing?",
+    "Is swelling normal at Day 6 post-op?",
+    "When is it safe to start driving?",
+    "Tips to reduce nighttime knee pain"
+  ];
 
-    if (checkInStep === 0) { // Pain (1-10)
-      return (
-        <div className="checkin-options-panel" style={{ padding: '14px' }}>
-          <div className="pain-level-slider-wrap">
-            <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', fontSize: '11px', fontWeight: 'bold' }}>
-              <span style={{ color: 'var(--color-green)' }}>Mild (1)</span>
-              <span style={{ fontSize: '13px', color: answers.painLevel >= 8 ? 'var(--color-red)' : answers.painLevel >= 5 ? 'var(--color-yellow)' : 'var(--color-green)' }}>
-                Pain: {answers.painLevel} / 10
-              </span>
-              <span style={{ color: 'var(--color-red)' }}>Severe (10)</span>
-            </div>
-            <input
-              type="range"
-              min="1"
-              max="10"
-              value={answers.painLevel}
-              onChange={(e) => setAnswers({ ...answers, painLevel: parseInt(e.target.value) })}
-              style={{ width: '100%', accentColor: 'var(--primary)', height: '6px', borderRadius: '4px', cursor: 'pointer' }}
-            />
-            <div className="pain-ticks">
-              {[1,2,3,4,5,6,7,8,9,10].map(n => <span key={n}>{n}</span>)}
-            </div>
-          </div>
-          <button 
-            className="checkin-submit-btn" 
-            onClick={() => handleInteractiveSubmit(`My pain level is ${answers.painLevel} out of 10.`, answers, answers.painLevel)}
-          >
-            Submit Pain Scale <ArrowRight size={13} />
-          </button>
-        </div>
-      );
-    }
+  // Work Side: Check-in complete submission
+  const handleCompleteCheckIn = (finalAnswers: CheckInAnswers) => {
+    const status = classifyRisk(finalAnswers);
+    const report = generateCareTeamReport(finalAnswers, status);
 
-    if (checkInStep === 1) { // Fever (Yes/No)
-      return (
-        <div className="checkin-options-panel" style={{ padding: '14px' }}>
-          <div className="choice-pill-grid">
-            <button 
-              className={`choice-pill-btn ${answers.hasFever ? 'selected' : ''}`}
-              onClick={() => setAnswers({ ...answers, hasFever: true, temperature: 100.6 })}
-            >
-              Yes, I have a fever
-            </button>
-            <button 
-              className={`choice-pill-btn ${!answers.hasFever ? 'selected' : ''}`}
-              onClick={() => setAnswers({ ...answers, hasFever: false, temperature: 98.6 })}
-            >
-              No fever
-            </button>
+    onCheckInComplete(finalAnswers, status, report);
+    setIsCheckInSubmitted(true);
+
+    // Notify user in Chat side
+    const summaryMsg = `I've analyzed your Day 6 check-in! Your Recovery Status has been updated on your Work Board.\n\n` +
+      `- **Pain Level**: ${finalAnswers.painLevel}/10\n` +
+      `- **Temperature**: ${finalAnswers.temperature || 98.6}°F (${finalAnswers.hasFever ? 'Fever reported' : 'Normal'})\n` +
+      `- **Medications**: ${finalAnswers.medsTaken ? 'All Taken ✓' : 'Missed Some'}\n` +
+      `- **Overall Protocol**: ${status === 'Green' ? 'Normal & Stable (On Track)' : status === 'Yellow' ? 'Attention Needed' : 'Clinical Review Needed'}\n\n` +
+      `Feel free to ask me any questions about your results or today's activities!`;
+
+    setMessages(prev => [
+      ...prev,
+      {
+        id: `shalom-checkin-ack-${Date.now()}`,
+        sender: 'shalom',
+        text: summaryMsg,
+        timestamp: new Date()
+      }
+    ]);
+    speakText("I've analyzed your Day 6 check-in! Your recovery status is now updated.");
+  };
+
+  // Retake check-in
+  const handleRetakeCheckIn = () => {
+    setIsCheckInSubmitted(false);
+    setCheckInStep(0);
+    onResetStatus();
+  };
+
+  // ==========================================
+  // RENDER WORK SIDE: CHECK-IN WORKFLOW
+  // ==========================================
+  const renderCheckInWorkflow = () => {
+    const stepsTitle = [
+      "1. Pain Assessment",
+      "2. Oral Temperature",
+      "3. Medication Adherence",
+      "4. Wound & Incision Safety",
+      "5. Knee Mobility",
+      "6. Safety & Symptoms"
+    ];
+
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', height: '100%' }}>
+        {/* Step Indicator Bar */}
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+            <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              {stepsTitle[checkInStep]}
+            </span>
+            <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>
+              Step {checkInStep + 1} of 6
+            </span>
           </div>
-          
-          {answers.hasFever && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#fff', padding: '6px 12px', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.06)' }}>
-              <label style={{ fontSize: '11.5px', fontWeight: 'bold' }}>Temp (°F):</label>
-              <input
-                type="number"
-                step="0.1"
-                min="97.0"
-                max="106.0"
-                value={answers.temperature}
-                onChange={(e) => setAnswers({ ...answers, temperature: parseFloat(e.target.value) || 100.4 })}
-                style={{ width: '60px', padding: '4px', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.08)', textAlign: 'center', fontSize: '12px' }}
+
+          <div className="work-step-pills">
+            {[0, 1, 2, 3, 4, 5].map(idx => (
+              <div 
+                key={idx} 
+                className={`work-step-pill ${checkInStep === idx ? 'active' : checkInStep > idx ? 'completed' : ''}`}
+                onClick={() => setCheckInStep(idx)}
+                title={`Go to step ${idx + 1}`}
               />
+            ))}
+          </div>
+        </div>
+
+        {/* Step Content Panels */}
+        <div style={{
+          background: 'var(--bg-glass-card)',
+          border: '1.5px solid var(--border-glass)',
+          borderRadius: '20px',
+          padding: '20px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '14px',
+          flex: 1
+        }}>
+          {/* STEP 0: PAIN LEVEL (1-10) */}
+          {checkInStep === 0 && (
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                <Activity size={18} style={{ color: 'var(--primary)' }} />
+                <h4 style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
+                  How would you rate your knee pain right now?
+                </h4>
+              </div>
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '0 0 16px 0' }}>
+                On a scale from 1 (minimal discomfort) to 10 (unbearable pain).
+              </p>
+
+              <div style={{
+                background: '#ffffff',
+                border: '1px solid var(--border-glass)',
+                borderRadius: '16px',
+                padding: '16px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '11px', fontWeight: 700, color: '#059669' }}>Mild (1)</span>
+                  <div style={{
+                    padding: '4px 14px',
+                    borderRadius: '20px',
+                    background: answers.painLevel >= 8 ? 'rgba(225, 29, 72, 0.1)' : answers.painLevel >= 5 ? 'rgba(217, 119, 6, 0.1)' : 'var(--primary-light)',
+                    color: answers.painLevel >= 8 ? '#E11D48' : answers.painLevel >= 5 ? '#D97706' : 'var(--primary)',
+                    fontWeight: 800,
+                    fontSize: '14px'
+                  }}>
+                    Pain: {answers.painLevel} / 10 &bull; {answers.painLevel <= 3 ? 'Mild' : answers.painLevel <= 6 ? 'Moderate' : 'Severe'}
+                  </div>
+                  <span style={{ fontSize: '11px', fontWeight: 700, color: '#E11D48' }}>Severe (10)</span>
+                </div>
+
+                <input
+                  type="range"
+                  min="1"
+                  max="10"
+                  value={answers.painLevel}
+                  onChange={(e) => setAnswers({ ...answers, painLevel: parseInt(e.target.value) })}
+                  style={{ width: '100%', accentColor: 'var(--primary)', height: '8px', borderRadius: '4px', cursor: 'pointer' }}
+                />
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0 2px', fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600 }}>
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => <span key={n}>{n}</span>)}
+                </div>
+              </div>
             </div>
           )}
 
-          <button 
-            className="checkin-submit-btn" 
-            onClick={() => {
-              const text = answers.hasFever 
-                ? `Yes, I have a fever. My temperature is ${answers.temperature}°F.` 
-                : "No, I do not have a fever.";
-              handleInteractiveSubmit(text, answers, { hasFever: answers.hasFever, temp: answers.temperature });
-            }}
-          >
-            Submit Fever Status <ArrowRight size={13} />
-          </button>
-        </div>
-      );
-    }
+          {/* STEP 1: TEMPERATURE & FEVER */}
+          {checkInStep === 1 && (
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                <Flame size={18} style={{ color: 'var(--primary)' }} />
+                <h4 style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
+                  Do you have an elevated temperature or fever?
+                </h4>
+              </div>
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '0 0 16px 0' }}>
+                Post-operative fever over 100.4°F is an important healing indicator.
+              </p>
 
-    if (checkInStep === 2) { // Medications (Yes/No)
-      return (
-        <div className="checkin-options-panel" style={{ padding: '14px' }}>
-          <div className="choice-pill-grid">
-            <button 
-              className="choice-pill-btn"
-              onClick={() => {
-                const updated = { ...answers, medsTaken: true };
-                setAnswers(updated);
-                handleInteractiveSubmit("Yes, I took all my scheduled recovery medications today.", updated, true);
-              }}
-              style={{ border: '1.5px solid var(--color-green)', color: 'var(--color-green)', background: 'var(--bg-green)', fontWeight: 'bold' }}
-            >
-              Yes, took medications
-            </button>
-            <button 
-              className="choice-pill-btn"
-              onClick={() => {
-                const updated = { ...answers, medsTaken: false };
-                setAnswers(updated);
-                handleInteractiveSubmit("No, I missed some or all of my recovery medications today.", updated, false);
-              }}
-              style={{ border: '1.5px solid var(--color-yellow)', color: 'var(--color-yellow)', background: 'var(--bg-yellow)', fontWeight: 'bold' }}
-            >
-              No, missed medication
-            </button>
-          </div>
-        </div>
-      );
-    }
-
-    if (checkInStep === 3) { // Incision (Multi-select)
-      const options = ["Normal", "Mild Redness", "Swelling", "Drainage", "Getting Worse"];
-      
-      const toggleIncision = (opt: string) => {
-        let updatedIssues = [...answers.incisionIssues];
-        if (opt === "Normal") {
-          updatedIssues = ["Normal"];
-        } else {
-          updatedIssues = updatedIssues.filter(item => item !== "Normal");
-          if (updatedIssues.includes(opt)) {
-            updatedIssues = updatedIssues.filter(item => item !== opt);
-            if (updatedIssues.length === 0) {
-              updatedIssues = ["Normal"];
-            }
-          } else {
-            updatedIssues.push(opt);
-          }
-        }
-        setAnswers({ ...answers, incisionIssues: updatedIssues });
-      };
-
-      return (
-        <div className="checkin-options-panel" style={{ padding: '12px' }}>
-          <div className="choice-pill-grid">
-            {options.map(opt => {
-              const isSelected = answers.incisionIssues.includes(opt);
-              return (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '14px' }}>
                 <button
-                  key={opt}
-                  onClick={() => toggleIncision(opt)}
-                  className={`choice-pill-btn ${isSelected ? 'selected' : ''}`}
-                  style={{ fontSize: '11px', padding: '6px 12px' }}
-                >
-                  {opt}
-                </button>
-              );
-            })}
-          </div>
-          <button 
-            className="checkin-submit-btn" 
-            onClick={() => {
-              const selected = answers.incisionIssues.join(', ');
-              handleInteractiveSubmit(`Incision status reported: ${selected}.`, answers, answers.incisionIssues);
-            }}
-          >
-            Submit Incision Status <ArrowRight size={13} />
-          </button>
-        </div>
-      );
-    }
-
-    if (checkInStep === 4) { // Mobility
-      const options: Array<{ label: string; val: 'Okay' | 'Getting harder' | 'Restricted' }> = [
-        { label: "Okay (moving around normally)", val: 'Okay' },
-        { label: "Getting harder to walk or exercise", val: 'Getting harder' },
-        { label: "Restricted (resting in bed/chair)", val: 'Restricted' }
-      ];
-
-      return (
-        <div className="checkin-options-panel" style={{ padding: '12px' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%' }}>
-            {options.map(opt => {
-              const isSelected = answers.mobility === opt.val;
-              return (
-                <button
-                  key={opt.val}
-                  onClick={() => setAnswers({ ...answers, mobility: opt.val })}
-                  className={`choice-pill-btn ${isSelected ? 'selected' : ''}`}
-                  style={{ textAlign: 'left', width: '100%', borderRadius: '10px' }}
-                >
-                  {opt.label}
-                </button>
-              );
-            })}
-          </div>
-          <button 
-            className="checkin-submit-btn" 
-            onClick={() => {
-              const label = options.find(o => o.val === answers.mobility)?.label || answers.mobility;
-              handleInteractiveSubmit(`My mobility is: ${label}.`, answers, answers.mobility);
-            }}
-          >
-            Submit Mobility <ArrowRight size={13} />
-          </button>
-        </div>
-      );
-    }
-
-    if (checkInStep === 5) { // Unusual Symptoms (Emergency triggers check)
-      const options = ["None", "Chest pain", "Difficulty breathing", "Uncontrolled bleeding", "Loss of consciousness", "Severe vomiting", "Severe dizziness", "Symptoms getting much worse"];
-      
-      const toggleSymptom = (opt: string) => {
-        let updated = [...answers.unusualSymptoms];
-        if (opt === "None") {
-          updated = ["None"];
-        } else {
-          updated = updated.filter(item => item !== "None");
-          if (updated.includes(opt)) {
-            updated = updated.filter(item => item !== opt);
-            if (updated.length === 0) {
-              updated = ["None"];
-            }
-          } else {
-            updated.push(opt);
-          }
-        }
-        setAnswers({ ...answers, unusualSymptoms: updated });
-      };
-
-      return (
-        <div className="checkin-options-panel" style={{ padding: '12px' }}>
-          <div className="choice-pill-grid">
-            {options.map(opt => {
-              const isSelected = answers.unusualSymptoms.includes(opt);
-              const isEmergencyOpt = ["Chest pain", "Difficulty breathing", "Uncontrolled bleeding", "Loss of consciousness"].includes(opt);
-              const isRedOpt = opt === "Symptoms getting much worse";
-              
-              let borderCol = 'rgba(0,0,0,0.06)';
-              if (isSelected) borderCol = 'var(--primary)';
-              else if (isEmergencyOpt) borderCol = '#ffc5c5';
-              else if (isRedOpt) borderCol = '#ffd8be';
-
-              return (
-                <button
-                  key={opt}
-                  onClick={() => toggleSymptom(opt)}
-                  className={`choice-pill-btn ${isSelected ? 'selected' : ''}`}
-                  style={{ 
-                    fontSize: '11px', 
-                    padding: '6px 12px',
-                    borderColor: borderCol,
-                    color: isSelected ? 'white' : (isEmergencyOpt ? 'var(--color-red)' : 'var(--text-main)'),
+                  type="button"
+                  onClick={() => setAnswers({ ...answers, hasFever: false, temperature: 98.6 })}
+                  style={{
+                    padding: '14px',
+                    borderRadius: '14px',
+                    border: !answers.hasFever ? '2px solid var(--primary)' : '1px solid var(--border-glass)',
+                    background: !answers.hasFever ? 'var(--primary-light)' : '#ffffff',
+                    color: !answers.hasFever ? 'var(--primary-dark)' : 'var(--text-main)',
+                    fontWeight: 700,
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '4px'
                   }}
                 >
-                  {opt} {isEmergencyOpt && <ShieldAlert size={11} style={{ display: 'inline-block', marginLeft: '4px', verticalAlign: 'middle' }} />}
+                  <span>No Fever</span>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 500 }}>Normal (~98.6°F)</span>
                 </button>
-              );
-            })}
-          </div>
-          <button 
-            className="checkin-submit-btn" 
-            onClick={() => {
-              const selected = answers.unusualSymptoms.join(', ');
-              handleInteractiveSubmit(`Unusual symptoms: ${selected}.`, answers, answers.unusualSymptoms);
-            }}
-          >
-            Complete Check-In <ArrowRight size={13} />
-          </button>
-        </div>
-      );
-    }
 
-    if (checkInStep === 6) { // Completed
-      return (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '14px', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--color-green)' }}>
-            <CheckCircle size={18} />
-            <strong style={{ fontSize: '12.5px' }}>Check-In Completed</strong>
-          </div>
-          <button className="choice-pill-btn" onClick={handleResetCheckIn} style={{ fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px' }}>
-            <RotateCcw size={12} /> Restart Check-In
-          </button>
-        </div>
-      );
-    }
+                <button
+                  type="button"
+                  onClick={() => setAnswers({ ...answers, hasFever: true, temperature: 100.6 })}
+                  style={{
+                    padding: '14px',
+                    borderRadius: '14px',
+                    border: answers.hasFever ? '2px solid #D97706' : '1px solid var(--border-glass)',
+                    background: answers.hasFever ? '#FEF3C7' : '#ffffff',
+                    color: answers.hasFever ? '#B45309' : 'var(--text-main)',
+                    fontWeight: 700,
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}
+                >
+                  <span>Yes, Running a Fever</span>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 500 }}>Feeling warm / chills</span>
+                </button>
+              </div>
 
-    return null;
+              {answers.hasFever && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: '#ffffff', padding: '12px 16px', borderRadius: '14px', border: '1px solid var(--border-glass)' }}>
+                  <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-main)' }}>Exact Temperature (°F):</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="97.0"
+                    max="106.0"
+                    value={answers.temperature}
+                    onChange={(e) => setAnswers({ ...answers, temperature: parseFloat(e.target.value) || 100.4 })}
+                    style={{
+                      width: '80px',
+                      padding: '6px',
+                      borderRadius: '8px',
+                      border: '1.5px solid var(--primary)',
+                      textAlign: 'center',
+                      fontSize: '14px',
+                      fontWeight: 700,
+                      color: 'var(--primary)'
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* STEP 2: MEDICATION ADHERENCE */}
+          {checkInStep === 2 && (
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                <Clock size={18} style={{ color: 'var(--primary)' }} />
+                <h4 style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
+                  Did you take your scheduled recovery medications today?
+                </h4>
+              </div>
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '0 0 16px 0' }}>
+                Including prescribed anti-inflammatories, analgesics, and supplements.
+              </p>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <button
+                  type="button"
+                  onClick={() => setAnswers({ ...answers, medsTaken: true })}
+                  style={{
+                    padding: '16px',
+                    borderRadius: '16px',
+                    border: answers.medsTaken ? '2px solid #059669' : '1px solid var(--border-glass)',
+                    background: answers.medsTaken ? 'rgba(5, 150, 105, 0.08)' : '#ffffff',
+                    color: answers.medsTaken ? '#059669' : 'var(--text-main)',
+                    fontWeight: 800,
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px'
+                  }}
+                >
+                  <Check size={16} strokeWidth={3} /> Yes, All Taken
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setAnswers({ ...answers, medsTaken: false })}
+                  style={{
+                    padding: '16px',
+                    borderRadius: '16px',
+                    border: !answers.medsTaken ? '2px solid #D97706' : '1px solid var(--border-glass)',
+                    background: !answers.medsTaken ? '#FEF3C7' : '#ffffff',
+                    color: !answers.medsTaken ? '#B45309' : 'var(--text-main)',
+                    fontWeight: 800,
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px'
+                  }}
+                >
+                  Missed Some / All
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* STEP 3: INCISION SITE ISSUES */}
+          {checkInStep === 3 && (
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                <ShieldCheck size={18} style={{ color: 'var(--primary)' }} />
+                <h4 style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
+                  How does your surgical incision dressing appear today?
+                </h4>
+              </div>
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '0 0 16px 0' }}>
+                Select all that apply to your left knee dressing.
+              </p>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
+                {["Normal (Clean & Dry)", "Mild Redness", "Swelling", "Drainage", "Getting Worse"].map(opt => {
+                  const isSelected = opt === "Normal (Clean & Dry)" 
+                    ? answers.incisionIssues.includes("Normal") 
+                    : answers.incisionIssues.includes(opt);
+
+                  const toggleOption = () => {
+                    if (opt === "Normal (Clean & Dry)") {
+                      setAnswers({ ...answers, incisionIssues: ["Normal"] });
+                    } else {
+                      let updated = answers.incisionIssues.filter(i => i !== "Normal");
+                      if (updated.includes(opt)) {
+                        updated = updated.filter(i => i !== opt);
+                        if (updated.length === 0) updated = ["Normal"];
+                      } else {
+                        updated.push(opt);
+                      }
+                      setAnswers({ ...answers, incisionIssues: updated });
+                    }
+                  };
+
+                  return (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={toggleOption}
+                      style={{
+                        padding: '12px',
+                        borderRadius: '12px',
+                        border: isSelected ? '2px solid var(--primary)' : '1px solid var(--border-glass)',
+                        background: isSelected ? 'var(--primary-light)' : '#ffffff',
+                        color: isSelected ? 'var(--primary-dark)' : 'var(--text-main)',
+                        fontWeight: 700,
+                        fontSize: '12px',
+                        cursor: 'pointer',
+                        textAlign: 'left'
+                      }}
+                    >
+                      {opt}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* STEP 4: KNEE MOBILITY */}
+          {checkInStep === 4 && (
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                <TrendingUp size={18} style={{ color: 'var(--primary)' }} />
+                <h4 style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
+                  How is your walking and knee movement today?
+                </h4>
+              </div>
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '0 0 16px 0' }}>
+                Movement consistency promotes safe tissue healing.
+              </p>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {[
+                  { label: "Okay (moving around normally with crutch/walker)", val: 'Okay' as const },
+                  { label: "Getting harder to walk or exercise", val: 'Getting harder' as const },
+                  { label: "Restricted (resting in bed/chair)", val: 'Restricted' as const }
+                ].map(opt => (
+                  <button
+                    key={opt.val}
+                    type="button"
+                    onClick={() => setAnswers({ ...answers, mobility: opt.val })}
+                    style={{
+                      padding: '14px',
+                      borderRadius: '14px',
+                      border: answers.mobility === opt.val ? '2px solid var(--primary)' : '1px solid var(--border-glass)',
+                      background: answers.mobility === opt.val ? 'var(--primary-light)' : '#ffffff',
+                      color: answers.mobility === opt.val ? 'var(--primary-dark)' : 'var(--text-main)',
+                      fontWeight: 700,
+                      fontSize: '12.5px',
+                      cursor: 'pointer',
+                      textAlign: 'left'
+                    }}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* STEP 5: WARNING SYMPTOMS CHECK */}
+          {checkInStep === 5 && (
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                <ShieldAlert size={18} style={{ color: 'var(--primary)' }} />
+                <h4 style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
+                  Are you experiencing any warning symptoms?
+                </h4>
+              </div>
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '0 0 16px 0' }}>
+                Select "None" if you are feeling safe and stable.
+              </p>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                {[
+                  "None",
+                  "Chest pain",
+                  "Difficulty breathing",
+                  "Uncontrolled bleeding",
+                  "Severe dizziness",
+                  "Symptoms getting much worse"
+                ].map(opt => {
+                  const isSelected = answers.unusualSymptoms.includes(opt);
+                  const isEmergencyOpt = ["Chest pain", "Difficulty breathing", "Uncontrolled bleeding"].includes(opt);
+
+                  const toggleSymptom = () => {
+                    if (opt === "None") {
+                      setAnswers({ ...answers, unusualSymptoms: ["None"] });
+                    } else {
+                      let updated = answers.unusualSymptoms.filter(s => s !== "None");
+                      if (updated.includes(opt)) {
+                        updated = updated.filter(s => s !== opt);
+                        if (updated.length === 0) updated = ["None"];
+                      } else {
+                        updated.push(opt);
+                      }
+                      setAnswers({ ...answers, unusualSymptoms: updated });
+                    }
+                  };
+
+                  return (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={toggleSymptom}
+                      style={{
+                        padding: '10px 12px',
+                        borderRadius: '12px',
+                        border: isSelected 
+                          ? (isEmergencyOpt ? '2px solid #E11D48' : '2px solid var(--primary)') 
+                          : '1px solid var(--border-glass)',
+                        background: isSelected 
+                          ? (isEmergencyOpt ? '#FFE4E6' : 'var(--primary-light)') 
+                          : '#ffffff',
+                        color: isSelected 
+                          ? (isEmergencyOpt ? '#BE123C' : 'var(--primary-dark)') 
+                          : 'var(--text-main)',
+                        fontWeight: 700,
+                        fontSize: '11.5px',
+                        cursor: 'pointer',
+                        textAlign: 'left'
+                      }}
+                    >
+                      {opt}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Navigation Bottom Controls */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto', paddingTop: '12px', borderTop: '1px solid var(--border-glass)' }}>
+            {checkInStep > 0 ? (
+              <button
+                type="button"
+                onClick={() => setCheckInStep(prev => prev - 1)}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '12px',
+                  border: '1px solid var(--border-glass)',
+                  background: '#ffffff',
+                  color: 'var(--text-muted)',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  cursor: 'pointer'
+                }}
+              >
+                Back
+              </button>
+            ) : <div />}
+
+            {checkInStep < 5 ? (
+              <button
+                type="button"
+                onClick={() => setCheckInStep(prev => prev + 1)}
+                style={{
+                  padding: '9px 18px',
+                  borderRadius: '14px',
+                  border: 'none',
+                  background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)',
+                  color: '#ffffff',
+                  fontSize: '12.5px',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  boxShadow: '0 4px 12px var(--primary-glow)'
+                }}
+              >
+                Next Step <ArrowRight size={14} />
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => handleCompleteCheckIn(answers)}
+                style={{
+                  padding: '10px 22px',
+                  borderRadius: '14px',
+                  border: 'none',
+                  background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)',
+                  color: '#ffffff',
+                  fontSize: '13px',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  boxShadow: '0 4px 14px var(--primary-glow)'
+                }}
+              >
+                Submit Daily Check-In <CheckCircle size={15} />
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
   };
 
-  const prebakedQueries = [
-    { text: "Is it normal to have more pain at night?", tag: "Pain" },
-    { text: "What activities are safe for me now?", tag: "Activity" },
-    { text: "How do I take my medications today?", tag: "Meds" },
-    { text: "Tips to reduce swelling and pain", tag: "Tips" }
-  ];
+  // ==========================================
+  // RENDER WORK SIDE: DYNAMIC RECOVERY STATUS RESPONSE
+  // ==========================================
+  const renderRecoveryStatusResponse = () => {
+    const pain = answers.painLevel;
+    const temp = answers.temperature || 98.6;
+    const hasFever = answers.hasFever || temp >= 100.4;
+    const meds = answers.medsTaken;
+    const incision = answers.incisionIssues;
+    const symptoms = answers.unusualSymptoms;
 
-  return (
-    <div className="chat-tab-container">
-      {/* Top Header */}
-      <div className="chat-header-bar">
-        <div className="chat-header-left">
-          <div className="chat-header-avatar"></div>
-          <div>
-            <span className="chat-header-title">Shalom Recovery AI</span>
-            <span className="chat-header-status">
-              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10B981', display: 'inline-block', boxShadow: '0 0 6px #10B981' }}></span>
-              Online &amp; Clinical Guardrails Active
+    const isEmergency = symptoms.some(s => ["Chest pain", "Difficulty breathing", "Uncontrolled bleeding", "Loss of consciousness"].includes(s));
+    const isRed = !isEmergency && (pain >= 8 || temp >= 101.5 || symptoms.includes("Symptoms getting much worse") || incision.includes("Getting Worse"));
+    const isYellow = !isEmergency && !isRed && (pain >= 5 || hasFever || !meds || incision.some(i => ["Mild Redness", "Swelling", "Drainage"].includes(i)));
+    const isGreen = !isEmergency && !isRed && !isYellow;
+
+    let heroTitle = "You’re doing great!";
+    let heroSubtitle = "Your recovery is on track. Pain is controlled at " + pain + "/10 and tissue recovery is ahead of Day 6 baseline.";
+    let statusBadgeText = "ON TRACK";
+    let statusBadgeBg = "#DCFCE7";
+    let statusBadgeColor = "#15803D";
+    let shalomSpeech = "Small steps today, stronger you tomorrow. Keep taking short walks and hydrating well!";
+
+    if (isYellow) {
+      heroTitle = "Attention Recommended Today";
+      heroSubtitle = !meds 
+        ? "You missed scheduled medications. Taking anti-inflammatories on time keeps swelling down."
+        : pain >= 5 
+          ? `Pain level of ${pain}/10 is slightly elevated. Rest, ice for 20 minutes, and elevate your leg.`
+          : "Mild symptoms logged. Continue standard monitoring and contact your care team if anything changes.";
+      statusBadgeText = "MONITORING PROTOCOL";
+      statusBadgeBg = "#FEF3C7";
+      statusBadgeColor = "#B45309";
+      shalomSpeech = "Rest and elevation are your superpowers right now. Don't push through pain—ice for 20 minutes and rest.";
+    } else if (isRed || isEmergency) {
+      heroTitle = "Clinical Review Recommended";
+      heroSubtitle = isEmergency
+        ? "Critical warning symptoms reported. Please call 911 or visit the emergency room immediately."
+        : `Elevated pain (${pain}/10) or concerning incision signs reported. Please notify Dr. Carter's clinic desk.`;
+      statusBadgeText = isEmergency ? "EMERGENCY ALERT" : "CLINICAL REVIEW";
+      statusBadgeBg = "#FFE4E6";
+      statusBadgeColor = "#BE123C";
+      shalomSpeech = "Your health is the top priority. Please speak directly with Dr. Carter's clinic hotline right away.";
+    }
+
+    return (
+      <div 
+        className="shalom-letter-card" 
+        style={{ 
+          padding: '22px', 
+          background: '#ffffff', 
+          border: '1px solid rgba(226, 232, 240, 0.9)', 
+          borderRadius: '24px', 
+          boxShadow: '0 8px 24px rgba(15, 23, 42, 0.04)', 
+          position: 'relative', 
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '16px'
+        }}
+      >
+        {/* Faint Quote Watermark */}
+        <div style={{ 
+          position: 'absolute', top: '12px', right: '18px', 
+          fontSize: '56px', fontFamily: 'Georgia, serif', 
+          color: 'rgba(148, 163, 184, 0.12)', lineHeight: 1, 
+          pointerEvents: 'none', userSelect: 'none' 
+        }}>
+          “
+        </div>
+
+        {/* Top Header: 3D Shalom Bubble Orb + Assistant Info */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', position: 'relative', zIndex: 2 }}>
+          <div style={{
+            width: '38px', height: '38px', borderRadius: '50%',
+            background: 'radial-gradient(circle at 35% 30%, #ffffff 0%, #f5f3ff 20%, #c084fc 45%, #7c3aed 75%, #3b0764 100%)',
+            boxShadow: '0 8px 18px rgba(124, 58, 237, 0.28), inset -2px -2px 6px rgba(91, 33, 182, 0.35)',
+            position: 'relative', flexShrink: 0
+          }}>
+            <div style={{
+              position: 'absolute', top: '4px', left: '7px',
+              width: '8px', height: '5px', borderRadius: '50%',
+              background: 'rgba(255, 255, 255, 0.85)', transform: 'rotate(-35deg)'
+            }} />
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <strong style={{ fontSize: '14px', color: '#0F172A', fontWeight: 800 }}>Shalom (AI Assistant)</strong>
+              <span style={{ 
+                fontSize: '9.5px', fontWeight: 800, padding: '2px 8px', borderRadius: '6px', 
+                background: statusBadgeBg, color: statusBadgeColor, textTransform: 'uppercase', letterSpacing: '0.4px' 
+              }}>
+                {statusBadgeText}
+              </span>
+            </div>
+            <span style={{ fontSize: '11px', color: '#64748B', fontWeight: 500 }}>
+              Evaluated response to your Day 6 Check-In
             </span>
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div className="chat-mode-toggle-group">
-            <button
-              type="button"
-              className={`chat-mode-btn ${chatMode === 'faq' && checkInStep === -1 ? 'active' : ''}`}
-              onClick={() => {
-                setChatMode('faq');
-                setCheckInStep(-1);
-              }}
-              style={{ display: 'flex', alignItems: 'center', gap: '5px' }}
-            >
-              <MessageSquare size={12} />
-              <span>Q&amp;A</span>
-            </button>
-            <button
-              type="button"
-              className={`chat-mode-btn ${chatMode === 'check-in' || checkInStep !== -1 ? 'active' : ''}`}
-              onClick={handleStartCheckIn}
-              style={{ display: 'flex', alignItems: 'center', gap: '5px' }}
-            >
-              <ClipboardList size={12} />
-              <span>Triage Check-In</span>
-            </button>
+        {/* Greeting */}
+        <div style={{ position: 'relative', zIndex: 2 }}>
+          <h3 style={{ fontSize: '19px', fontWeight: 800, color: '#0F172A', margin: 0, letterSpacing: '-0.3px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            Hi Aïda!
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/>
+              <path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2"/>
+              <path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8"/>
+              <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/>
+            </svg>
+          </h3>
+          <p style={{ fontSize: '12px', color: '#64748B', margin: '2px 0 0 0' }}>
+            Here’s how your recovery is progressing based on today's check-in.
+          </p>
+        </div>
+
+        {/* Highlight Card */}
+        <div style={{
+          background: isGreen ? '#F8FCF9' : isYellow ? '#FFFBEB' : '#FFF1F2',
+          border: `1.5px solid ${isGreen ? '#DCFCE7' : isYellow ? '#FDE68A' : '#FECDD3'}`,
+          borderRadius: '18px',
+          padding: '16px 18px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '14px',
+          position: 'relative',
+          zIndex: 2
+        }}>
+          <div style={{
+            width: '52px', height: '52px', borderRadius: '50%',
+            background: isGreen 
+              ? 'radial-gradient(circle, rgba(74, 222, 128, 0.22) 0%, rgba(220, 252, 231, 0.55) 70%, transparent 100%)' 
+              : isYellow 
+                ? 'radial-gradient(circle, rgba(251, 191, 36, 0.25) 0%, rgba(254, 243, 199, 0.55) 70%, transparent 100%)'
+                : 'radial-gradient(circle, rgba(244, 63, 94, 0.25) 0%, rgba(255, 228, 230, 0.55) 70%, transparent 100%)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+          }}>
+            <div style={{
+              width: '38px', height: '38px', borderRadius: '50%',
+              background: '#ffffff',
+              boxShadow: '0 4px 10px rgba(0,0,0,0.06)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center'
+            }}>
+              {isGreen ? (
+                <Check size={22} strokeWidth={3.5} style={{ color: '#16A34A' }} />
+              ) : isYellow ? (
+                <AlertTriangle size={20} style={{ color: '#D97706' }} />
+              ) : (
+                <ShieldAlert size={20} style={{ color: '#E11D48' }} />
+              )}
+            </div>
           </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <h4 style={{ fontSize: '16px', fontWeight: 800, color: isGreen ? '#166534' : isYellow ? '#92400E' : '#9F1239', margin: '0 0 2px 0' }}>
+              {heroTitle}
+            </h4>
+            <div style={{ fontSize: '11.5px', color: '#475569', lineHeight: 1.4 }}>
+              {heroSubtitle}
+            </div>
+          </div>
+        </div>
+
+        {/* Submitted Vitals Grid */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(4, 1fr)',
+          gap: '8px',
+          background: 'rgba(248, 250, 252, 0.8)',
+          border: '1px solid var(--border-glass)',
+          borderRadius: '14px',
+          padding: '10px 12px',
+          position: 'relative',
+          zIndex: 2
+        }}>
+          <div>
+            <span style={{ fontSize: '9.5px', color: 'var(--text-muted)', display: 'block' }}>Pain Level</span>
+            <strong style={{ fontSize: '12px', color: 'var(--primary)' }}>{pain}/10</strong>
+          </div>
+          <div>
+            <span style={{ fontSize: '9.5px', color: 'var(--text-muted)', display: 'block' }}>Oral Temp</span>
+            <strong style={{ fontSize: '12px', color: 'var(--text-main)' }}>{temp}°F</strong>
+          </div>
+          <div>
+            <span style={{ fontSize: '9.5px', color: 'var(--text-muted)', display: 'block' }}>Medications</span>
+            <strong style={{ fontSize: '12px', color: meds ? '#059669' : '#D97706' }}>{meds ? 'Taken ✓' : 'Missed'}</strong>
+          </div>
+          <div>
+            <span style={{ fontSize: '9.5px', color: 'var(--text-muted)', display: 'block' }}>Wound Status</span>
+            <strong style={{ fontSize: '12px', color: incision.includes('Normal') ? '#059669' : '#D97706' }}>
+              {incision.includes('Normal') ? 'Clear ✓' : incision[0]}
+            </strong>
+          </div>
+        </div>
+
+        {/* 3 WINS THIS WEEK */}
+        <div style={{ position: 'relative', zIndex: 2 }}>
+          <span style={{
+            fontSize: '10.5px', fontWeight: 800, color: 'var(--primary)', textTransform: 'uppercase',
+            letterSpacing: '0.6px', display: 'block', marginBottom: '8px'
+          }}>
+            3 WINS THIS WEEK
+          </span>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <div style={{ background: '#ffffff', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '10px 12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#DCFCE7', color: '#16A34A', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Check size={14} strokeWidth={3} />
+              </div>
+              <span style={{ fontSize: '12px', fontWeight: 600, color: '#1E293B' }}>Walking is getting easier</span>
+            </div>
+
+            <div style={{ background: '#ffffff', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '10px 12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#F3E8FF', color: '#9333EA', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <TrendingUp size={14} />
+              </div>
+              <span style={{ fontSize: '12px', fontWeight: 600, color: '#1E293B' }}>Knee movement improved</span>
+            </div>
+
+            <div style={{ background: '#ffffff', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '10px 12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#F5F3FF', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Calendar size={14} />
+              </div>
+              <span style={{ fontSize: '12px', fontWeight: 600, color: '#1E293B' }}>6-day check-in streak</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Shalom Says Speech Bubble */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', position: 'relative', zIndex: 2 }}>
+          <div style={{
+            width: '32px', height: '32px', borderRadius: '50%',
+            background: 'radial-gradient(circle at 35% 30%, #ffffff 0%, #f5f3ff 20%, #c084fc 45%, #7c3aed 75%, #3b0764 100%)',
+            boxShadow: '0 4px 10px rgba(124, 58, 237, 0.25)',
+            position: 'relative', flexShrink: 0, marginTop: '2px'
+          }}>
+            <div style={{ position: 'absolute', top: '3px', left: '6px', width: '6px', height: '4px', borderRadius: '50%', background: 'rgba(255,255,255,0.85)', transform: 'rotate(-35deg)' }} />
+          </div>
+
+          <div style={{
+            background: '#FAF5FF',
+            border: '1px solid rgba(124, 58, 237, 0.15)',
+            borderRadius: '14px',
+            padding: '10px 14px',
+            flex: 1
+          }}>
+            <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--primary-dark)', marginBottom: '2px' }}>
+              Shalom says:
+            </div>
+            <div style={{ fontSize: '12px', color: '#1E293B', fontWeight: 500, lineHeight: 1.4 }}>
+              {shalomSpeech}
+            </div>
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: 'auto', position: 'relative', zIndex: 2 }}>
+          {onNavigateToProgress && (
+            <button 
+              type="button"
+              onClick={onNavigateToProgress}
+              style={{ 
+                width: '100%',
+                background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)',
+                color: '#ffffff', 
+                fontWeight: 800, 
+                padding: '12px 18px', 
+                borderRadius: '14px', 
+                border: 'none',
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                gap: '8px', 
+                fontSize: '13px',
+                cursor: 'pointer',
+                boxShadow: '0 4px 14px var(--primary-glow)'
+              }}
+            >
+              See detailed trajectory in Progress
+              <ChevronRight size={16} />
+            </button>
+          )}
 
           <button
             type="button"
-            className="detail-menu-btn"
-            onClick={handleResetCheckIn}
-            title="Reset conversation"
+            onClick={handleRetakeCheckIn}
+            style={{
+              width: '100%',
+              background: 'transparent',
+              color: 'var(--text-muted)',
+              fontSize: '11.5px',
+              fontWeight: 700,
+              border: 'none',
+              cursor: 'pointer',
+              padding: '4px'
+            }}
           >
-            <RotateCcw size={13} />
+            Update Today's Check-In
           </button>
         </div>
       </div>
+    );
+  };
 
-      {/* Main chat messages scroller */}
-      <div className="chat-scroller-view">
-        {/* Welcome card if starting */}
-        {messages.length <= 1 && (
-          <div className="chat-welcome-box">
-            <div className="hologram-chat-sphere" style={{ width: '56px', height: '56px', margin: '0 auto' }}></div>
-            <strong style={{ fontSize: '15px', color: 'var(--text-main)' }}>
-              Hi Aïda, how can I support your recovery today?
-            </strong>
-            <p style={{ fontSize: '11.5px', color: 'var(--text-muted)', margin: 0, lineHeight: '1.4' }}>
-              Ask anything about post-op knee recovery, pain management, medications, or start your daily clinical check-in.
-            </p>
-
-            <div className="suggest-chips-grid" style={{ width: '100%', marginTop: '4px' }}>
-              {prebakedQueries.map((q, idx) => (
-                <div 
-                  key={idx} 
-                  className="suggest-chip-box"
-                  onClick={() => handleSendMessage(q.text)}
-                >
-                  <span className="suggest-chip-icon"><Sparkles size={11} /></span>
-                  <span>{q.text}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {messages.map((msg) => {
-          const isUser = msg.sender === 'user';
-          let wrapperStatusClass = '';
-          if (msg.isEmergency) wrapperStatusClass = 'emergency';
-          else if (msg.isMedicalWarning) wrapperStatusClass = 'warning';
-
-          return (
-            <div key={msg.id} className={`chat-bubble-row ${isUser ? 'user' : 'shalom'} ${wrapperStatusClass}`}>
-              {!isUser && <div className="chat-bubble-avatar">S</div>}
-              <div className="chat-text-bubble">
-                
-                {msg.isEmergency && (
-                  <div className="chat-alert-heading" style={{ color: 'var(--color-red)', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
-                    <ShieldAlert size={12} /> EMERGENCY DIRECTIVE
-                  </div>
-                )}
-
-                {msg.isMedicalWarning && (
-                  <div className="chat-alert-heading" style={{ color: 'var(--color-yellow)', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
-                    <AlertTriangle size={12} /> CLINICAL GUIDANCE
-                  </div>
-                )}
-
-                <div>
-                  {msg.text.split('\n').map((line, idx) => {
-                    if (line.startsWith('- ') || line.startsWith('* ')) {
-                      return <li key={idx} style={{ marginLeft: '12px', fontSize: '12px' }}>{line.substring(2)}</li>;
-                    }
-                    return <p key={idx} style={{ margin: '2px 0', fontSize: '12px' }}>{line}</p>;
-                  })}
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px', borderTop: '1px solid rgba(0,0,0,0.04)', paddingTop: '4px' }}>
-                  {!isUser && (
-                    <button 
-                      onClick={() => toggleSpeakMessage(msg.id, msg.text)} 
-                      className={`replay-speech-btn ${playingMessageId === msg.id ? 'active-speaking' : ''}`}
-                      title={playingMessageId === msg.id ? "Click to stop voice playback" : "Listen to this response"}
-                      type="button"
-                    >
-                      {playingMessageId === msg.id ? (
-                        <>
-                          <div className="audio-mini-bars">
-                            <span></span><span></span><span></span>
-                          </div>
-                          <VolumeX size={11} />
-                          <span>Stop</span>
-                        </>
-                      ) : (
-                        <>
-                          <Volume2 size={11} />
-                          <span>Listen</span>
-                        </>
-                      )}
-                    </button>
-                  )}
-                  <span style={{ fontSize: '9px', color: 'var(--text-muted)' }}>
-                    {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </span>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-
-        {isTyping && (
-          <div className="chat-bubble-row shalom">
-            <div className="chat-bubble-avatar">S</div>
-            <div className="chat-loading-dots">
-              <span className="loading-dot"></span>
-              <span className="loading-dot"></span>
-              <span className="loading-dot"></span>
-            </div>
-          </div>
-        )}
-        <div ref={messagesEndRef} />
+  // ==========================================
+  // MAIN RENDER: SPLIT VIEW (CHAT SIDE & WORK SIDE)
+  // ==========================================
+  return (
+    <div className="shalom-split-container">
+      {/* Mobile Switcher (Visible on screens < 1024px) */}
+      <div className="shalom-mobile-switcher">
+        <button
+          type="button"
+          className={`shalom-mobile-switch-btn ${mobileSide === 'chat' ? 'active' : ''}`}
+          onClick={() => setMobileSide('chat')}
+        >
+          <MessageSquare size={13} />
+          <span>Chat (Questions)</span>
+        </button>
+        <button
+          type="button"
+          className={`shalom-mobile-switch-btn ${mobileSide === 'work' ? 'active' : ''}`}
+          onClick={() => setMobileSide('work')}
+        >
+          <ClipboardList size={13} />
+          <span>Work (Check-In &amp; Status)</span>
+        </button>
       </div>
 
-      {/* Interactive Questionnaire Panel */}
-      {chatMode === 'check-in' && checkInStep !== -1 && (
-        <div style={{ background: 'var(--bg-glass-card)', border: '1px solid var(--border-glass)', borderRadius: '16px', padding: '10px', marginBottom: '8px', flexShrink: 0 }}>
-          {renderInteractiveControls()}
-        </div>
-      )}
+      {/* Grid: Left Chat Side + Right Work Side */}
+      <div className="shalom-split-grid">
+        {/* ========================================================= */}
+        {/* LEFT SIDE: CHAT PANEL (FOR QUESTIONS & CLINICAL ANSWERS) */}
+        {/* ========================================================= */}
+        <div 
+          className="shalom-chat-panel"
+          style={{ display: mobileSide === 'chat' ? 'flex' : undefined }}
+        >
+          {/* Header */}
+          <div className="shalom-panel-header">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div className="chat-header-avatar" />
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span className="chat-header-title">Ask Shalom</span>
+                  <span style={{ 
+                    fontSize: '9px', fontWeight: 800, padding: '2px 7px', borderRadius: '6px', 
+                    background: 'var(--primary-light)', color: 'var(--primary)', textTransform: 'uppercase' 
+                  }}>
+                    Q&amp;A
+                  </span>
+                </div>
+                <span className="chat-header-status">
+                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10B981', display: 'inline-block', boxShadow: '0 0 6px #10B981' }}></span>
+                  Questions &amp; Post-Op Guidance
+                </span>
+              </div>
+            </div>
 
-      {/* Quick Suggestion Chips (Modern AI Prompts) */}
-      {suggestionChips.length > 0 && (
-        <div className="chat-suggestion-chips-bar">
-          {suggestionChips.map((chip, idx) => (
-            <button 
-              key={idx} 
-              className="chat-suggestion-chip"
-              onClick={() => handleChipClick(chip.action)}
+            <button
+              type="button"
+              className="detail-menu-btn"
+              onClick={handleClearChat}
+              title="Refresh conversation"
             >
-              {chip.label}
+              <RotateCcw size={13} />
             </button>
-          ))}
-        </div>
-      )}
+          </div>
 
-      {/* Modern AI Input Console */}
-      <div className="chat-modern-footer-area">
-        <div className="chat-input-console">
-          <div className="console-row">
-            <button 
-              type="button"
-              className="chat-mic-btn" 
-              onClick={() => speakText("I'm listening. Ask me anything about your recovery.")} 
-              title="Voice input"
-            >
-              <Mic size={15} />
-            </button>
-            <input
-              type="text"
-              placeholder={
-                chatMode === 'check-in' && checkInStep !== -1
-                  ? "Type your check-in answer..."
-                  : "Message Shalom about medications, pain, exercises..."
-              }
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              onKeyDown={handleKeyPress}
-              className="console-field"
-            />
-            <button 
-              type="button"
-              className="console-send-button" 
-              onClick={() => handleSendMessage(inputText)}
-              disabled={!inputText.trim()}
-              title="Send message"
-            >
-              <Send size={13} />
-            </button>
+          {/* Messages Scroller */}
+          <div className="chat-scroller-view">
+            {messages.length <= 1 && (
+              <div className="chat-welcome-box" style={{ padding: '16px' }}>
+                <div className="hologram-chat-sphere" style={{ width: '46px', height: '46px', margin: '0 auto' }}></div>
+                <strong style={{ fontSize: '14px', color: 'var(--text-main)' }}>
+                  Hi Aïda, what questions do you have today?
+                </strong>
+                <p style={{ fontSize: '11.5px', color: 'var(--text-muted)', margin: 0, lineHeight: '1.4' }}>
+                  Ask about recovery timelines, swelling, pain relief, showering, or walking guidelines.
+                </p>
+
+                <div className="suggest-chips-grid" style={{ width: '100%', marginTop: '6px' }}>
+                  {prebakedQueries.map((q, idx) => (
+                    <div 
+                      key={idx} 
+                      className="suggest-chip-box"
+                      onClick={() => handleSendMessage(q)}
+                    >
+                      <span className="suggest-chip-icon"><Sparkles size={11} /></span>
+                      <span>{q}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {messages.map((msg) => {
+              const isUser = msg.sender === 'user';
+              let wrapperStatusClass = '';
+              if (msg.isEmergency) wrapperStatusClass = 'emergency';
+              else if (msg.isMedicalWarning) wrapperStatusClass = 'warning';
+
+              return (
+                <div key={msg.id} className={`chat-bubble-row ${isUser ? 'user' : 'shalom'} ${wrapperStatusClass}`}>
+                  {!isUser && <div className="chat-bubble-avatar">S</div>}
+                  <div className="chat-text-bubble">
+                    {msg.isEmergency && (
+                      <div className="chat-alert-heading" style={{ color: 'var(--color-red)', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
+                        <ShieldAlert size={12} /> EMERGENCY DIRECTIVE
+                      </div>
+                    )}
+
+                    {msg.isMedicalWarning && (
+                      <div className="chat-alert-heading" style={{ color: 'var(--color-yellow)', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
+                        <AlertTriangle size={12} /> CLINICAL GUIDANCE
+                      </div>
+                    )}
+
+                    <div>
+                      {msg.text.split('\n').map((line, idx) => {
+                        if (line.startsWith('- ') || line.startsWith('* ')) {
+                          return <li key={idx} style={{ marginLeft: '12px', fontSize: '12px' }}>{line.substring(2)}</li>;
+                        }
+                        return <p key={idx} style={{ margin: '2px 0', fontSize: '12px' }}>{line}</p>;
+                      })}
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px', borderTop: '1px solid rgba(0,0,0,0.04)', paddingTop: '4px' }}>
+                      {!isUser && (
+                        <button 
+                          onClick={() => toggleSpeakMessage(msg.id, msg.text)} 
+                          className={`replay-speech-btn ${playingMessageId === msg.id ? 'active-speaking' : ''}`}
+                          title={playingMessageId === msg.id ? "Click to stop voice playback" : "Listen to this response"}
+                          type="button"
+                        >
+                          {playingMessageId === msg.id ? (
+                            <>
+                              <VolumeX size={11} />
+                              <span>Stop</span>
+                            </>
+                          ) : (
+                            <>
+                              <Volume2 size={11} />
+                              <span>Listen</span>
+                            </>
+                          )}
+                        </button>
+                      )}
+                      <span style={{ fontSize: '9px', color: 'var(--text-muted)' }}>
+                        {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+
+            {isTyping && (
+              <div className="chat-bubble-row shalom">
+                <div className="chat-bubble-avatar">S</div>
+                <div className="chat-loading-dots">
+                  <span className="loading-dot"></span>
+                  <span className="loading-dot"></span>
+                  <span className="loading-dot"></span>
+                </div>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Chat Input Console */}
+          <div className="chat-modern-footer-area">
+            <div className="chat-input-console">
+              <div className="console-row">
+                <button 
+                  type="button"
+                  className="chat-mic-btn" 
+                  onClick={() => speakText("I'm listening. Ask me any question about your recovery.")} 
+                  title="Voice input"
+                >
+                  <Mic size={15} />
+                </button>
+                <input
+                  type="text"
+                  placeholder="Ask Shalom any question about your recovery..."
+                  value={inputText}
+                  onChange={(e) => setInputText(e.target.value)}
+                  onKeyDown={handleKeyPress}
+                  className="console-field"
+                />
+                <button 
+                  type="button"
+                  className="console-send-button" 
+                  onClick={() => handleSendMessage(inputText)}
+                  disabled={!inputText.trim()}
+                  title="Send message"
+                >
+                  <Send size={13} />
+                </button>
+              </div>
+            </div>
+
+            <div className="chat-footer-disclaimer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
+              <ShieldCheck size={13} style={{ color: 'var(--primary)', flexShrink: 0 }} />
+              <span>Grounded in Dr. Carter's orthopedic protocol &bull; Emergency: 911</span>
+            </div>
           </div>
         </div>
 
-        <div className="chat-footer-disclaimer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
-          <ShieldCheck size={13} style={{ color: 'var(--primary)', flexShrink: 0 }} />
-          <span>Shalom AI is grounded in Dr. Robert Smith's post-op protocol • In case of emergency, call 911 immediately.</span>
+        {/* ========================================================================= */}
+        {/* RIGHT SIDE: WORK PANEL (FOR DAILY CHECK-IN & DYNAMIC RECOVERY STATUS) */}
+        {/* ========================================================================= */}
+        <div 
+          className="shalom-work-panel"
+          style={{ display: mobileSide === 'work' ? 'flex' : undefined }}
+        >
+          {/* Header */}
+          <div className="shalom-panel-header">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{
+                width: '32px', height: '32px', borderRadius: '10px',
+                background: 'var(--primary-light)', color: 'var(--primary)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}>
+                <ClipboardList size={16} />
+              </div>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span className="chat-header-title">Daily Clinical Check-In</span>
+                  <span style={{
+                    fontSize: '9.5px', fontWeight: 800, padding: '2px 7px', borderRadius: '6px',
+                    background: isCheckInSubmitted ? 'rgba(5, 150, 105, 0.1)' : 'var(--primary-light)',
+                    color: isCheckInSubmitted ? '#059669' : 'var(--primary)',
+                    textTransform: 'uppercase'
+                  }}>
+                    {isCheckInSubmitted ? 'Completed' : `Step ${checkInStep + 1} of 6`}
+                  </span>
+                </div>
+                <span style={{ fontSize: '10.5px', color: 'var(--text-muted)' }}>
+                  {isCheckInSubmitted ? 'Recovery status analyzed from your answers' : 'Daily vitals, pain scale & triage'}
+                </span>
+              </div>
+            </div>
+
+            {isCheckInSubmitted && (
+              <button
+                type="button"
+                onClick={handleRetakeCheckIn}
+                style={{
+                  background: 'var(--primary-light)',
+                  color: 'var(--primary)',
+                  border: '1px solid rgba(124, 58, 237, 0.2)',
+                  borderRadius: '10px',
+                  padding: '4px 10px',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}
+              >
+                <RotateCcw size={11} /> Retake
+              </button>
+            )}
+          </div>
+
+          {/* Work Body: Either the 6-step Check-In workflow OR the Dynamic Recovery Status Response */}
+          <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+            {!isCheckInSubmitted ? (
+              renderCheckInWorkflow()
+            ) : (
+              renderRecoveryStatusResponse()
+            )}
+          </div>
         </div>
       </div>
     </div>
