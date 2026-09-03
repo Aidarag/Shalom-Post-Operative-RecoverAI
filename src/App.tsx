@@ -39,7 +39,9 @@ import {
   Trophy,
   Flame,
   Target,
-  Star
+  Star,
+  Award,
+  TrendingDown
 } from 'lucide-react';
 import { ChatInterface } from './components/ChatInterface';
 import { type CheckInAnswers, type CareTeamReport, normalizePatientRecord } from './utils/shalomAgent';
@@ -449,18 +451,18 @@ function App() {
     } else {
       // Default fallback matching clinically structured post-op protocol
       list = [
-        // 💊 Category 1: Medications
+        // Category 1: Medications
         { id: 'med-1', name: 'Oxycodone (Pain Relief)', dose: '5 mg • Take 1 tablet', type: 'medication', timeSlot: 'Oxycodone 5mg', timeHour: '08:00 AM', completed: false, instructions: 'Take with light meal & plenty of water. Do not drive.', tag: 'Pain Relief', streak: 4, bestTime: 'Morning' },
         { id: 'med-2', name: 'Cephalexin (Antibiotic)', dose: '500 mg • Take 1 capsule', type: 'medication', timeSlot: 'Cephalexin 500mg', timeHour: '01:00 PM', completed: false, instructions: 'Take every 8 hours with full glass of water.', tag: 'Infection Shield', streak: 6, bestTime: 'Afternoon' },
         { id: 'med-3', name: 'Aspirin (Blood Thinner)', dose: '81 mg • Take 1 tablet', type: 'medication', timeSlot: 'Aspirin 81mg', timeHour: '06:00 PM', completed: false, instructions: 'Take with evening meal to prevent blood clots (DVT).', tag: 'DVT Prevention', streak: 6, bestTime: 'Evening' },
         { id: 'med-4', name: 'Colace (Stool Softener)', dose: '100 mg • Take 1 capsule', type: 'medication', timeSlot: 'Colace 100mg', timeHour: '09:00 PM', completed: false, instructions: 'Take at bedtime with plenty of fluids.', tag: 'GI Comfort', streak: 4, bestTime: 'Night' },
 
-        // 🏃 Category 2: Physical Therapy & Mobility
+        // Category 2: Physical Therapy & Mobility
         { id: 'pt-1', name: 'Quad Sets & Ankle Pumps', dose: '10 reps • 3 sets (hold 5s)', type: 'activity', timeSlot: 'PT Exercise', timeHour: '10:00 AM', completed: false, instructions: 'Tighten thigh muscles down flat. Flex & point toes to boost circulation.', tag: 'Strength PT', streak: 5, bestTime: 'Morning' },
         { id: 'pt-2', name: 'Assisted Walker Walk', dose: '5–10 min slow walk', type: 'activity', timeSlot: 'Mobility Goal', timeHour: '03:30 PM', completed: false, instructions: 'Keep posture upright with walker. Stop if you experience sharp knee pain.', tag: 'Mobility Goal', streak: 3, bestTime: 'Afternoon' },
         { id: 'pt-3', name: 'Heel Slides & Range of Motion', dose: '8–10 reps (gentle bend)', type: 'activity', timeSlot: 'Flexion PT', timeHour: '07:30 PM', completed: false, instructions: 'Slide heel smoothly toward hip on bed. Pause at comfortable resistance.', tag: 'Flexion PT', streak: 4, bestTime: 'Evening' },
 
-        // 🩹 Category 3: Wound & Recovery Care
+        // Category 3: Wound & Recovery Care
         { id: 'wound-1', name: 'Morning Incision Inspection', dose: 'Visual Check', type: 'wound', timeSlot: 'Incision Check', timeHour: '09:00 AM', completed: false, instructions: 'Ensure incision is dry with clean margins. Report redness spreading >1 inch.', tag: 'Wound Care', streak: 6, bestTime: 'Morning' },
         { id: 'wound-2', name: 'Cold Compression / Ice Therapy', dose: '20 min session', type: 'wound', timeSlot: 'Cold Compress', timeHour: '02:30 PM', completed: false, instructions: 'Wrap ice pack in clean cloth. Apply to knee to soothe swelling.', tag: 'Swelling Relief', streak: 4, bestTime: 'Afternoon' },
         { id: 'wound-3', name: 'Leg Elevation & Rest Session', dose: '30 min session', type: 'wound', timeSlot: 'Elevation', timeHour: '05:30 PM', completed: false, instructions: 'Place 2 pillows under calves/ankles above heart level (not directly under knee).', tag: 'Circulation', streak: 5, bestTime: 'Evening' },
@@ -1668,7 +1670,7 @@ function App() {
         date: 'Aug 22, 2026',
         status: 'completed' as const,
         achievement: 'Discharge criteria met safely with elevation plan.',
-        icon: '✓'
+        icon: <Check size={14} strokeWidth={3} />
       },
       {
         id: 'm2',
@@ -1678,7 +1680,7 @@ function App() {
         date: 'Aug 24, 2026',
         status: 'completed' as const,
         achievement: 'Two 10-minute walks completed; morning swelling controlled.',
-        icon: '✓'
+        icon: <Check size={14} strokeWidth={3} />
       },
       {
         id: 'm3',
@@ -1688,7 +1690,7 @@ function App() {
         date: 'Aug 26, 2026',
         status: 'completed' as const,
         achievement: 'Resting pain dropped to 4/10; incision clean and dry.',
-        icon: '✓'
+        icon: <Check size={14} strokeWidth={3} />
       },
       {
         id: 'm4',
@@ -1698,7 +1700,7 @@ function App() {
         date: 'Aug 28, 2026 (Today)',
         status: 'current' as const,
         achievement: '12/12 PT sessions completed; 6-day check-in streak!',
-        icon: '🌟'
+        icon: <Star size={14} fill="#ffffff" />
       },
       {
         id: 'm5',
@@ -1708,7 +1710,7 @@ function App() {
         date: 'Aug 31, 2026',
         status: 'upcoming' as const,
         achievement: 'Target: Dressing-free showering & scar tissue mobilization.',
-        icon: '🔒'
+        icon: <Clock size={14} />
       },
       {
         id: 'm6',
@@ -1718,7 +1720,7 @@ function App() {
         date: 'Sept 5, 2026',
         status: 'upcoming' as const,
         achievement: 'Target: 90° flexion & graduation to Phase 2 active recovery.',
-        icon: '🏆'
+        icon: <Trophy size={14} />
       }
     ];
 
@@ -1726,7 +1728,7 @@ function App() {
     const weeklyWins = [
       {
         id: 'streak',
-        icon: '🔥',
+        icon: <Flame size={20} style={{ color: '#FF6B6B' }} />,
         title: 'Daily Check-In Streak',
         metric: '6 Days',
         tag: '100% Consistent',
@@ -1735,7 +1737,7 @@ function App() {
       },
       {
         id: 'meds',
-        icon: '💊',
+        icon: <Pill size={20} style={{ color: '#008C8C' }} />,
         title: 'Medication Precision',
         metric: '96% On-Time',
         tag: 'Clinical Standard',
@@ -1744,7 +1746,7 @@ function App() {
       },
       {
         id: 'pt',
-        icon: '🏃‍♀️',
+        icon: <Activity size={20} style={{ color: '#00BFFF' }} />,
         title: 'Mobility & PT Progress',
         metric: '+35% Range',
         tag: 'Ahead of Target',
@@ -1753,7 +1755,7 @@ function App() {
       },
       {
         id: 'pain',
-        icon: '📉',
+        icon: <TrendingDown size={20} style={{ color: '#218C74' }} />,
         title: 'Comfort Improvement',
         metric: '-3 Points Pain',
         tag: 'Healing Faster',
@@ -1782,7 +1784,7 @@ function App() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '20px', zIndex: 5, position: 'relative' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <h2 style={{ fontSize: '24px', fontWeight: 800, margin: 0, letterSpacing: '-0.4px', lineHeight: 1.2 }}>
-              You're making amazing progress, Aïda! 🎉
+              You're making amazing progress, Aïda!
             </h2>
             <p style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.9)', margin: 0, lineHeight: 1.55, maxWidth: '520px' }}>
               Your knee mobility, steady pain reduction, and routine consistency this week put you in the top 10% of ACL recovery adherence. Every small effort is adding up!
@@ -1839,9 +1841,12 @@ function App() {
             <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               Recognizing Your Dedication
             </span>
-            <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-main)', margin: '2px 0 0 0' }}>
-              This Week's Wins 🏅
-            </h3>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
+                This Week's Wins
+              </h3>
+              <Award size={18} style={{ color: 'var(--primary)' }} />
+            </div>
           </div>
           <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600 }}>4 of 4 Milestones Hit</span>
         </div>
@@ -1851,7 +1856,7 @@ function App() {
             <div key={win.id} className="win-card">
               <div className="win-card-header">
                 <div className="win-card-icon-wrap" style={{ background: `${win.color}15`, color: win.color }}>
-                  <span>{win.icon}</span>
+                  {win.icon}
                 </div>
                 <span className="win-card-tag" style={{ background: `${win.color}15`, color: win.color }}>
                   {win.tag}
@@ -1876,9 +1881,12 @@ function App() {
             <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               Your Road to Full Recovery
             </span>
-            <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-main)', margin: '2px 0 0 0' }}>
-              Recovery Milestones 🗺️
-            </h3>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
+                Recovery Milestones
+              </h3>
+              <Target size={18} style={{ color: 'var(--primary)' }} />
+            </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(0,140,140,0.08)', padding: '4px 10px', borderRadius: '12px' }}>
             <Star size={13} style={{ color: 'var(--primary)' }} />
@@ -1924,9 +1932,22 @@ function App() {
                       padding: '2px 8px', 
                       borderRadius: '8px',
                       background: isCompleted ? 'rgba(33, 140, 116, 0.1)' : isCurrent ? 'var(--primary)' : 'rgba(0,0,0,0.04)',
-                      color: isCompleted ? '#218C74' : isCurrent ? '#ffffff' : 'var(--text-muted)'
+                      color: isCompleted ? '#218C74' : isCurrent ? '#ffffff' : 'var(--text-muted)',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px'
                     }}>
-                      {isCompleted ? 'Achieved ✓' : isCurrent ? 'You Are Here 🌟' : 'Upcoming Target'}
+                      {isCompleted ? (
+                        <>
+                          <Check size={11} strokeWidth={3} /> Achieved
+                        </>
+                      ) : isCurrent ? (
+                        <>
+                          <Star size={11} fill="#ffffff" /> You Are Here
+                        </>
+                      ) : (
+                        <span>Upcoming Target</span>
+                      )}
                     </span>
                   </div>
 
@@ -1962,9 +1983,12 @@ function App() {
             <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               Comfort & Recovery Pace
             </span>
-            <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-main)', margin: '2px 0 0 0' }}>
-              Your Healing Trajectory 📈
-            </h3>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
+                Your Healing Trajectory
+              </h3>
+              <TrendingUp size={18} style={{ color: 'var(--primary)' }} />
+            </div>
           </div>
           <span style={{ fontSize: '10.5px', color: 'var(--text-muted)' }}>Tap dots to view guide</span>
         </div>
@@ -2091,9 +2115,12 @@ function App() {
         </div>
 
         <div style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <h4 style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-main)', margin: 0, letterSpacing: '-0.2px' }}>
-            Look how far you've come, Aïda! 🌟
-          </h4>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <h4 style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-main)', margin: 0, letterSpacing: '-0.2px' }}>
+              Look how far you've come, Aïda!
+            </h4>
+            <Sparkles size={16} style={{ color: 'var(--primary)' }} />
+          </div>
 
           <p style={{ fontSize: '12.5px', lineHeight: '1.65', color: 'var(--text-main)', margin: 0, fontWeight: 400 }}>
             Take a moment to pause and reflect on <strong>Day 1</strong>. Getting out of bed was an uphill struggle, standing for two minutes pushed your pain to a 7/10, and taking every medicine on time felt exhausting.
@@ -2157,9 +2184,12 @@ function App() {
             <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               Clinical Records
             </span>
-            <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-main)', margin: '2px 0 0 0' }}>
-              Daily Check-In History 📋
-            </h3>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
+                Daily Check-In History
+              </h3>
+              <ClipboardList size={18} style={{ color: 'var(--primary)' }} />
+            </div>
           </div>
           <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{historyLogs.length} logs recorded</span>
         </div>
@@ -2244,20 +2274,23 @@ function App() {
           <button 
             className={`tab-header-btn ${progressSubTab === 'overview' ? 'active' : ''}`}
             onClick={() => setProgressSubTab('overview')}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
           >
-            🎉 Celebration
+            <Sparkles size={13} /> Celebration
           </button>
           <button 
             className={`tab-header-btn ${progressSubTab === 'trends' ? 'active' : ''}`}
             onClick={() => setProgressSubTab('trends')}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
           >
-            🗺️ Milestones
+            <Target size={13} /> Milestones
           </button>
           <button 
             className={`tab-header-btn ${progressSubTab === 'checkins' ? 'active' : ''}`}
             onClick={() => setProgressSubTab('checkins')}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
           >
-            📋 Records
+            <ClipboardList size={13} /> Records
           </button>
         </div>
 
