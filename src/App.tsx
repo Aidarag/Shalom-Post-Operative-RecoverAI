@@ -2086,13 +2086,8 @@ function App() {
       </div>
     );
 
-    // Recovery Status Card Component
+    // Recovery Status Card Component (Inspired by Shalom AI reference design)
     const renderRecoveryStatusCard = () => {
-      // Determine dynamic status
-      const latestStatus = historyLogs[historyLogs.length - 1]?.status || 'Green';
-      const statusCategory: 'great' | 'effort' | 'attention' = 
-        latestStatus === 'Green' ? 'great' : latestStatus === 'Yellow' ? 'effort' : 'attention';
-
       const handleSeeProgress = () => {
         if (!isDesktop) {
           setProgressSubTab('trends');
@@ -2102,207 +2097,256 @@ function App() {
       };
 
       return (
-        <div className="shalom-letter-card" style={{ padding: '22px 24px' }}>
-          {/* Header Row: Hi [Name] & Dynamic Recovery Status Badge */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '18px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{
-                width: '42px', height: '42px', borderRadius: '50%',
-                background: 'radial-gradient(circle at 35% 35%, #ffffff 0%, #e6f7ff 35%, #00BFFF 70%, #008C8C 100%)',
-                boxShadow: '0 8px 18px rgba(0, 140, 140, 0.25), inset -2px -2px 6px rgba(0, 140, 140, 0.3)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
-              }}>
-                <Sparkles size={20} style={{ color: '#ffffff' }} />
-              </div>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-main)', margin: 0, letterSpacing: '-0.3px' }}>
-                    Hi Aïda
-                  </h3>
-                  <Smile size={18} style={{ color: 'var(--primary)' }} />
-                </div>
-                <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 500 }}>
-                  Day 6 Post-Op &bull; Knee Recovery Status
-                </span>
-              </div>
-            </div>
-
-            {/* Status Indicator Badge */}
-            <div>
-              {statusCategory === 'great' ? (
-                <span style={{ 
-                  display: 'inline-flex', alignItems: 'center', gap: '6px', 
-                  padding: '6px 14px', borderRadius: '12px', 
-                  background: 'rgba(33, 140, 116, 0.12)', color: '#218C74', 
-                  fontWeight: 800, fontSize: '12px' 
-                }}>
-                  <CheckCircle2 size={15} /> You’re doing great
-                </span>
-              ) : statusCategory === 'effort' ? (
-                <span style={{ 
-                  display: 'inline-flex', alignItems: 'center', gap: '6px', 
-                  padding: '6px 14px', borderRadius: '12px', 
-                  background: 'rgba(217, 119, 6, 0.12)', color: '#D97706', 
-                  fontWeight: 800, fontSize: '12px' 
-                }}>
-                  <AlertCircle size={15} /> Needs more effort
-                </span>
-              ) : (
-                <span style={{ 
-                  display: 'inline-flex', alignItems: 'center', gap: '6px', 
-                  padding: '6px 14px', borderRadius: '12px', 
-                  background: 'rgba(220, 38, 38, 0.12)', color: '#DC2626', 
-                  fontWeight: 800, fontSize: '12px' 
-                }}>
-                  <ShieldAlert size={15} /> Needs attention
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* 3 Short Personalized Recovery Wins */}
-          <div style={{ marginBottom: '16px' }}>
-            <span style={{ fontSize: '10.5px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.4px', display: 'block', marginBottom: '8px' }}>
-              Personalized Wins
-            </span>
-            <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(3, 1fr)' : '1fr', gap: '10px' }}>
-              <div style={{
-                background: 'rgba(255, 255, 255, 0.75)',
-                border: '1px solid var(--border-glass)',
-                borderRadius: '14px',
-                padding: '12px 14px',
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: '10px'
-              }}>
-                <div style={{
-                  width: '28px', height: '28px', borderRadius: '8px',
-                  background: 'rgba(33, 140, 116, 0.12)', color: '#218C74',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  flexShrink: 0
-                }}>
-                  <CheckCircle2 size={15} />
-                </div>
-                <div>
-                  <strong style={{ fontSize: '12.5px', color: 'var(--text-main)', display: 'block' }}>
-                    15-Min Walk
-                  </strong>
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                    Completed morning stroll unassisted
-                  </span>
-                </div>
-              </div>
-
-              <div style={{
-                background: 'rgba(255, 255, 255, 0.75)',
-                border: '1px solid var(--border-glass)',
-                borderRadius: '14px',
-                padding: '12px 14px',
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: '10px'
-              }}>
-                <div style={{
-                  width: '28px', height: '28px', borderRadius: '8px',
-                  background: 'rgba(0, 140, 140, 0.12)', color: 'var(--primary)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  flexShrink: 0
-                }}>
-                  <Target size={15} />
-                </div>
-                <div>
-                  <strong style={{ fontSize: '12.5px', color: 'var(--text-main)', display: 'block' }}>
-                    75° Flexion
-                  </strong>
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                    Exceeded 40° initial bend limit
-                  </span>
-                </div>
-              </div>
-
-              <div style={{
-                background: 'rgba(255, 255, 255, 0.75)',
-                border: '1px solid var(--border-glass)',
-                borderRadius: '14px',
-                padding: '12px 14px',
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: '10px'
-              }}>
-                <div style={{
-                  width: '28px', height: '28px', borderRadius: '8px',
-                  background: 'rgba(2, 132, 199, 0.12)', color: '#0284C7',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  flexShrink: 0
-                }}>
-                  <Clock size={15} />
-                </div>
-                <div>
-                  <strong style={{ fontSize: '12.5px', color: 'var(--text-main)', display: 'block' }}>
-                    6-Day Streak
-                  </strong>
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                    100% on-time meds &amp; check-ins
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* One Short Encouraging "Shalom Says" Message */}
-          <div style={{
-            background: 'linear-gradient(135deg, rgba(0, 140, 140, 0.05) 0%, rgba(255, 255, 255, 0.85) 100%)',
-            border: '1px solid rgba(0, 140, 140, 0.15)',
-            borderRadius: '14px',
-            padding: '12px 16px',
-            display: 'flex',
-            alignItems: 'flex-start',
-            gap: '10px',
-            marginBottom: '18px'
+        <div 
+          className="shalom-letter-card" 
+          style={{ 
+            padding: '24px', 
+            background: '#ffffff', 
+            border: '1px solid rgba(226, 232, 240, 0.9)', 
+            borderRadius: '24px', 
+            boxShadow: '0 10px 30px rgba(15, 23, 42, 0.04)', 
+            position: 'relative', 
+            overflow: 'hidden' 
+          }}
+        >
+          {/* Faint Quote Watermark */}
+          <div style={{ 
+            position: 'absolute', top: '16px', right: '22px', 
+            fontSize: '64px', fontFamily: 'Georgia, serif', 
+            color: 'rgba(148, 163, 184, 0.12)', lineHeight: 1, 
+            pointerEvents: 'none', userSelect: 'none' 
           }}>
-            <Sparkles size={16} style={{ color: 'var(--primary)', marginTop: '2px', flexShrink: 0 }} />
-            <div>
-              <span style={{ fontSize: '10.5px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--primary-dark)', letterSpacing: '0.4px', display: 'block', marginBottom: '2px' }}>
-                Shalom says
+            “
+          </div>
+
+          {/* Top Header: 3D Shalom Bubble Orb + Assistant Info */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', position: 'relative', zIndex: 2 }}>
+            <div style={{
+              width: '42px', height: '42px', borderRadius: '50%',
+              background: 'radial-gradient(circle at 35% 30%, #ffffff 0%, #e0f2fe 20%, #7dd3fc 45%, #0284c7 75%, #0369a1 100%)',
+              boxShadow: '0 8px 18px rgba(2, 132, 199, 0.28), inset -2px -2px 6px rgba(3, 105, 161, 0.35)',
+              position: 'relative', flexShrink: 0
+            }}>
+              <div style={{
+                position: 'absolute', top: '5px', left: '8px',
+                width: '9px', height: '6px', borderRadius: '50%',
+                background: 'rgba(255, 255, 255, 0.85)', transform: 'rotate(-35deg)'
+              }} />
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <strong style={{ fontSize: '15px', color: '#0F172A', fontWeight: 800 }}>Shalom (AI Assistant)</strong>
+                <span style={{ 
+                  fontSize: '9.5px', fontWeight: 800, padding: '2px 8px', borderRadius: '6px', 
+                  background: '#EEF2FF', color: '#4F46E5', textTransform: 'uppercase', letterSpacing: '0.4px' 
+                }}>
+                  RECOVERY STATUS
+                </span>
+              </div>
+              <span style={{ fontSize: '11px', color: '#64748B', fontWeight: 500, marginTop: '2px' }}>
+                Personalized Recovery Update &bull; August 28, 2026
               </span>
-              <p style={{ fontSize: '12.5px', color: 'var(--text-main)', margin: 0, lineHeight: 1.45, fontWeight: 500 }}>
-                "Every small step you take today is rebuilding your knee's strength. You’re right on track — keep resting and icing when needed!"
-              </p>
             </div>
           </div>
 
-          {/* Action Row: See My Progress Button */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-            <button 
-              type="button"
-              className="choice-pill-btn" 
-              onClick={handleSeeProgress}
-              style={{ 
-                background: 'var(--primary)', 
-                color: '#ffffff', 
-                fontWeight: 700, 
-                padding: '9px 20px', 
-                borderRadius: '12px', 
-                display: 'inline-flex', 
-                alignItems: 'center', 
-                gap: '8px', 
-                fontSize: '12.5px' 
-              }}
-            >
-              <TrendingUp size={15} />
-              See my progress
-              <ChevronRightIcon size={14} />
-            </button>
-
-            <button 
-              type="button"
-              className="choice-pill-btn" 
-              onClick={() => setActiveTab('chat')}
-              style={{ fontSize: '11.5px', padding: '8px 16px', fontWeight: 600 }}
-            >
-              Ask Shalom AI
-            </button>
+          {/* Greeting: Hi Aida! + Subtext */}
+          <div style={{ marginTop: '20px', marginBottom: '18px', position: 'relative', zIndex: 2 }}>
+            <h3 style={{ fontSize: '22px', fontWeight: 800, color: '#0F172A', margin: 0, letterSpacing: '-0.4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              Hi Aida!
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block' }}>
+                <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/>
+                <path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2"/>
+                <path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8"/>
+                <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/>
+              </svg>
+            </h3>
+            <p style={{ fontSize: '13px', color: '#64748B', margin: '4px 0 0 0' }}>
+              Here’s how your recovery is going.
+            </p>
           </div>
+
+          {/* Highlight Green Card: "You’re doing great!" */}
+          <div style={{
+            background: '#F8FCF9',
+            border: '1px solid #DCFCE7',
+            borderRadius: '18px',
+            padding: '18px 20px',
+            marginBottom: '20px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '18px',
+            position: 'relative',
+            zIndex: 2
+          }}>
+            <div style={{
+              width: '68px', height: '68px', borderRadius: '50%',
+              background: 'radial-gradient(circle, rgba(74, 222, 128, 0.22) 0%, rgba(220, 252, 231, 0.55) 70%, transparent 100%)',
+              border: '2px solid rgba(74, 222, 128, 0.4)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+            }}>
+              <div style={{
+                width: '48px', height: '48px', borderRadius: '50%',
+                background: '#ffffff',
+                boxShadow: '0 4px 12px rgba(22, 163, 74, 0.15)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}>
+                <Check size={26} strokeWidth={3.5} style={{ color: '#16A34A' }} />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <h4 style={{ fontSize: '19px', fontWeight: 800, color: '#166534', margin: '0 0 4px 0', letterSpacing: '-0.2px' }}>
+                You’re doing great!
+              </h4>
+              <div style={{ fontSize: '12.5px', color: '#475569', lineHeight: 1.4 }}>
+                Your recovery is on track.<br />Keep it up!
+              </div>
+              <div style={{ marginTop: '8px' }}>
+                <span style={{
+                  fontSize: '10px', fontWeight: 800, padding: '3px 9px', borderRadius: '6px',
+                  background: '#DCFCE7', color: '#15803D', textTransform: 'uppercase', letterSpacing: '0.4px', display: 'inline-block'
+                }}>
+                  ON TRACK
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* 3 WINS THIS WEEK */}
+          <div style={{ marginBottom: '20px', position: 'relative', zIndex: 2 }}>
+            <span style={{
+              fontSize: '11px', fontWeight: 800, color: '#2563EB', textTransform: 'uppercase',
+              letterSpacing: '0.6px', display: 'block', marginBottom: '10px'
+            }}>
+              3 WINS THIS WEEK
+            </span>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {/* Win 1: Walking */}
+              <div style={{
+                background: '#ffffff', border: '1px solid #E2E8F0', borderRadius: '14px', padding: '12px 14px',
+                display: 'flex', alignItems: 'center', gap: '12px', boxShadow: '0 2px 6px rgba(15, 23, 42, 0.02)'
+              }}>
+                <div style={{
+                  width: '32px', height: '32px', borderRadius: '50%', background: '#DCFCE7', color: '#16A34A',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+                }}>
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="5" r="2"/>
+                    <path d="m10 22 2-7 3 3v4"/>
+                    <path d="m7 13 3-3 4 2 3-3"/>
+                  </svg>
+                </div>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: '#1E293B' }}>
+                  Walking is getting easier
+                </span>
+              </div>
+
+              {/* Win 2: Knee movement */}
+              <div style={{
+                background: '#ffffff', border: '1px solid #E2E8F0', borderRadius: '14px', padding: '12px 14px',
+                display: 'flex', alignItems: 'center', gap: '12px', boxShadow: '0 2px 6px rgba(15, 23, 42, 0.02)'
+              }}>
+                <div style={{
+                  width: '32px', height: '32px', borderRadius: '50%', background: '#F3E8FF', color: '#9333EA',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+                }}>
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#9333EA" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 2v4"/><path d="M12 18v4"/><circle cx="12" cy="12" r="4"/><path d="M8 8c0 2.2 1.8 4 4 4"/><path d="M16 16c0-2.2-1.8-4-4-4"/>
+                  </svg>
+                </div>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: '#1E293B' }}>
+                  Knee movement improved
+                </span>
+              </div>
+
+              {/* Win 3: Streak */}
+              <div style={{
+                background: '#ffffff', border: '1px solid #E2E8F0', borderRadius: '14px', padding: '12px 14px',
+                display: 'flex', alignItems: 'center', gap: '12px', boxShadow: '0 2px 6px rgba(15, 23, 42, 0.02)'
+              }}>
+                <div style={{
+                  width: '32px', height: '32px', borderRadius: '50%', background: '#E0F2FE', color: '#0284C7',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+                }}>
+                  <Calendar size={16} style={{ color: '#0284C7' }} />
+                </div>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: '#1E293B' }}>
+                  6-day check-in streak
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Shalom Says Speech Bubble with Smiling Shalom Bubble Avatar */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '20px', position: 'relative', zIndex: 2 }}>
+            <div style={{
+              width: '38px', height: '38px', borderRadius: '50%',
+              background: 'radial-gradient(circle at 35% 30%, #ffffff 0%, #e0f2fe 20%, #7dd3fc 45%, #0284c7 75%, #0369a1 100%)',
+              boxShadow: '0 6px 14px rgba(2, 132, 199, 0.28), inset -2px -2px 6px rgba(3, 105, 161, 0.35)',
+              position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0, marginTop: '2px'
+            }}>
+              <div style={{
+                position: 'absolute', top: '4px', left: '7px', width: '8px', height: '5px',
+                borderRadius: '50%', background: 'rgba(255, 255, 255, 0.85)', transform: 'rotate(-35deg)'
+              }} />
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" style={{ position: 'relative', zIndex: 2 }}>
+                <path d="M7 11C7.6 9.8 8.9 9.8 9.5 11" stroke="#ffffff" strokeWidth="1.9" strokeLinecap="round" />
+                <path d="M14.5 11C15.1 9.8 16.4 9.8 17 11" stroke="#ffffff" strokeWidth="1.9" strokeLinecap="round" />
+                <path d="M9.8 14.5C10.8 16 13.2 16 14.2 14.5" stroke="#ffffff" strokeWidth="1.9" strokeLinecap="round" />
+              </svg>
+            </div>
+
+            <div style={{
+              background: '#F0F6FF',
+              border: '1px solid rgba(59, 130, 246, 0.15)',
+              borderRadius: '16px',
+              padding: '12px 16px',
+              flex: 1,
+              position: 'relative'
+            }}>
+              <div style={{ fontSize: '11.5px', fontWeight: 700, color: '#1E40AF', marginBottom: '2px' }}>
+                Shalom says:
+              </div>
+              <div style={{ fontSize: '13px', color: '#1E293B', fontWeight: 500, lineHeight: 1.45 }}>
+                Small steps today,<br />
+                stronger you tomorrow.{' '}
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="#2563EB" stroke="#2563EB" style={{ display: 'inline', verticalAlign: 'middle', marginLeft: '3px' }}>
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          {/* Full-width "See my progress" Button */}
+          <button 
+            type="button"
+            onClick={handleSeeProgress}
+            style={{ 
+              width: '100%',
+              background: '#3B52E2',
+              color: '#ffffff', 
+              fontWeight: 700, 
+              padding: '14px 20px', 
+              borderRadius: '14px', 
+              border: 'none',
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              gap: '8px', 
+              fontSize: '14px',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              boxShadow: '0 6px 18px rgba(59, 82, 226, 0.25)',
+              position: 'relative',
+              zIndex: 2
+            }}
+          >
+            See my progress
+            <ChevronRightIcon size={18} />
+          </button>
         </div>
       );
     };
