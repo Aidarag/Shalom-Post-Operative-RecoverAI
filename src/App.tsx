@@ -831,16 +831,9 @@ function App() {
   };
 
   // ==========================================
-  // UNIFIED RECOVERY MASTER CARD (SINGLE CARD WITH ALL 4 PILLARS DISPLAYED)
+  // UNIFIED RECOVERY MASTER CARD (HERO AI STATUS BANNER)
   // ==========================================
   const renderUnifiedRecoveryMasterCard = () => {
-    const ptTasks = todayTasks.filter(t => t.type === 'activity');
-    const ptDone = ptTasks.filter(t => t.completed).length;
-    const ptTotal = ptTasks.length || 3;
-    const nextActivity = ptTasks.find(t => !t.completed) || ptTasks[0];
-
-    const currentStatus = activeReport?.status || (checkInComplete ? 'Green' : 'Pending');
-
     return (
       <div 
         className="recovery-master-card"
@@ -899,141 +892,158 @@ function App() {
             </div>
           </div>
         </div>
+      </div>
+    );
+  };
 
-        {/* 4 Matching Sub-Cards in ONE single cohesive grid */}
-        <div className="recovery-uniform-grid">
-          {/* Subcard 1: Shalom AI */}
-          <div className="recovery-subcard" onClick={() => setActiveTab('trends')} style={{ cursor: 'pointer' }}>
-            <div className="recovery-subcard-top">
-              <div className="recovery-subcard-badge">
-                <div className="recovery-subcard-icon" style={{ background: 'linear-gradient(135deg, #3730A3 0%, #4F46E5 100%)', color: '#FFFFFF' }}>
-                  <Heart size={14} fill="#FFFFFF" color="#FFFFFF" />
-                </div>
-                <span className="recovery-subcard-track">SHALOM AI</span>
-              </div>
-              <span className="recovery-subcard-pill" style={{ background: 'rgba(99, 102, 241, 0.18)', color: '#C7D2FE', border: '1px solid rgba(99, 102, 241, 0.3)' }}>
-                {currentStatus === 'Green' ? 'Stable' : 'Day 6'}
-              </span>
+  // ==========================================
+  // 4 RECOVERY SUB-CARDS (ORGANIZED UNDER & NEXT TO MEDS)
+  // ==========================================
+  const renderSubcardShalomAi = () => {
+    const currentStatus = activeReport?.status || (checkInComplete ? 'Green' : 'Pending');
+    return (
+      <div className="recovery-subcard" onClick={() => setActiveTab('trends')} style={{ cursor: 'pointer' }} title="Click to view recovery trends">
+        <div className="recovery-subcard-top">
+          <div className="recovery-subcard-badge">
+            <div className="recovery-subcard-icon" style={{ background: 'linear-gradient(135deg, #3730A3 0%, #4F46E5 100%)', color: '#FFFFFF' }}>
+              <Heart size={14} fill="#FFFFFF" color="#FFFFFF" />
             </div>
-            <div className="recovery-subcard-body">
-              <h4 className="recovery-subcard-headline">Recovery On Track</h4>
-              <p className="recovery-subcard-subtitle">Pain: 4/10 &bull; Mild Swelling</p>
-            </div>
-            <div>
-              <div className="recovery-subcard-meter-bg">
-                <div className="recovery-subcard-meter-fill" style={{ width: '100%', background: 'linear-gradient(90deg, #4F46E5, #818CF8)' }} />
-              </div>
-              <div className="recovery-subcard-footer">
-                <span>Clinical Protocol</span>
-                <span>Normal &amp; Stable</span>
-              </div>
-            </div>
+            <span className="recovery-subcard-track">SHALOM AI</span>
           </div>
-
-          {/* Subcard 2: Physical Activity */}
-          <div className="recovery-subcard" onClick={() => nextActivity && setSelectedTaskId(nextActivity.id)} style={{ cursor: 'pointer' }}>
-            <div className="recovery-subcard-top">
-              <div className="recovery-subcard-badge">
-                <div className="recovery-subcard-icon" style={{ background: 'linear-gradient(135deg, #7C3AED 0%, #A855F7 100%)', color: '#FFFFFF' }}>
-                  <Activity size={14} color="#FFFFFF" />
-                </div>
-                <span className="recovery-subcard-track">ACTIVITY</span>
-              </div>
-              <span className="recovery-subcard-pill" style={{ background: 'rgba(168, 85, 247, 0.18)', color: '#E9D5FF', border: '1px solid rgba(168, 85, 247, 0.3)' }}>
-                {ptDone} of {ptTotal} Done
-              </span>
-            </div>
-            <div className="recovery-subcard-body">
-              <h4 className="recovery-subcard-headline">Time to Move</h4>
-              <p className="recovery-subcard-subtitle">{nextActivity?.name || 'Walk 5–10 min'} &bull; 3x today</p>
-            </div>
-            <div>
-              <div className="recovery-subcard-meter-bg">
-                <div 
-                  className="recovery-subcard-meter-fill" 
-                  style={{ 
-                    width: `${Math.min(100, Math.round((ptDone / ptTotal) * 100))}%`, 
-                    background: 'linear-gradient(90deg, #7C3AED, #C084FC)' 
-                  }} 
-                />
-              </div>
-              <div className="recovery-subcard-footer">
-                <span>Prescribed Routine</span>
-                <span>Next: {nextActivity?.timeHour || '10:00 AM'}</span>
-              </div>
-            </div>
+          <span className="recovery-subcard-pill" style={{ background: 'rgba(99, 102, 241, 0.1)', color: '#4338CA', border: '1px solid rgba(99, 102, 241, 0.22)' }}>
+            {currentStatus === 'Green' ? 'Stable' : 'Day 6'}
+          </span>
+        </div>
+        <div className="recovery-subcard-body">
+          <h4 className="recovery-subcard-headline">Recovery On Track</h4>
+          <p className="recovery-subcard-subtitle">Pain: 4/10 &bull; Mild Swelling</p>
+        </div>
+        <div>
+          <div className="recovery-subcard-meter-bg">
+            <div className="recovery-subcard-meter-fill" style={{ width: '100%', background: 'linear-gradient(90deg, #4F46E5, #818CF8)' }} />
           </div>
-
-          {/* Subcard 3: Daily Water Log */}
-          <div className="recovery-subcard" onClick={() => {
-            setHydrationGlasses(prev => {
-              const next = Math.min(12, prev + 1);
-              triggerToast(`Logged a glass of water (${next} of 8 glasses)`);
-              return next;
-            });
-          }} style={{ cursor: 'pointer' }} title="Click to log a glass of water">
-            <div className="recovery-subcard-top">
-              <div className="recovery-subcard-badge">
-                <div className="recovery-subcard-icon" style={{ background: 'linear-gradient(135deg, #0284C7 0%, #38BDF8 100%)', color: '#FFFFFF' }}>
-                  <Droplets size={14} color="#FFFFFF" />
-                </div>
-                <span className="recovery-subcard-track">WATER LOG</span>
-              </div>
-              <span className="recovery-subcard-pill" style={{ background: 'rgba(56, 189, 248, 0.18)', color: '#BAE6FD', border: '1px solid rgba(56, 189, 248, 0.3)' }}>
-                {hydrationGlasses} of 8 Glasses
-              </span>
-            </div>
-            <div className="recovery-subcard-body">
-              <h4 className="recovery-subcard-headline">Stay Hydrated</h4>
-              <p className="recovery-subcard-subtitle">{hydrationGlasses < 8 ? `${8 - hydrationGlasses} glasses to daily goal` : 'Daily goal achieved!'}</p>
-            </div>
-            <div>
-              <div className="recovery-subcard-meter-bg">
-                <div 
-                  className="recovery-subcard-meter-fill" 
-                  style={{ 
-                    width: `${Math.min(100, Math.round((hydrationGlasses / 8) * 100))}%`, 
-                    background: 'linear-gradient(90deg, #0284C7, #38BDF8)' 
-                  }} 
-                />
-              </div>
-              <div className="recovery-subcard-footer">
-                <span>Tissue Recovery</span>
-                <span>Next: 2:00 PM</span>
-              </div>
-            </div>
+          <div className="recovery-subcard-footer">
+            <span>Clinical Protocol</span>
+            <span>Normal &amp; Stable</span>
           </div>
+        </div>
+      </div>
+    );
+  };
 
-          {/* Subcard 4: Incision & Wound Safety */}
-          <div className="recovery-subcard" onClick={() => setShowIncisionCheckModal(true)} style={{ cursor: 'pointer' }} title="Click to review incision checklist">
-            <div className="recovery-subcard-top">
-              <div className="recovery-subcard-badge">
-                <div className="recovery-subcard-icon" style={{ background: 'linear-gradient(135deg, #059669 0%, #10B981 100%)', color: '#FFFFFF' }}>
-                  <ShieldCheck size={14} color="#FFFFFF" />
-                </div>
-                <span className="recovery-subcard-track">WOUND SAFETY</span>
-              </div>
-              <span className="recovery-subcard-pill" style={{ 
-                background: woundStatus === 'clear' ? 'rgba(16, 185, 129, 0.18)' : 'rgba(245, 158, 11, 0.18)', 
-                color: woundStatus === 'clear' ? '#A7F3D0' : '#FDE68A', 
-                border: `1px solid ${woundStatus === 'clear' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(245, 158, 11, 0.3)'}` 
-              }}>
-                {woundStatus === 'clear' ? 'All Clear' : 'Needs Review'}
-              </span>
+  const renderSubcardActivity = () => {
+    const ptTasks = todayTasks.filter(t => t.type === 'activity');
+    const ptDone = ptTasks.filter(t => t.completed).length;
+    const ptTotal = ptTasks.length || 3;
+    const nextActivity = ptTasks.find(t => !t.completed) || ptTasks[0];
+    return (
+      <div className="recovery-subcard" onClick={() => nextActivity && setSelectedTaskId(nextActivity.id)} style={{ cursor: 'pointer' }} title="Click to view activity details">
+        <div className="recovery-subcard-top">
+          <div className="recovery-subcard-badge">
+            <div className="recovery-subcard-icon" style={{ background: 'linear-gradient(135deg, #7C3AED 0%, #A855F7 100%)', color: '#FFFFFF' }}>
+              <Activity size={14} color="#FFFFFF" />
             </div>
-            <div className="recovery-subcard-body">
-              <h4 className="recovery-subcard-headline">Incision Secure</h4>
-              <p className="recovery-subcard-subtitle">Dressing Clean &amp; Dry &bull; No Swelling</p>
+            <span className="recovery-subcard-track">ACTIVITY</span>
+          </div>
+          <span className="recovery-subcard-pill" style={{ background: 'rgba(168, 85, 247, 0.1)', color: '#7E22CE', border: '1px solid rgba(168, 85, 247, 0.22)' }}>
+            {ptDone} of {ptTotal} Done
+          </span>
+        </div>
+        <div className="recovery-subcard-body">
+          <h4 className="recovery-subcard-headline">Time to Move</h4>
+          <p className="recovery-subcard-subtitle">{nextActivity?.name || 'Walk 5–10 min'} &bull; 3x today</p>
+        </div>
+        <div>
+          <div className="recovery-subcard-meter-bg">
+            <div 
+              className="recovery-subcard-meter-fill" 
+              style={{ 
+                width: `${Math.min(100, Math.round((ptDone / ptTotal) * 100))}%`, 
+                background: 'linear-gradient(90deg, #7C3AED, #C084FC)' 
+              }} 
+            />
+          </div>
+          <div className="recovery-subcard-footer">
+            <span>Prescribed Routine</span>
+            <span>Next: {nextActivity?.timeHour || '10:00 AM'}</span>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderSubcardWaterLog = () => {
+    return (
+      <div className="recovery-subcard" onClick={() => {
+        setHydrationGlasses(prev => {
+          const next = Math.min(12, prev + 1);
+          triggerToast(`Logged a glass of water (${next} of 8 glasses)`);
+          return next;
+        });
+      }} style={{ cursor: 'pointer' }} title="Click to log a glass of water">
+        <div className="recovery-subcard-top">
+          <div className="recovery-subcard-badge">
+            <div className="recovery-subcard-icon" style={{ background: 'linear-gradient(135deg, #0284C7 0%, #38BDF8 100%)', color: '#FFFFFF' }}>
+              <Droplets size={14} color="#FFFFFF" />
             </div>
-            <div>
-              <div className="recovery-subcard-meter-bg">
-                <div className="recovery-subcard-meter-fill" style={{ width: '100%', background: 'linear-gradient(90deg, #059669, #10B981)' }} />
-              </div>
-              <div className="recovery-subcard-footer">
-                <span>Infection Defense</span>
-                <span>{woundCheckDone ? 'Checked Today ✓' : 'Next: 12:00 PM'}</span>
-              </div>
+            <span className="recovery-subcard-track">WATER LOG</span>
+          </div>
+          <span className="recovery-subcard-pill" style={{ background: 'rgba(2, 132, 199, 0.1)', color: '#0284C7', border: '1px solid rgba(2, 132, 199, 0.22)' }}>
+            {hydrationGlasses} of 8 Glasses
+          </span>
+        </div>
+        <div className="recovery-subcard-body">
+          <h4 className="recovery-subcard-headline">Stay Hydrated</h4>
+          <p className="recovery-subcard-subtitle">{hydrationGlasses < 8 ? `${8 - hydrationGlasses} glasses to daily goal` : 'Daily goal achieved!'}</p>
+        </div>
+        <div>
+          <div className="recovery-subcard-meter-bg">
+            <div 
+              className="recovery-subcard-meter-fill" 
+              style={{ 
+                width: `${Math.min(100, Math.round((hydrationGlasses / 8) * 100))}%`, 
+                background: 'linear-gradient(90deg, #0284C7, #38BDF8)' 
+              }} 
+            />
+          </div>
+          <div className="recovery-subcard-footer">
+            <span>Tissue Recovery</span>
+            <span>Next: 2:00 PM</span>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderSubcardWoundSafety = () => {
+    return (
+      <div className="recovery-subcard" onClick={() => setShowIncisionCheckModal(true)} style={{ cursor: 'pointer' }} title="Click to review incision checklist">
+        <div className="recovery-subcard-top">
+          <div className="recovery-subcard-badge">
+            <div className="recovery-subcard-icon" style={{ background: 'linear-gradient(135deg, #059669 0%, #10B981 100%)', color: '#FFFFFF' }}>
+              <ShieldCheck size={14} color="#FFFFFF" />
             </div>
+            <span className="recovery-subcard-track">WOUND SAFETY</span>
+          </div>
+          <span className="recovery-subcard-pill" style={{ 
+            background: woundStatus === 'clear' ? 'rgba(16, 185, 129, 0.12)' : 'rgba(245, 158, 11, 0.12)', 
+            color: woundStatus === 'clear' ? '#047857' : '#B45309', 
+            border: `1px solid ${woundStatus === 'clear' ? 'rgba(16, 185, 129, 0.25)' : 'rgba(245, 158, 11, 0.25)'}` 
+          }}>
+            {woundStatus === 'clear' ? 'All Clear' : 'Needs Review'}
+          </span>
+        </div>
+        <div className="recovery-subcard-body">
+          <h4 className="recovery-subcard-headline">Incision Secure</h4>
+          <p className="recovery-subcard-subtitle">Dressing Clean &amp; Dry &bull; No Swelling</p>
+        </div>
+        <div>
+          <div className="recovery-subcard-meter-bg">
+            <div className="recovery-subcard-meter-fill" style={{ width: '100%', background: 'linear-gradient(90deg, #059669, #10B981)' }} />
+          </div>
+          <div className="recovery-subcard-footer">
+            <span>Infection Defense</span>
+            <span>{woundCheckDone ? 'Checked Today ✓' : 'Next: 12:00 PM'}</span>
           </div>
         </div>
       </div>
@@ -1080,104 +1090,132 @@ function App() {
           <button className="section-link" onClick={() => setActiveTab('plan')}>View full schedule &rarr;</button>
         </div>
 
-        {/* Unified Single Master Card (All 4 Pillars Displayed) */}
+        {/* Hero AI Status Banner (Master Card) */}
         {renderUnifiedRecoveryMasterCard()}
 
-        {/* Prescribed Medications & Follow-Up Strip */}
+        {/* Organized Prescribed Medications & Recovery Tasks Grid */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: isDesktop ? '1.2fr 0.8fr' : '1fr',
+          gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr',
           gap: '16px',
           marginTop: '8px'
         }}>
-          {/* Medications Card */}
-          <div className="glass-card" style={{
-            padding: '16px 20px',
-            borderRadius: '20px',
-            border: '1.5px solid var(--border-glass)',
-            background: 'var(--bg-glass-card)'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Pill size={15} />
+          {/* Left Column: Prescribed Medications + Cards Directly Under It */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            {/* Medications Card */}
+            <div className="glass-card" style={{
+              padding: '16px 20px',
+              borderRadius: '20px',
+              border: '1.5px solid var(--border-glass)',
+              background: 'var(--bg-glass-card)',
+              minHeight: '206px'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Pill size={15} />
+                  </div>
+                  <strong style={{ fontSize: '13px', color: 'var(--text-main)' }}>Prescribed Medications</strong>
                 </div>
-                <strong style={{ fontSize: '13px', color: 'var(--text-main)' }}>Prescribed Medications</strong>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--primary)', background: 'var(--primary-light)', padding: '2px 8px', borderRadius: '10px' }}>
+                  {completedMeds} of {totalMeds} taken
+                </span>
               </div>
-              <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--primary)', background: 'var(--primary-light)', padding: '2px 8px', borderRadius: '10px' }}>
-                {completedMeds} of {totalMeds} taken
-              </span>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {medicationTasks.slice(0, 3).map(task => (
+                  <div 
+                    key={task.id}
+                    className={`task-card-row ${task.completed ? 'completed' : ''}`}
+                    onClick={() => setSelectedTaskId(task.id)}
+                    style={{ padding: '8px 12px', cursor: 'pointer' }}
+                  >
+                    <div className="task-card-left">
+                      <span className="task-card-title" style={{ fontSize: '12px' }}>{task.name}</span>
+                      <span className="task-card-subtitle" style={{ fontSize: '10.5px' }}>{task.dose}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span className="task-card-time" style={{ fontSize: '10.5px' }}>{task.timeHour}</span>
+                      <span 
+                        className={`task-checkbox-indicator ${task.completed ? 'checked' : ''}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleTaskCompleted(task.id);
+                        }}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        {task.completed ? '✓' : ''}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {medicationTasks.slice(0, 3).map(task => (
-                <div 
-                  key={task.id}
-                  className={`task-card-row ${task.completed ? 'completed' : ''}`}
-                  onClick={() => setSelectedTaskId(task.id)}
-                  style={{ padding: '8px 12px', cursor: 'pointer' }}
-                >
-                  <div className="task-card-left">
-                    <span className="task-card-title" style={{ fontSize: '12px' }}>{task.name}</span>
-                    <span className="task-card-subtitle" style={{ fontSize: '10.5px' }}>{task.dose}</span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span className="task-card-time" style={{ fontSize: '10.5px' }}>{task.timeHour}</span>
-                    <span 
-                      className={`task-checkbox-indicator ${task.completed ? 'checked' : ''}`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleTaskCompleted(task.id);
-                      }}
-                      style={{ cursor: 'pointer' }}
-                    >
-                      {task.completed ? '✓' : ''}
-                    </span>
-                  </div>
-                </div>
-              ))}
+            {/* Cards directly UNDER Prescribed Medications */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: '12px'
+            }}>
+              {renderSubcardActivity()}
+              {renderSubcardWaterLog()}
             </div>
           </div>
 
-          {/* Follow-Up Card */}
-          <div className="glass-card" style={{
-            padding: '16px 20px',
-            borderRadius: '20px',
-            border: '1.5px solid var(--border-glass)',
-            background: 'var(--bg-glass-card)',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between'
-          }}>
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'rgba(79, 70, 229, 0.1)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Calendar size={15} />
+          {/* Right Column: Follow-Up Appointment + Cards Next to Medications Column */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            {/* Follow-Up Card */}
+            <div className="glass-card" style={{
+              padding: '16px 20px',
+              borderRadius: '20px',
+              border: '1.5px solid var(--border-glass)',
+              background: 'var(--bg-glass-card)',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              minHeight: '206px'
+            }}>
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'rgba(79, 70, 229, 0.1)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Calendar size={15} />
+                    </div>
+                    <strong style={{ fontSize: '13px', color: 'var(--text-main)' }}>Follow-Up Appointment</strong>
                   </div>
-                  <strong style={{ fontSize: '13px', color: 'var(--text-main)' }}>Follow-Up Appointment</strong>
+                  <span style={{ fontSize: '10.5px', fontWeight: 700, color: 'var(--primary)', background: 'var(--primary-light)', padding: '2px 8px', borderRadius: '8px' }}>
+                    In 6 Days
+                  </span>
                 </div>
-                <span style={{ fontSize: '10.5px', fontWeight: 700, color: 'var(--primary)', background: 'var(--primary-light)', padding: '2px 8px', borderRadius: '8px' }}>
-                  In 6 Days
-                </span>
+
+                <div style={{ background: 'var(--primary-light)', padding: '10px 12px', borderRadius: '12px', marginBottom: '8px' }}>
+                  <strong style={{ fontSize: '12px', color: 'var(--text-main)', display: 'block' }}>Dr. James Carter, MD</strong>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                    Sept 5, 2026 at 10:30 AM &bull; Suite 400
+                  </span>
+                </div>
               </div>
 
-              <div style={{ background: 'var(--primary-light)', padding: '10px 12px', borderRadius: '12px', marginBottom: '8px' }}>
-                <strong style={{ fontSize: '12px', color: 'var(--text-main)', display: 'block' }}>Dr. James Carter, MD</strong>
-                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                  Sept 5, 2026 at 10:30 AM &bull; Suite 400
-                </span>
-              </div>
+              <button
+                type="button"
+                className="meds-action-btn"
+                style={{ fontSize: '11.5px', padding: '9px 12px', width: '100%', borderRadius: '12px' }}
+                onClick={() => setShowAppointmentSummaryModal(true)}
+              >
+                Pre-Visit Instructions &rarr;
+              </button>
             </div>
 
-            <button
-              type="button"
-              className="meds-action-btn"
-              style={{ fontSize: '11.5px', padding: '9px 12px', width: '100%', borderRadius: '12px' }}
-              onClick={() => setShowAppointmentSummaryModal(true)}
-            >
-              Pre-Visit Instructions &rarr;
-            </button>
+            {/* Cards NEXT TO the left subcards and UNDER Follow-Up */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: '12px'
+            }}>
+              {renderSubcardShalomAi()}
+              {renderSubcardWoundSafety()}
+            </div>
           </div>
         </div>
       </div>
