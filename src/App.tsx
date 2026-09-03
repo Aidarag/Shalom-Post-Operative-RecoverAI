@@ -1054,10 +1054,6 @@ function App() {
   // RENDER TAB 1: Today (Home Tab - Screen 1)
   // ==========================================
   const renderHomeTab = () => {
-    const medicationTasks = todayTasks.filter(t => t.type === 'medication');
-    const totalMeds = medicationTasks.length;
-    const completedMeds = medicationTasks.filter(t => t.completed).length;
-
     return (
       <div className="home-tab-container" style={{ animation: 'fadeIn 0.3s ease-out' }}>
         {/* Top Greeting Row with Avatar */}
@@ -1093,130 +1089,63 @@ function App() {
         {/* Hero AI Status Banner (Master Card) */}
         {renderUnifiedRecoveryMasterCard()}
 
-        {/* Organized Prescribed Medications & Recovery Tasks Grid */}
+        {/* The 4 Recovery Cards - Moved Up and Reorganized for Optimal UX */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr',
-          gap: '16px',
-          marginTop: '8px'
+          gridTemplateColumns: isDesktop ? 'repeat(4, 1fr)' : 'repeat(2, 1fr)',
+          gap: '14px',
+          marginTop: '14px',
+          marginBottom: '16px'
         }}>
-          {/* Left Column: Prescribed Medications + Cards Directly Under It */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            {/* Medications Card */}
-            <div className="glass-card" style={{
-              padding: '16px 20px',
-              borderRadius: '20px',
-              border: '1.5px solid var(--border-glass)',
-              background: 'var(--bg-glass-card)',
-              minHeight: '206px'
+          {renderSubcardShalomAi()}
+          {renderSubcardActivity()}
+          {renderSubcardWaterLog()}
+          {renderSubcardWoundSafety()}
+        </div>
+
+        {/* Follow-Up Appointment - The Last Card */}
+        <div className="glass-card" style={{
+          padding: '16px 22px',
+          borderRadius: '20px',
+          border: '1.5px solid var(--border-glass)',
+          background: 'var(--bg-glass-card)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '16px',
+          boxShadow: '0 4px 18px rgba(0, 31, 63, 0.04)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
+            <div style={{
+              width: '40px', height: '40px', borderRadius: '12px',
+              background: 'rgba(79, 70, 229, 0.1)', color: 'var(--primary)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0
             }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Pill size={15} />
-                  </div>
-                  <strong style={{ fontSize: '13px', color: 'var(--text-main)' }}>Prescribed Medications</strong>
-                </div>
-                <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--primary)', background: 'var(--primary-light)', padding: '2px 8px', borderRadius: '10px' }}>
-                  {completedMeds} of {totalMeds} taken
+              <Calendar size={18} />
+            </div>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '3px' }}>
+                <strong style={{ fontSize: '13.5px', color: 'var(--text-main)', fontWeight: 800 }}>Follow-Up Appointment</strong>
+                <span style={{ fontSize: '10.5px', fontWeight: 700, color: 'var(--primary)', background: 'var(--primary-light)', padding: '2px 8px', borderRadius: '8px' }}>
+                  In 6 Days
                 </span>
               </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {medicationTasks.slice(0, 3).map(task => (
-                  <div 
-                    key={task.id}
-                    className={`task-card-row ${task.completed ? 'completed' : ''}`}
-                    onClick={() => setSelectedTaskId(task.id)}
-                    style={{ padding: '8px 12px', cursor: 'pointer' }}
-                  >
-                    <div className="task-card-left">
-                      <span className="task-card-title" style={{ fontSize: '12px' }}>{task.name}</span>
-                      <span className="task-card-subtitle" style={{ fontSize: '10.5px' }}>{task.dose}</span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span className="task-card-time" style={{ fontSize: '10.5px' }}>{task.timeHour}</span>
-                      <span 
-                        className={`task-checkbox-indicator ${task.completed ? 'checked' : ''}`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleTaskCompleted(task.id);
-                        }}
-                        style={{ cursor: 'pointer' }}
-                      >
-                        {task.completed ? '✓' : ''}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Cards directly UNDER Prescribed Medications */}
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: '12px'
-            }}>
-              {renderSubcardActivity()}
-              {renderSubcardWaterLog()}
+              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                <strong style={{ color: 'var(--text-main)', fontWeight: 700 }}>Dr. James Carter, MD</strong> &bull; Sept 5, 2026 at 10:30 AM &bull; Suite 400 &bull; Orthopedic Rehabilitation Clinic
+              </span>
             </div>
           </div>
 
-          {/* Right Column: Follow-Up Appointment + Cards Next to Medications Column */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            {/* Follow-Up Card */}
-            <div className="glass-card" style={{
-              padding: '16px 20px',
-              borderRadius: '20px',
-              border: '1.5px solid var(--border-glass)',
-              background: 'var(--bg-glass-card)',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              minHeight: '206px'
-            }}>
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'rgba(79, 70, 229, 0.1)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Calendar size={15} />
-                    </div>
-                    <strong style={{ fontSize: '13px', color: 'var(--text-main)' }}>Follow-Up Appointment</strong>
-                  </div>
-                  <span style={{ fontSize: '10.5px', fontWeight: 700, color: 'var(--primary)', background: 'var(--primary-light)', padding: '2px 8px', borderRadius: '8px' }}>
-                    In 6 Days
-                  </span>
-                </div>
-
-                <div style={{ background: 'var(--primary-light)', padding: '10px 12px', borderRadius: '12px', marginBottom: '8px' }}>
-                  <strong style={{ fontSize: '12px', color: 'var(--text-main)', display: 'block' }}>Dr. James Carter, MD</strong>
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                    Sept 5, 2026 at 10:30 AM &bull; Suite 400
-                  </span>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                className="meds-action-btn"
-                style={{ fontSize: '11.5px', padding: '9px 12px', width: '100%', borderRadius: '12px' }}
-                onClick={() => setShowAppointmentSummaryModal(true)}
-              >
-                Pre-Visit Instructions &rarr;
-              </button>
-            </div>
-
-            {/* Cards NEXT TO the left subcards and UNDER Follow-Up */}
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: '12px'
-            }}>
-              {renderSubcardShalomAi()}
-              {renderSubcardWoundSafety()}
-            </div>
-          </div>
+          <button
+            type="button"
+            className="meds-action-btn"
+            style={{ fontSize: '12px', padding: '10px 18px', borderRadius: '12px', whiteSpace: 'nowrap', cursor: 'pointer', fontWeight: 700 }}
+            onClick={() => setShowAppointmentSummaryModal(true)}
+          >
+            Pre-Visit Instructions &rarr;
+          </button>
         </div>
       </div>
     );
