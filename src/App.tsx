@@ -35,7 +35,11 @@ import {
   Feather,
   Sun,
   PhoneCall,
-  X
+  X,
+  Trophy,
+  Flame,
+  Target,
+  Star
 } from 'lucide-react';
 import { ChatInterface } from './components/ChatInterface';
 import { type CheckInAnswers, type CareTeamReport, normalizePatientRecord } from './utils/shalomAgent';
@@ -1654,398 +1658,627 @@ function App() {
   const renderTrendsTab = () => {
     const progress = calculateRecoveryProgress();
 
-    if (isDesktop) {
-      return (
-        <div className="progress-desktop-layout" style={{ display: 'grid', gridTemplateColumns: '1fr 1.1fr', gap: '32px', animation: 'fadeIn 0.3s ease-out' }}>
-          {/* Left Column: Progress, Stats and Guide */}
-          <div className="progress-left-col" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            {/* Recovery Progress Card */}
-            <div className="recovery-card" style={{ background: 'var(--bg-glass-card)', border: '1px solid var(--border-glass)', margin: 0 }}>
-              <div className="recovery-card-info">
-                <span className="recovery-card-day" style={{ fontSize: '14px' }}>Recovery Progress</span>
-                <span className="recovery-card-desc">You're on the right track! Keep following your plan.</span>
-              </div>
-              <div className="recovery-card-ring">
-                <svg className="recovery-ring-svg" viewBox="0 0 100 100">
-                  <circle className="recovery-ring-bg" cx="50" cy="50" r="42" />
-                  <circle 
-                    className="recovery-ring-val" 
-                    cx="50" cy="50" r="42" 
-                    strokeDasharray="263.89"
-                    strokeDashoffset={263.89 - (263.89 * progress) / 100}
-                  />
-                </svg>
-                <div className="recovery-ring-text">
-                  <span className="recovery-ring-percent">{progress}%</span>
-                  <span className="recovery-ring-lbl">Recovered</span>
-                </div>
-              </div>
-            </div>
+    // Recovery Milestones Data
+    const recoveryMilestones = [
+      {
+        id: 'm1',
+        day: 0,
+        title: 'Surgery & Safe Return Home',
+        subtitle: 'Procedure successful • Rest & cold therapy',
+        date: 'Aug 22, 2026',
+        status: 'completed' as const,
+        achievement: 'Discharge criteria met safely with elevation plan.',
+        icon: '✓'
+      },
+      {
+        id: 'm2',
+        day: 2,
+        title: 'First Assisted Steps',
+        subtitle: 'Weight-bearing initiated with crutches',
+        date: 'Aug 24, 2026',
+        status: 'completed' as const,
+        achievement: 'Two 10-minute walks completed; morning swelling controlled.',
+        icon: '✓'
+      },
+      {
+        id: 'm3',
+        day: 4,
+        title: 'Pain & Swelling Stabilization',
+        subtitle: 'Transitioned to mild oral analgesic',
+        date: 'Aug 26, 2026',
+        status: 'completed' as const,
+        achievement: 'Resting pain dropped to 4/10; incision clean and dry.',
+        icon: '✓'
+      },
+      {
+        id: 'm4',
+        day: 6,
+        title: 'Active Rehabilitation Phase',
+        subtitle: '75° Knee Flexion • Unassisted indoor walking',
+        date: 'Aug 28, 2026 (Today)',
+        status: 'current' as const,
+        achievement: '12/12 PT sessions completed; 6-day check-in streak!',
+        icon: '🌟'
+      },
+      {
+        id: 'm5',
+        day: 9,
+        title: 'Incision & Suture Healing Review',
+        subtitle: 'Wound closure check with Shalom AI',
+        date: 'Aug 31, 2026',
+        status: 'upcoming' as const,
+        achievement: 'Target: Dressing-free showering & scar tissue mobilization.',
+        icon: '🔒'
+      },
+      {
+        id: 'm6',
+        day: 14,
+        title: 'Surgical Clinic Evaluation',
+        subtitle: 'In-person follow-up with Dr. Smith',
+        date: 'Sept 5, 2026',
+        status: 'upcoming' as const,
+        achievement: 'Target: 90° flexion & graduation to Phase 2 active recovery.',
+        icon: '🏆'
+      }
+    ];
 
-            {/* 3 Stats Columns Grid */}
-            <div className="stats-grid-3col">
-              <div className="stat-box-card">
-                <span className="stat-box-lbl">Check-Ins</span>
-                <span className="stat-box-num">6/7</span>
-                <span className="stat-box-tag">Great job!</span>
-              </div>
-              <div className="stat-box-card">
-                <span className="stat-box-lbl">Plan Adherence</span>
-                <span className="stat-box-num">86%</span>
-                <span className="stat-box-tag">Excellent</span>
-              </div>
-              <div className="stat-box-card">
-                <span className="stat-box-lbl">Tasks Completed</span>
-                <span className="stat-box-num">18/22</span>
-                <span className="stat-box-tag">Keep it up!</span>
-              </div>
-            </div>
+    // This Week's Wins Data
+    const weeklyWins = [
+      {
+        id: 'streak',
+        icon: '🔥',
+        title: 'Daily Check-In Streak',
+        metric: '6 Days',
+        tag: '100% Consistent',
+        desc: 'You logged every morning on time, keeping your surgical team fully updated.',
+        color: '#FF6B6B'
+      },
+      {
+        id: 'meds',
+        icon: '💊',
+        title: 'Medication Precision',
+        metric: '96% On-Time',
+        tag: 'Clinical Standard',
+        desc: 'Prescribed anti-inflammatories and supplements taken on schedule with meals.',
+        color: '#008C8C'
+      },
+      {
+        id: 'pt',
+        icon: '🏃‍♀️',
+        title: 'Mobility & PT Progress',
+        metric: '+35% Range',
+        tag: 'Ahead of Target',
+        desc: 'All 12 prescribed quad extensions and heel slides completed this week.',
+        color: '#00BFFF'
+      },
+      {
+        id: 'pain',
+        icon: '📉',
+        title: 'Comfort Improvement',
+        metric: '-3 Points Pain',
+        tag: 'Healing Faster',
+        desc: 'Dropped from 7/10 on Day 1 to a calm 4/10 today, beating the clinical curve.',
+        color: '#218C74'
+      }
+    ];
 
-            {/* Senior Care Guide Card */}
-            {historyLogs[selectedLogIndex] && (() => {
-              const log = historyLogs[selectedLogIndex];
-              const summary = getSeniorFriendlySummary(log);
-              return (
-                <div className="glass-card" style={{ 
-                  padding: '20px', 
-                  borderRadius: '20px', 
-                  border: '1px solid var(--border-glass)',
-                  background: 'linear-gradient(135deg, rgba(0, 140, 140, 0.04) 0%, rgba(255, 255, 255, 0.02) 100%)',
-                  boxShadow: '0 4px 14px rgba(0,31,63,0.01)',
-                  margin: 0
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                    <span style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', color: 'var(--primary-dark)' }}>
-                      Senior Care Guide &bull; {log.date}
-                    </span>
-                    <span style={{ fontSize: '10.5px', color: 'var(--text-muted)' }}>
-                      Logged at {log.time}
-                    </span>
-                  </div>
-                  
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ 
-                        width: '8px', height: '8px', borderRadius: '50%', 
-                        background: log.status === 'Green' ? 'var(--color-green)' : log.status === 'Yellow' ? 'var(--color-yellow)' : 'var(--color-red)'
-                      }}></span>
-                      <strong style={{ fontSize: '15px', color: 'var(--text-main)' }}>
-                        Status: {summary.painText} ({log.painLevel}/10)
-                      </strong>
-                    </div>
-                    
-                    <p style={{ fontSize: '13px', lineHeight: '1.6', color: 'var(--text-muted)', fontWeight: 500, margin: 0 }}>
-                      {summary.painAdvice}
-                    </p>
-                    
-                    {/* Vitals Summary Grid for Seniors */}
-                    <div style={{ 
-                      display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', 
-                      gap: '8px', marginTop: '8px', 
-                      background: 'rgba(255,255,255,0.4)', 
-                      padding: '12px', borderRadius: '14px',
-                      border: '1px solid rgba(0, 140, 140, 0.05)'
-                    }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                        <span style={{ fontSize: '9px', color: 'var(--text-muted)' }}>Swelling</span>
-                        <strong style={{ fontSize: '12.5px', color: 'var(--text-main)' }}>{log.swellingLevel}/10</strong>
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                        <span style={{ fontSize: '9px', color: 'var(--text-muted)' }}>Vitals Temp</span>
-                        <strong style={{ fontSize: '12.5px', color: 'var(--text-main)' }}>{log.temperature.toFixed(1)}°F</strong>
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                        <span style={{ fontSize: '9px', color: 'var(--text-muted)' }}>Sleep</span>
-                        <strong style={{ fontSize: '12.5px', color: 'var(--text-main)' }}>{log.sleepLevel}/10</strong>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
+    // Celebration Hero Banner Component
+    const renderCelebrationHero = () => (
+      <div className="celebration-hero-card">
+        <div className="celebration-hero-orb celebration-hero-orb-1" />
+        <div className="celebration-hero-orb celebration-hero-orb-2" />
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px', zIndex: 5, position: 'relative' }}>
+          <div className="celebration-badge gold">
+            <Trophy size={14} style={{ color: '#FFD166' }} />
+            <span>Day 6 Milestone Achieved</span>
+          </div>
+          <div className="celebration-badge emerald">
+            <Sparkles size={14} style={{ color: '#00FFC2' }} />
+            <span>Ahead of Recovery Curve</span>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '20px', zIndex: 5, position: 'relative' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <h2 style={{ fontSize: '24px', fontWeight: 800, margin: 0, letterSpacing: '-0.4px', lineHeight: 1.2 }}>
+              You're making amazing progress, Aïda! 🎉
+            </h2>
+            <p style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.9)', margin: 0, lineHeight: 1.55, maxWidth: '520px' }}>
+              Your knee mobility, steady pain reduction, and routine consistency this week put you in the top 10% of ACL recovery adherence. Every small effort is adding up!
+            </p>
+
+            <div style={{ display: 'flex', gap: '14px', marginTop: '6px', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '11.5px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '5px', color: 'rgba(255,255,255,0.95)' }}>
+                <Flame size={14} style={{ color: '#FFAA00' }} /> 6-Day Streak
+              </span>
+              <span style={{ fontSize: '11.5px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '5px', color: 'rgba(255,255,255,0.95)' }}>
+                <CheckCircle2 size={14} style={{ color: '#00FFC2' }} /> 18/22 Tasks Done
+              </span>
+              <span style={{ fontSize: '11.5px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '5px', color: 'rgba(255,255,255,0.95)' }}>
+                <Target size={14} style={{ color: '#70D6FF' }} /> Next: 90° Flexion
+              </span>
+            </div>
           </div>
 
-          {/* Right Column: Trend Chart & Check-In History List */}
-          <div className="progress-right-col" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            {/* Pain Trend SVG chart */}
-            <div className="glass-card" style={{ background: 'var(--bg-glass-card)', border: '1px solid var(--border-glass)', padding: '20px', borderRadius: '24px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                <span className="section-title" style={{ fontSize: '16px' }}>Pain Trend</span>
-                <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Tap dots to view guide</span>
-              </div>
-              {renderTrendsChart()}
+          <div className="celebration-ring-wrapper">
+            <svg className="celebration-ring-svg" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255, 255, 255, 0.15)" strokeWidth="8" />
+              <circle 
+                cx="50" cy="50" r="40" 
+                fill="none" 
+                stroke="url(#celebrationRingGrad)" 
+                strokeWidth="8" 
+                strokeLinecap="round"
+                strokeDasharray="251.32"
+                strokeDashoffset={251.32 - (251.32 * progress) / 100}
+                style={{ transition: 'stroke-dashoffset 1s ease-in-out' }}
+              />
+              <defs>
+                <linearGradient id="celebrationRingGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#00FFC2" />
+                  <stop offset="50%" stopColor="#00BFFF" />
+                  <stop offset="100%" stopColor="#FFD166" />
+                </linearGradient>
+              </defs>
+            </svg>
+            <div className="celebration-ring-text">
+              <span style={{ fontSize: '20px', fontWeight: 800, color: '#ffffff', lineHeight: 1 }}>{progress}%</span>
+              <span style={{ fontSize: '9px', fontWeight: 700, color: 'rgba(255,255,255,0.85)', textTransform: 'uppercase', marginTop: '2px' }}>Healed</span>
             </div>
+          </div>
+        </div>
+      </div>
+    );
 
-            {/* Check-In History List */}
-            <div className="glass-card" style={{ background: 'var(--bg-glass-card)', border: '1px solid var(--border-glass)', padding: '20px', borderRadius: '24px' }}>
-              <span className="section-title" style={{ display: 'block', marginBottom: '12px', fontSize: '16px' }}>Check-In History</span>
-              <div className="history-list" style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '280px', overflowY: 'auto', paddingRight: '4px' }}>
-                {historyLogs.slice().reverse().map((log, idx) => {
-                  const originalIdx = historyLogs.length - 1 - idx;
-                  const isSelected = originalIdx === selectedLogIndex;
-                  return (
-                    <div 
-                      key={idx} 
-                      className={`history-item-row ${isSelected ? 'selected' : ''}`} 
-                      onClick={() => setSelectedLogIndex(originalIdx)}
-                      style={{
-                        borderColor: isSelected ? 'var(--primary)' : 'var(--border-glass)',
-                        background: isSelected ? 'var(--primary-light)' : 'var(--bg-glass-card)',
-                        cursor: 'pointer',
-                        padding: '12px 16px',
-                        borderRadius: '16px',
-                        borderWidth: '1px',
-                        borderStyle: 'solid',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        transition: 'all 0.2s ease'
-                      }}
-                    >
-                      <div className="history-item-left">
-                        <span className="history-item-date" style={{ fontWeight: 700, fontSize: '12px' }}>
-                          {log.date} &bull; <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 500 }}>{log.time}</span>
-                        </span>
-                      </div>
-                      <div className="history-item-right" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span className="history-item-status" style={{ fontWeight: 700, fontSize: '12px' }}>Pain {log.painLevel}</span>
-                        <Smile size={16} style={{ 
-                          color: log.status === 'Green' ? 'var(--color-green)' : log.status === 'Yellow' ? 'var(--color-yellow)' : 'var(--color-red)'
-                        }} />
-                      </div>
-                    </div>
-                  );
-                })}
+    // This Week's Wins Section Component
+    const renderWeeklyWins = () => (
+      <div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+          <div>
+            <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              Recognizing Your Dedication
+            </span>
+            <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-main)', margin: '2px 0 0 0' }}>
+              This Week's Wins 🏅
+            </h3>
+          </div>
+          <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600 }}>4 of 4 Milestones Hit</span>
+        </div>
+
+        <div className="wins-grid">
+          {weeklyWins.map(win => (
+            <div key={win.id} className="win-card">
+              <div className="win-card-header">
+                <div className="win-card-icon-wrap" style={{ background: `${win.color}15`, color: win.color }}>
+                  <span>{win.icon}</span>
+                </div>
+                <span className="win-card-tag" style={{ background: `${win.color}15`, color: win.color }}>
+                  {win.tag}
+                </span>
               </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                <span className="win-card-metric" style={{ color: win.color }}>{win.metric}</span>
+                <span className="win-card-title">{win.title}</span>
+              </div>
+              <p className="win-card-desc">{win.desc}</p>
             </div>
+          ))}
+        </div>
+      </div>
+    );
+
+    // Visual Recovery Journey with Milestones Component
+    const renderRecoveryJourney = () => (
+      <div className="glass-card" style={{ background: 'var(--bg-glass-card)', border: '1px solid var(--border-glass)', padding: '22px', borderRadius: '24px', marginBottom: '24px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <div>
+            <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              Your Road to Full Recovery
+            </span>
+            <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-main)', margin: '2px 0 0 0' }}>
+              Recovery Milestones 🗺️
+            </h3>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(0,140,140,0.08)', padding: '4px 10px', borderRadius: '12px' }}>
+            <Star size={13} style={{ color: 'var(--primary)' }} />
+            <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--primary)' }}>3/6 Completed</span>
+          </div>
+        </div>
+
+        <div className="milestone-timeline">
+          {recoveryMilestones.map((m, idx) => {
+            const isCompleted = m.status === 'completed';
+            const isCurrent = m.status === 'current';
+            const isUpcoming = m.status === 'upcoming';
+
+            return (
+              <div 
+                key={m.id} 
+                className={`milestone-card ${isCurrent ? 'active-step' : isCompleted ? 'completed-step' : ''}`}
+              >
+                <div className="milestone-node-col">
+                  <div className={`milestone-node-circle ${m.status}`}>
+                    {m.icon}
+                  </div>
+                  {idx < recoveryMilestones.length - 1 && (
+                    <div style={{ 
+                      width: '2px', 
+                      flexGrow: 1, 
+                      minHeight: '28px',
+                      background: isCompleted ? '#218C74' : isCurrent ? 'linear-gradient(to bottom, #008C8C, rgba(0,0,0,0.1))' : 'rgba(0,0,0,0.08)',
+                      margin: '6px 0',
+                      borderRadius: '1px'
+                    }} />
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, gap: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '6px' }}>
+                    <span style={{ fontSize: '13.5px', fontWeight: 800, color: isCurrent ? 'var(--primary)' : 'var(--text-main)' }}>
+                      {m.title}
+                    </span>
+                    <span style={{ 
+                      fontSize: '10.5px', 
+                      fontWeight: 700, 
+                      padding: '2px 8px', 
+                      borderRadius: '8px',
+                      background: isCompleted ? 'rgba(33, 140, 116, 0.1)' : isCurrent ? 'var(--primary)' : 'rgba(0,0,0,0.04)',
+                      color: isCompleted ? '#218C74' : isCurrent ? '#ffffff' : 'var(--text-muted)'
+                    }}>
+                      {isCompleted ? 'Achieved ✓' : isCurrent ? 'You Are Here 🌟' : 'Upcoming Target'}
+                    </span>
+                  </div>
+
+                  <span style={{ fontSize: '11.5px', color: 'var(--text-muted)', fontWeight: 500 }}>
+                    {m.subtitle} &bull; <strong style={{ color: 'var(--text-main)' }}>{m.date}</strong>
+                  </span>
+
+                  <div style={{ 
+                    marginTop: '4px', 
+                    padding: '8px 12px', 
+                    borderRadius: '12px', 
+                    background: isCurrent ? 'rgba(0, 140, 140, 0.08)' : 'rgba(255, 255, 255, 0.5)',
+                    border: `1px solid ${isCurrent ? 'rgba(0, 140, 140, 0.18)' : 'rgba(0,0,0,0.04)'}`,
+                    fontSize: '11px',
+                    color: isCurrent ? 'var(--primary-dark)' : 'var(--text-muted)',
+                    lineHeight: 1.45
+                  }}>
+                    <strong>{isUpcoming ? 'Goal: ' : 'Highlight: '}</strong>{m.achievement}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+
+    // Simple Progress Trends & Healing Trajectory Component
+    const renderSimpleTrends = () => (
+      <div className="glass-card" style={{ background: 'var(--bg-glass-card)', border: '1px solid var(--border-glass)', padding: '22px', borderRadius: '24px', marginBottom: '24px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+          <div>
+            <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              Comfort & Recovery Pace
+            </span>
+            <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-main)', margin: '2px 0 0 0' }}>
+              Your Healing Trajectory 📈
+            </h3>
+          </div>
+          <span style={{ fontSize: '10.5px', color: 'var(--text-muted)' }}>Tap dots to view guide</span>
+        </div>
+
+        {/* Positive Clinical Affirmation Callout */}
+        <div style={{ 
+          background: 'linear-gradient(135deg, rgba(33, 140, 116, 0.08) 0%, rgba(0, 255, 194, 0.04) 100%)',
+          border: '1px solid rgba(33, 140, 116, 0.22)',
+          borderRadius: '16px',
+          padding: '12px 16px',
+          marginBottom: '16px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px'
+        }}>
+          <div style={{ 
+            width: '32px', height: '32px', borderRadius: '50%', background: '#218C74', 
+            color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 
+          }}>
+            <Sparkles size={16} />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+            <strong style={{ fontSize: '12px', color: '#1B6B58' }}>Ahead of Standard Timeline</strong>
+            <span style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: 1.4 }}>
+              Your pain level of <strong>4/10</strong> is below the typical Day 6 postoperative baseline (4.8/10). Tissue inflammation is resolving ahead of schedule!
+            </span>
+          </div>
+        </div>
+
+        {/* The SVG Pain Curve Chart */}
+        {renderTrendsChart()}
+
+        {/* 4 Uplifting Vital Recovery Snapshot Chips */}
+        <div style={{ 
+          display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', 
+          gap: '8px', marginTop: '16px', 
+          background: 'rgba(255,255,255,0.5)', 
+          padding: '12px', borderRadius: '16px',
+          border: '1px solid rgba(0, 140, 140, 0.06)'
+        }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+            <span style={{ fontSize: '9.5px', color: 'var(--text-muted)', fontWeight: 600 }}>Knee Flexion</span>
+            <strong style={{ fontSize: '13px', color: 'var(--primary)', marginTop: '2px' }}>75°</strong>
+            <span style={{ fontSize: '8.5px', color: '#218C74', fontWeight: 700 }}>Ahead of avg</span>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+            <span style={{ fontSize: '9.5px', color: 'var(--text-muted)', fontWeight: 600 }}>Temperature</span>
+            <strong style={{ fontSize: '13px', color: 'var(--text-main)', marginTop: '2px' }}>98.6°F</strong>
+            <span style={{ fontSize: '8.5px', color: '#218C74', fontWeight: 700 }}>Optimal</span>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+            <span style={{ fontSize: '9.5px', color: 'var(--text-muted)', fontWeight: 600 }}>Swelling</span>
+            <strong style={{ fontSize: '13px', color: 'var(--text-main)', marginTop: '2px' }}>Level 3/10</strong>
+            <span style={{ fontSize: '8.5px', color: '#218C74', fontWeight: 700 }}>-40% since Day 2</span>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+            <span style={{ fontSize: '9.5px', color: 'var(--text-muted)', fontWeight: 600 }}>Sleep Quality</span>
+            <strong style={{ fontSize: '13px', color: 'var(--text-main)', marginTop: '2px' }}>7.5 hrs</strong>
+            <span style={{ fontSize: '8.5px', color: '#218C74', fontWeight: 700 }}>Restorative</span>
+          </div>
+        </div>
+
+        {/* Selected Log Senior Guide */}
+        {historyLogs[selectedLogIndex] && (() => {
+          const log = historyLogs[selectedLogIndex];
+          const summary = getSeniorFriendlySummary(log);
+          return (
+            <div style={{ 
+              marginTop: '16px', 
+              padding: '14px 16px', 
+              borderRadius: '16px', 
+              border: '1px solid rgba(0, 140, 140, 0.1)',
+              background: 'linear-gradient(135deg, rgba(0, 140, 140, 0.03) 0%, rgba(255, 255, 255, 0.6) 100%)'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                <span style={{ fontSize: '10.5px', fontWeight: '700', textTransform: 'uppercase', color: 'var(--primary-dark)' }}>
+                  Clinical Note &bull; {log.date} ({log.time})
+                </span>
+                <span style={{ 
+                  fontSize: '10px', 
+                  fontWeight: 800, 
+                  color: log.status === 'Green' ? '#218C74' : log.status === 'Yellow' ? '#D97706' : '#DC2626' 
+                }}>
+                  ● Status: {summary.painText}
+                </span>
+              </div>
+              <p style={{ fontSize: '12px', lineHeight: '1.5', color: 'var(--text-muted)', margin: 0, fontWeight: 500 }}>
+                {summary.painAdvice}
+              </p>
+            </div>
+          );
+        })()}
+      </div>
+    );
+
+    // Personalized "Look How Far You've Come" Shalom AI Letter Component
+    const renderShalomLetter = () => (
+      <div className="shalom-letter-card">
+        <div className="shalom-letter-quote">“</div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '16px', position: 'relative', zIndex: 2 }}>
+          <div style={{
+            width: '46px', height: '46px', borderRadius: '50%',
+            background: 'radial-gradient(circle at 35% 35%, #ffffff 0%, #e6f7ff 35%, #00BFFF 70%, #008C8C 100%)',
+            boxShadow: '0 8px 18px rgba(0, 140, 140, 0.25), inset -2px -2px 6px rgba(0, 140, 140, 0.3)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+          }}>
+            <Sparkles size={20} style={{ color: '#ffffff' }} />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <strong style={{ fontSize: '15px', color: 'var(--text-main)', fontWeight: 800 }}>Shalom (AI Assistant)</strong>
+              <span style={{ 
+                fontSize: '9.5px', fontWeight: 800, padding: '2px 8px', borderRadius: '8px', 
+                background: 'rgba(0, 140, 140, 0.1)', color: 'var(--primary)', textTransform: 'uppercase' 
+              }}>
+                Recovery Letter
+              </span>
+            </div>
+            <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 500 }}>
+              Personalized Milestone Review &bull; August 28, 2026
+            </span>
+          </div>
+        </div>
+
+        <div style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <h4 style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-main)', margin: 0, letterSpacing: '-0.2px' }}>
+            Look how far you've come, Aïda! 🌟
+          </h4>
+
+          <p style={{ fontSize: '12.5px', lineHeight: '1.65', color: 'var(--text-main)', margin: 0, fontWeight: 400 }}>
+            Take a moment to pause and reflect on <strong>Day 1</strong>. Getting out of bed was an uphill struggle, standing for two minutes pushed your pain to a 7/10, and taking every medicine on time felt exhausting.
+          </p>
+
+          <p style={{ fontSize: '12.5px', lineHeight: '1.65', color: 'var(--text-main)', margin: 0, fontWeight: 400 }}>
+            Look at where you stand today on <strong>Day 6</strong>:
+          </p>
+
+          <div style={{ 
+            background: 'rgba(0, 140, 140, 0.04)', 
+            borderLeft: '3px solid var(--primary)', 
+            padding: '10px 14px', 
+            borderRadius: '0 12px 12px 0',
+            display: 'flex', 
+            flexDirection: 'column', 
+            gap: '6px',
+            fontSize: '12px',
+            color: 'var(--text-main)'
+          }}>
+            <div>• <strong>15-Minute Unassisted Walks:</strong> You completed your indoor morning walking routine with confidence.</div>
+            <div>• <strong>75° Knee Flexion:</strong> You surpassed your initial 40° restriction, moving closer to the 90° target.</div>
+            <div>• <strong>Unbroken 6-Day Check-in Streak:</strong> Giving your surgical team crystal-clear visibility into your healing trajectory.</div>
+          </div>
+
+          <p style={{ fontSize: '12.5px', lineHeight: '1.65', color: 'var(--text-main)', margin: 0, fontWeight: 400 }}>
+            Recovery is not simply waiting for days to pass — it is the patience, hydration, and gentle movement you show yourself every morning. Dr. Smith’s care team will be delighted to review this at your upcoming Day 14 surgical evaluation.
+          </p>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px', paddingTop: '12px', borderTop: '1px solid rgba(0,0,0,0.06)', flexWrap: 'wrap', gap: '10px' }}>
+            <span style={{ fontSize: '12px', fontStyle: 'italic', color: 'var(--primary-dark)', fontWeight: 600 }}>
+              With pride & clinical care, your Shalom AI Assistant
+            </span>
+
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button 
+                className="choice-pill-btn" 
+                style={{ fontSize: '11px', padding: '6px 14px', background: 'var(--primary)', color: '#ffffff', fontWeight: 700 }}
+                onClick={() => setShowAppointmentSummaryModal(true)}
+              >
+                View Pre-Visit Report
+              </button>
+              <button 
+                className="choice-pill-btn" 
+                style={{ fontSize: '11px', padding: '6px 14px' }}
+                onClick={() => setActiveTab('chat')}
+              >
+                Message Shalom AI
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+
+    // Check-in History List Component
+    const renderCheckinHistory = () => (
+      <div className="glass-card" style={{ background: 'var(--bg-glass-card)', border: '1px solid var(--border-glass)', padding: '20px', borderRadius: '24px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+          <div>
+            <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              Clinical Records
+            </span>
+            <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-main)', margin: '2px 0 0 0' }}>
+              Daily Check-In History 📋
+            </h3>
+          </div>
+          <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{historyLogs.length} logs recorded</span>
+        </div>
+
+        <div className="history-list" style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '320px', overflowY: 'auto', paddingRight: '4px' }}>
+          {historyLogs.slice().reverse().map((log, idx) => {
+            const originalIdx = historyLogs.length - 1 - idx;
+            const isSelected = originalIdx === selectedLogIndex;
+            return (
+              <div 
+                key={idx} 
+                className={`history-item-row ${isSelected ? 'selected' : ''}`} 
+                onClick={() => setSelectedLogIndex(originalIdx)}
+                style={{
+                  borderColor: isSelected ? 'var(--primary)' : 'var(--border-glass)',
+                  background: isSelected ? 'var(--primary-light)' : 'var(--bg-glass-card)',
+                  cursor: 'pointer',
+                  padding: '12px 16px',
+                  borderRadius: '16px',
+                  borderWidth: '1px',
+                  borderStyle: 'solid',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <div className="history-item-left">
+                  <span className="history-item-date" style={{ fontWeight: 700, fontSize: '12.5px' }}>
+                    {log.date} &bull; <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 500 }}>{log.time}</span>
+                  </span>
+                </div>
+                <div className="history-item-right" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ 
+                    fontSize: '11.5px', fontWeight: 800, padding: '3px 8px', borderRadius: '8px',
+                    background: log.status === 'Green' ? 'rgba(33, 140, 116, 0.1)' : log.status === 'Yellow' ? 'rgba(217, 119, 6, 0.1)' : 'rgba(220, 38, 38, 0.1)',
+                    color: log.status === 'Green' ? '#218C74' : log.status === 'Yellow' ? '#D97706' : '#DC2626'
+                  }}>
+                    Pain {log.painLevel}/10
+                  </span>
+                  <Smile size={18} style={{ 
+                    color: log.status === 'Green' ? 'var(--color-green)' : log.status === 'Yellow' ? 'var(--color-yellow)' : 'var(--color-red)'
+                  }} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+
+    // ==========================================
+    // DESKTOP LAYOUT (>= 1024px)
+    // ==========================================
+    if (isDesktop) {
+      return (
+        <div className="progress-desktop-layout" style={{ display: 'grid', gridTemplateColumns: '1.05fr 1fr', gap: '32px', animation: 'fadeIn 0.3s ease-out' }}>
+          {/* Left Column: Hero Celebration, Weekly Wins & Shalom Letter */}
+          <div className="progress-left-col" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            {renderCelebrationHero()}
+            {renderWeeklyWins()}
+            {renderShalomLetter()}
+          </div>
+
+          {/* Right Column: Milestones Roadmap, Healing Trajectory & History */}
+          <div className="progress-right-col" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            {renderRecoveryJourney()}
+            {renderSimpleTrends()}
+            {renderCheckinHistory()}
           </div>
         </div>
       );
     }
 
+    // ==========================================
+    // MOBILE / TABLET LAYOUT (< 1024px)
+    // ==========================================
     return (
-      <div className="progress-scroller">
-        {/* Sub-tabs progress */}
-        <div className="tabs-header-row">
+      <div className="progress-scroller" style={{ animation: 'fadeIn 0.3s ease-out' }}>
+        {/* Mobile View Switcher */}
+        <div className="tabs-header-row" style={{ marginBottom: '18px' }}>
           <button 
             className={`tab-header-btn ${progressSubTab === 'overview' ? 'active' : ''}`}
             onClick={() => setProgressSubTab('overview')}
           >
-            Overview
-          </button>
-          <button 
-            className={`tab-header-btn ${progressSubTab === 'checkins' ? 'active' : ''}`}
-            onClick={() => setProgressSubTab('checkins')}
-          >
-            Check-Ins
+            🎉 Celebration
           </button>
           <button 
             className={`tab-header-btn ${progressSubTab === 'trends' ? 'active' : ''}`}
             onClick={() => setProgressSubTab('trends')}
           >
-            Trends Chart
+            🗺️ Milestones
+          </button>
+          <button 
+            className={`tab-header-btn ${progressSubTab === 'checkins' ? 'active' : ''}`}
+            onClick={() => setProgressSubTab('checkins')}
+          >
+            📋 Records
           </button>
         </div>
 
         {progressSubTab === 'overview' ? (
-          <>
-            {/* Recovery Progress Card */}
-            <div className="recovery-card" style={{ background: 'var(--bg-glass-card)', border: '1px solid var(--border-glass)' }}>
-              <div className="recovery-card-info">
-                <span className="recovery-card-day" style={{ fontSize: '14px' }}>Recovery Progress</span>
-                <span className="recovery-card-desc">You're on the right track! Keep following your plan.</span>
-              </div>
-              <div className="recovery-card-ring">
-                <svg className="recovery-ring-svg" viewBox="0 0 100 100">
-                  <circle className="recovery-ring-bg" cx="50" cy="50" r="42" />
-                  <circle 
-                    className="recovery-ring-val" 
-                    cx="50" cy="50" r="42" 
-                    strokeDasharray="263.89"
-                    strokeDashoffset={263.89 - (263.89 * progress) / 100}
-                  />
-                </svg>
-                <div className="recovery-ring-text">
-                  <span className="recovery-ring-percent">{progress}%</span>
-                  <span className="recovery-ring-lbl">Recovered</span>
-                </div>
-              </div>
-            </div>
-
-            {/* 3 Stats Columns Grid */}
-            <div className="stats-grid-3col">
-              <div className="stat-box-card">
-                <span className="stat-box-lbl">Check-Ins</span>
-                <span className="stat-box-num">6/7</span>
-                <span className="stat-box-tag">Great job!</span>
-              </div>
-              <div className="stat-box-card">
-                <span className="stat-box-lbl">Plan Adherence</span>
-                <span className="stat-box-num">86%</span>
-                <span className="stat-box-tag">Excellent</span>
-              </div>
-              <div className="stat-box-card">
-                <span className="stat-box-lbl">Tasks Completed</span>
-                <span className="stat-box-num">18/22</span>
-                <span className="stat-box-tag">Keep it up!</span>
-              </div>
-            </div>
-
-            {/* Pain Trend SVG chart */}
-            <div className="glass-card" style={{ background: 'var(--bg-glass-card)', border: '1px solid var(--border-glass)', padding: '16px', borderRadius: '24px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                <span className="section-title">Pain Trend</span>
-                <span style={{ fontSize: '9.5px', color: 'var(--text-muted)' }}>Tap dots to view guide</span>
-              </div>
-              {renderTrendsChart()}
-            </div>
-
-            {/* Senior Care Guide Card */}
-            {historyLogs[selectedLogIndex] && (() => {
-              const log = historyLogs[selectedLogIndex];
-              const summary = getSeniorFriendlySummary(log);
-              return (
-                <div className="glass-card" style={{ 
-                  marginTop: '14px', 
-                  padding: '16px', 
-                  borderRadius: '20px', 
-                  border: '1px solid var(--border-glass)',
-                  background: 'linear-gradient(135deg, rgba(0, 140, 140, 0.04) 0%, rgba(255, 255, 255, 0.02) 100%)',
-                  boxShadow: '0 4px 14px rgba(0,31,63,0.01)'
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                    <span style={{ fontSize: '10.5px', fontWeight: '700', textTransform: 'uppercase', color: 'var(--primary-dark)' }}>
-                      Senior Care Guide &bull; {log.date}
-                    </span>
-                    <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
-                      Logged at {log.time}
-                    </span>
-                  </div>
-                  
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ 
-                        width: '8px', height: '8px', borderRadius: '50%', 
-                        background: log.status === 'Green' ? 'var(--color-green)' : log.status === 'Yellow' ? 'var(--color-yellow)' : 'var(--color-red)'
-                      }}></span>
-                      <strong style={{ fontSize: '14px', color: 'var(--text-main)' }}>
-                        Status: {summary.painText} ({log.painLevel}/10)
-                      </strong>
-                    </div>
-                    
-                    <p style={{ fontSize: '12px', lineHeight: '1.5', color: 'var(--text-muted)', fontWeight: 500 }}>
-                      {summary.painAdvice}
-                    </p>
-                    
-                    {/* Vitals Summary Grid for Seniors */}
-                    <div style={{ 
-                      display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', 
-                      gap: '8px', marginTop: '6px', 
-                      background: 'rgba(255,255,255,0.4)', 
-                      padding: '8px', borderRadius: '12px',
-                      border: '1px solid rgba(0, 140, 140, 0.05)'
-                    }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                        <span style={{ fontSize: '8.5px', color: 'var(--text-muted)' }}>Swelling</span>
-                        <strong style={{ fontSize: '11.5px', color: 'var(--text-main)' }}>{log.swellingLevel}/10</strong>
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                        <span style={{ fontSize: '8.5px', color: 'var(--text-muted)' }}>Vitals Temp</span>
-                        <strong style={{ fontSize: '11.5px', color: 'var(--text-main)' }}>{log.temperature.toFixed(1)}°F</strong>
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                        <span style={{ fontSize: '8.5px', color: 'var(--text-muted)' }}>Sleep</span>
-                        <strong style={{ fontSize: '11.5px', color: 'var(--text-main)' }}>{log.sleepLevel}/10</strong>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
-          </>
-        ) : progressSubTab === 'checkins' ? (
-          /* Check-In History List (Screen 9) */
-          <div className="history-list">
-            <span className="section-title" style={{ display: 'block', marginBottom: '8px' }}>Check-In History</span>
-            {historyLogs.slice().reverse().map((log, idx) => {
-              const originalIdx = historyLogs.length - 1 - idx;
-              const isSelected = originalIdx === selectedLogIndex;
-              return (
-                <div 
-                  key={idx} 
-                  className={`history-item-row ${isSelected ? 'selected' : ''}`} 
-                  onClick={() => {
-                    setSelectedLogIndex(originalIdx);
-                    setProgressSubTab('overview');
-                  }}
-                  style={{
-                    borderColor: isSelected ? 'var(--primary)' : 'var(--border-glass)',
-                    background: isSelected ? 'var(--primary-light)' : 'var(--bg-glass-card)',
-                    animation: 'slideInFade 0.2s ease-out'
-                  }}
-                >
-                  <div className="history-item-left">
-                    <span className="history-item-date" style={{ fontWeight: 700 }}>
-                      {log.date} &bull; <span style={{ fontSize: '10.5px', color: 'var(--text-muted)', fontWeight: 500 }}>{log.time}</span>
-                    </span>
-                  </div>
-                  <div className="history-item-right">
-                    <span className="history-item-status" style={{ fontWeight: 700 }}>Pain {log.painLevel}</span>
-                    <Smile size={16} style={{ 
-                      color: log.status === 'Green' ? 'var(--color-green)' : log.status === 'Yellow' ? 'var(--color-yellow)' : 'var(--color-red)'
-                    }} />
-                  </div>
-                </div>
-              );
-            })}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {renderCelebrationHero()}
+            {renderWeeklyWins()}
+            {renderRecoveryJourney()}
+            {renderSimpleTrends()}
+            {renderShalomLetter()}
+          </div>
+        ) : progressSubTab === 'trends' ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {renderRecoveryJourney()}
+            {renderSimpleTrends()}
           </div>
         ) : (
-          /* Trends chart details */
-          <>
-            <div className="glass-card" style={{ background: 'var(--bg-glass-card)', border: '1px solid var(--border-glass)', padding: '16px', borderRadius: '24px' }}>
-              <span className="section-title" style={{ display: 'block', marginBottom: '14px' }}>Recovery Adherence Timeline</span>
-              {renderTrendsChart()}
-            </div>
-            {/* Senior Care Guide Card */}
-            {historyLogs[selectedLogIndex] && (() => {
-              const log = historyLogs[selectedLogIndex];
-              const summary = getSeniorFriendlySummary(log);
-              return (
-                <div className="glass-card" style={{ 
-                  marginTop: '14px', 
-                  padding: '16px', 
-                  borderRadius: '20px', 
-                  border: '1px solid var(--border-glass)',
-                  background: 'linear-gradient(135deg, rgba(0, 140, 140, 0.04) 0%, rgba(255, 255, 255, 0.02) 100%)',
-                  boxShadow: '0 4px 14px rgba(0,31,63,0.01)'
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                    <span style={{ fontSize: '10.5px', fontWeight: '700', textTransform: 'uppercase', color: 'var(--primary-dark)' }}>
-                      Senior Care Guide &bull; {log.date}
-                    </span>
-                    <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
-                      Logged at {log.time}
-                    </span>
-                  </div>
-                  
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ 
-                        width: '8px', height: '8px', borderRadius: '50%', 
-                        background: log.status === 'Green' ? 'var(--color-green)' : log.status === 'Yellow' ? 'var(--color-yellow)' : 'var(--color-red)'
-                      }}></span>
-                      <strong style={{ fontSize: '14px', color: 'var(--text-main)' }}>
-                        Status: {summary.painText} ({log.painLevel}/10)
-                      </strong>
-                    </div>
-                    <p style={{ fontSize: '12px', lineHeight: '1.5', color: 'var(--text-muted)', fontWeight: 500 }}>
-                      {summary.painAdvice}
-                    </p>
-                  </div>
-                </div>
-              );
-            })()}
-          </>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {renderCheckinHistory()}
+            {renderSimpleTrends()}
+          </div>
         )}
       </div>
     );
