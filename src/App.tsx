@@ -202,7 +202,6 @@ function App() {
   const [sliderMobility, setSliderMobility] = useState<number>(4);
   const [sliderSleep, setSliderSleep] = useState<number>(7);
   const [sliderMood, setSliderMood] = useState<number>(6);
-  const [selectedLogIndex, setSelectedLogIndex] = useState<number>(6);
 
   const [isSpeakingHero, setIsSpeakingHero] = useState<boolean>(false);
 
@@ -577,7 +576,6 @@ function App() {
       status: status
     };
     setHistoryLogs(prev => [...prev, newLog]);
-    setSelectedLogIndex(historyLogs.length);
   };
 
   const handleTriggerPreset = (type: 'green' | 'yellow' | 'red' | 'emergency') => {
@@ -1934,115 +1932,6 @@ function App() {
       </div>
     );
 
-    // Simple Progress Trends & Healing Trajectory Component
-    const renderSimpleTrends = () => (
-      <div className="glass-card" style={{ background: 'var(--bg-glass-card)', border: '1px solid var(--border-glass)', padding: '22px', borderRadius: '24px', marginBottom: '24px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-          <div>
-            <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Comfort & Recovery Pace
-            </span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
-              <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
-                Your Healing Trajectory
-              </h3>
-              <TrendingUp size={18} style={{ color: 'var(--primary)' }} />
-            </div>
-          </div>
-          <span style={{ fontSize: '10.5px', color: 'var(--text-muted)' }}>Tap dots to view guide</span>
-        </div>
-
-        {/* Positive Clinical Affirmation Callout */}
-        <div style={{ 
-          background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.08) 0%, rgba(168, 85, 247, 0.04) 100%)',
-          border: '1px solid rgba(124, 58, 237, 0.2)',
-          borderRadius: '16px',
-          padding: '12px 16px',
-          marginBottom: '16px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '12px'
-        }}>
-          <div style={{ 
-            width: '32px', height: '32px', borderRadius: '50%', background: 'linear-gradient(135deg, #7C3AED 0%, #A855F7 100%)', 
-            color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 
-          }}>
-            <Sparkles size={16} />
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-            <strong style={{ fontSize: '12px', color: '#6D28D9' }}>Ahead of Standard Timeline</strong>
-            <span style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: 1.4 }}>
-              Your pain level of <strong>4/10</strong> is below the typical Day 6 postoperative baseline (4.8/10). Tissue inflammation is resolving ahead of schedule!
-            </span>
-          </div>
-        </div>
-
-        {/* The SVG Pain Curve Chart */}
-        {renderTrendsChart()}
-
-        {/* 4 Uplifting Vital Recovery Snapshot Chips */}
-        <div style={{ 
-          display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', 
-          gap: '8px', marginTop: '16px', 
-          background: 'rgba(255,255,255,0.5)', 
-          padding: '12px', borderRadius: '16px',
-          border: '1px solid var(--border-glass)'
-        }}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-            <span style={{ fontSize: '9.5px', color: 'var(--text-muted)', fontWeight: 600 }}>Knee Flexion</span>
-            <strong style={{ fontSize: '13px', color: 'var(--primary)', marginTop: '2px' }}>75°</strong>
-            <span style={{ fontSize: '8.5px', color: 'var(--primary)', fontWeight: 700 }}>Ahead of avg</span>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-            <span style={{ fontSize: '9.5px', color: 'var(--text-muted)', fontWeight: 600 }}>Temperature</span>
-            <strong style={{ fontSize: '13px', color: 'var(--text-main)', marginTop: '2px' }}>98.6°F</strong>
-            <span style={{ fontSize: '8.5px', color: '#059669', fontWeight: 700 }}>Optimal</span>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-            <span style={{ fontSize: '9.5px', color: 'var(--text-muted)', fontWeight: 600 }}>Swelling</span>
-            <strong style={{ fontSize: '13px', color: 'var(--text-main)', marginTop: '2px' }}>Level 3/10</strong>
-            <span style={{ fontSize: '8.5px', color: 'var(--primary)', fontWeight: 700 }}>-40% since Day 2</span>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-            <span style={{ fontSize: '9.5px', color: 'var(--text-muted)', fontWeight: 600 }}>Sleep Quality</span>
-            <strong style={{ fontSize: '13px', color: 'var(--text-main)', marginTop: '2px' }}>7.5 hrs</strong>
-            <span style={{ fontSize: '8.5px', color: '#059669', fontWeight: 700 }}>Restorative</span>
-          </div>
-        </div>
-
-        {/* Selected Log Senior Guide */}
-        {historyLogs[selectedLogIndex] && (() => {
-          const log = historyLogs[selectedLogIndex];
-          const summary = getSeniorFriendlySummary(log);
-          return (
-            <div style={{ 
-              marginTop: '16px', 
-              padding: '14px 16px', 
-              borderRadius: '16px', 
-              border: '1px solid var(--border-glass)',
-              background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.03) 0%, rgba(255, 255, 255, 0.85) 100%)'
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                <span style={{ fontSize: '10.5px', fontWeight: '700', textTransform: 'uppercase', color: 'var(--primary-dark)' }}>
-                  Clinical Note &bull; {log.date} ({log.time})
-                </span>
-                <span style={{ 
-                  fontSize: '10px', 
-                  fontWeight: 800, 
-                  color: log.status === 'Green' ? '#218C74' : log.status === 'Yellow' ? '#D97706' : '#DC2626' 
-                }}>
-                  ● Status: {summary.painText}
-                </span>
-              </div>
-              <p style={{ fontSize: '12px', lineHeight: '1.5', color: 'var(--text-muted)', margin: 0, fontWeight: 500 }}>
-                {summary.painAdvice}
-              </p>
-            </div>
-          );
-        })()}
-      </div>
-    );
-
     // ==========================================
     // DESKTOP LAYOUT (>= 1024px)
     // ==========================================
@@ -2055,10 +1944,9 @@ function App() {
             {renderWeeklyWins()}
           </div>
 
-          {/* Right Column: Milestones Roadmap & Healing Trajectory */}
+          {/* Right Column: Milestones Roadmap */}
           <div className="progress-right-col" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             {renderRecoveryJourney()}
-            {renderSimpleTrends()}
           </div>
         </div>
       );
@@ -2083,7 +1971,7 @@ function App() {
             onClick={() => setProgressSubTab('trends')}
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
           >
-            <Target size={13} /> Milestones &amp; Trajectory
+            <Target size={13} /> Milestones
           </button>
         </div>
 
@@ -2092,159 +1980,12 @@ function App() {
             {renderCelebrationHero()}
             {renderWeeklyWins()}
             {renderRecoveryJourney()}
-            {renderSimpleTrends()}
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             {renderRecoveryJourney()}
-            {renderSimpleTrends()}
           </div>
         )}
-      </div>
-    );
-  };
-
-  const renderTrendsChart = () => {
-    const width = 340;
-    const height = 135;
-    const padding = 20;
-    const chartWidth = width - padding * 2;
-    const chartHeight = height - padding * 2.5;
-
-    const points = historyLogs.map((log, idx) => {
-      const x = padding + (idx / (historyLogs.length - 1 || 1)) * chartWidth;
-      const y = padding + chartHeight - ((log.painLevel - 1) / 9) * chartHeight;
-      return { x, y, pain: log.painLevel };
-    });
-
-    // Compute expected target recovery progression points
-    const targetPoints = historyLogs.map((log, idx) => {
-      const x = padding + (idx / (historyLogs.length - 1 || 1)) * chartWidth;
-      const dayNum = log.day || (idx + 1);
-      // Expected normal curve declines from 6.5 down to 1.5 gradually
-      const expectedPain = Math.max(1.5, 6.5 - (dayNum - 1) * 0.95);
-      const y = padding + chartHeight - ((expectedPain - 1) / 9) * chartHeight;
-      return { x, y };
-    });
-
-    let pathD = "";
-    if (points.length > 0) {
-      pathD = `M ${points[0].x} ${points[0].y}`;
-      for (let i = 1; i < points.length; i++) {
-        pathD += ` L ${points[i].x} ${points[i].y}`;
-      }
-    }
-
-    let targetPathD = "";
-    if (targetPoints.length > 0) {
-      targetPathD = `M ${targetPoints[0].x} ${targetPoints[0].y}`;
-      for (let i = 1; i < targetPoints.length; i++) {
-        targetPathD += ` L ${targetPoints[i].x} ${targetPoints[i].y}`;
-      }
-    }
-
-    return (
-      <div className="svg-chart-wrapper" style={{ height: 'auto' }}>
-        <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} style={{ overflow: 'visible' }}>
-          <defs>
-            <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.25" />
-              <stop offset="100%" stopColor="var(--primary)" stopOpacity="0" />
-            </linearGradient>
-          </defs>
-
-          {/* Severity background color zones for older patient triage context */}
-          {/* Mild Zone (Green status log) */}
-          <rect x={padding} y={padding} width={chartWidth} height={chartHeight} fill="none" />
-          <rect x={padding} y={padding + chartHeight * 0.7} width={chartWidth} height={chartHeight * 0.3} fill="var(--bg-green)" rx="4" />
-          {/* Moderate Zone (Yellow status log) */}
-          <rect x={padding} y={padding + chartHeight * 0.3} width={chartWidth} height={chartHeight * 0.4} fill="var(--bg-yellow)" rx="4" />
-          {/* Severe Zone (Red status log) */}
-          <rect x={padding} y={padding} width={chartWidth} height={chartHeight * 0.3} fill="var(--bg-red)" rx="4" />
-
-          {/* Grid lines */}
-          <line x1={padding} y1={padding} x2={width - padding} y2={padding} stroke="rgba(0,0,0,0.03)" strokeWidth="1" />
-          <line x1={padding} y1={padding + chartHeight * 0.3} x2={width - padding} y2={padding + chartHeight * 0.3} stroke="rgba(0,0,0,0.03)" strokeWidth="1" />
-          <line x1={padding} y1={padding + chartHeight * 0.7} x2={width - padding} y2={padding + chartHeight * 0.7} stroke="rgba(0,0,0,0.03)" strokeWidth="1" />
-          <line x1={padding} y1={padding + chartHeight} x2={width - padding} y2={padding + chartHeight} stroke="rgba(0,0,0,0.06)" strokeWidth="1.5" />
-          
-          {points.length > 1 && (
-            <path
-              d={`${pathD} L ${points[points.length - 1].x} ${padding + chartHeight} L ${points[0].x} ${padding + chartHeight} Z`}
-              fill="url(#chartGrad)"
-            />
-          )}
-
-          {/* Expected Normal Recovery Path (dashed baseline) */}
-          {targetPoints.length > 0 && (
-            <path 
-              d={targetPathD} 
-              fill="none" 
-              stroke="var(--accent)" 
-              strokeWidth="1.8" 
-              strokeDasharray="4,4" 
-              strokeLinecap="round" 
-              strokeLinejoin="round" 
-            />
-          )}
-
-          <path d={pathD} fill="none" stroke="var(--primary)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-
-          {/* Interactive node points with labels */}
-          {points.map((pt, idx) => {
-            const isSelected = idx === selectedLogIndex;
-            const log = historyLogs[idx];
-            const dateNum = log.date.split(',').pop()?.trim().split(' ').pop() || log.date;
-            
-            return (
-              <g key={idx} onClick={() => setSelectedLogIndex(idx)} style={{ cursor: 'pointer' }}>
-                {/* Large clickable overlay */}
-                <circle cx={pt.x} cy={pt.y} r="12" fill="transparent" />
-                
-                {/* Selection ring */}
-                {isSelected && (
-                  <circle cx={pt.x} cy={pt.y} r="8" fill="none" stroke="var(--primary)" strokeWidth="1.5" strokeDasharray="3,3" />
-                )}
-                
-                <circle 
-                  cx={pt.x} cy={pt.y} 
-                  r={isSelected ? "5" : "4"} 
-                  fill={isSelected ? "var(--primary)" : "#fff"} 
-                  stroke="var(--primary)" 
-                  strokeWidth="2" 
-                />
-                
-                {/* Pain value indicator */}
-                <text x={pt.x} y={pt.y - 8} textAnchor="middle" fontSize="9" fontWeight="800" fill="var(--text-main)">
-                  {pt.pain}
-                </text>
-                
-                {/* Date/day indicator */}
-                <text 
-                  x={pt.x} y={height - 2} 
-                  textAnchor="middle" 
-                  fontSize="8.5" 
-                  fontWeight={isSelected ? "800" : "600"} 
-                  fill={isSelected ? "var(--primary)" : "var(--text-muted)"}
-                >
-                  {dateNum}
-                </text>
-              </g>
-            );
-          })}
-        </svg>
-
-        {/* Legend */}
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginTop: '16px', borderTop: '1px solid var(--border-glass)', paddingTop: '10px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ width: '12px', height: '3px', background: 'var(--primary)', borderRadius: '1.5px', display: 'inline-block' }}></span>
-            <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Your Pain</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ width: '12px', height: '0px', borderTop: '2px dashed var(--accent)', display: 'inline-block' }}></span>
-            <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Expected Curve</span>
-          </div>
-        </div>
       </div>
     );
   };
