@@ -129,6 +129,52 @@ function App() {
   const [toastNotification, setToastNotification] = useState<string | null>(null);
   const [showAppointmentSummaryModal, setShowAppointmentSummaryModal] = useState<boolean>(false);
 
+  // Recovery Plan Single Carousel State & Swipe Logic
+  const [carouselIndex, setCarouselIndex] = useState<number>(0);
+  const touchStartXRef = useRef<number | null>(null);
+  const touchDeltaXRef = useRef<number>(0);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartXRef.current = e.touches[0].clientX;
+    touchDeltaXRef.current = 0;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchStartXRef.current !== null) {
+      touchDeltaXRef.current = e.touches[0].clientX - touchStartXRef.current;
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (touchStartXRef.current !== null) {
+      if (touchDeltaXRef.current < -40) {
+        // Swiped left -> next card
+        setCarouselIndex(prev => (prev + 1) % 4);
+      } else if (touchDeltaXRef.current > 40) {
+        // Swiped right -> prev card
+        setCarouselIndex(prev => (prev === 0 ? 3 : prev - 1));
+      }
+    }
+    touchStartXRef.current = null;
+    touchDeltaXRef.current = 0;
+  };
+
+  const nextCarouselCard = () => {
+    setCarouselIndex(prev => (prev + 1) % 4);
+  };
+
+  const prevCarouselCard = () => {
+    setCarouselIndex(prev => (prev === 0 ? 3 : prev - 1));
+  };
+
+  const handleCarouselKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowLeft') {
+      prevCarouselCard();
+    } else if (e.key === 'ArrowRight') {
+      nextCarouselCard();
+    }
+  };
+
   const triggerToast = (msg: string) => {
     setToastNotification(msg);
     setTimeout(() => {
@@ -728,7 +774,7 @@ function App() {
     const currentStatus = activeReport?.status || (checkInComplete ? 'Green' : 'Pending');
 
     return (
-      <div key="card-shalom-ai" className="plan-card-pro">
+      <div key="slide-shalom-ai" className="carousel-slide">
         {/* Top Header */}
         <div className="plan-card-top-row">
           <div className="plan-card-badge-left">
@@ -831,7 +877,7 @@ function App() {
     };
 
     return (
-      <div key="card-physical-activity" className="plan-card-pro">
+      <div key="slide-physical-activity" className="carousel-slide">
         {/* Top Header */}
         <div className="plan-card-top-row">
           <div className="plan-card-badge-left">
@@ -949,7 +995,7 @@ function App() {
     };
 
     return (
-      <div key="card-daily-water" className="plan-card-pro">
+      <div key="slide-daily-water" className="carousel-slide">
         {/* Top Header */}
         <div className="plan-card-top-row">
           <div className="plan-card-badge-left">
@@ -1052,7 +1098,7 @@ function App() {
   // ==========================================
   const renderIncisionSafetyCard = () => {
     return (
-      <div key="card-wound-safety" className="plan-card-pro">
+      <div key="slide-wound-safety" className="carousel-slide">
         {/* Top Header */}
         <div className="plan-card-top-row">
           <div className="plan-card-badge-left">
@@ -1321,6 +1367,86 @@ function App() {
   };
 
   // ==========================================
+  // RECOVERY PLAN DASHBOARD CAROUSEL (ONE CARD)
+  // ==========================================
+  const renderRecoveryPlanCarousel = () => {
+    const carouselTabs = [
+      { id: 0, label: 'Shalom AI', icon: <Heart size={12} fill="currentColor" /> },
+      { id: 1, label: 'Physical Activity', icon: <Activity size={12} /> },
+      { id: 2, label: 'Daily Water Log', icon: <Droplets size={12} /> },
+      { id: 3, label: 'Incision & Wound Safety', icon: <ShieldCheck size={12} /> }
+    ];
+
+    return (
+      <div 
+        className="recovery-carousel-card"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onKeyDown={handleCarouselKeyDown}
+        tabIndex={0}
+        role="region"
+        aria-label="Recovery Plan Dashboard Carousel"
+      >
+        {/* Top Header Controls: Pagination Tabs + Navigation Arrows */}
+        <div className="carousel-header-controls">
+          <div className="carousel-dots-row">
+            {carouselTabs.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                className={`carousel-tab-btn ${carouselIndex === tab.id ? 'active' : ''}`}
+                onClick={() => setCarouselIndex(tab.id)}
+                title={tab.label}
+                aria-label={`Go to slide ${tab.id + 1}: ${tab.label}`}
+              >
+                <span className={`carousel-dot-indicator ${carouselIndex === tab.id ? 'active' : ''}`} />
+                <span className="carousel-tab-icon">{tab.icon}</span>
+                <span className="carousel-tab-title">{tab.label}</span>
+              </button>
+            ))}
+          </div>
+
+          <div className="carousel-arrows-row">
+            <button
+              type="button"
+              className="carousel-arrow-btn"
+              onClick={prevCarouselCard}
+              title="Previous card"
+              aria-label="Previous card"
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <span className="carousel-counter">{carouselIndex + 1} of 4</span>
+            <button
+              type="button"
+              className="carousel-arrow-btn"
+              onClick={nextCarouselCard}
+              title="Next card"
+              aria-label="Next card"
+            >
+              <ChevronRightIcon size={16} />
+            </button>
+          </div>
+        </div>
+
+        {/* Viewport & Track: Only Content Slides */}
+        <div className="carousel-viewport">
+          <div 
+            className="carousel-track" 
+            style={{ transform: `translateX(-${carouselIndex * 100}%)` }}
+          >
+            {renderShalomRecoverCard()}
+            {renderPhysicalActivityCard()}
+            {renderDailyWaterCard()}
+            {renderIncisionSafetyCard()}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // ==========================================
   // RENDER TAB 1: Today (Home Tab - Screen 1)
   // ==========================================
   const renderHomeTab = () => {
@@ -1359,19 +1485,14 @@ function App() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span className="section-title">Recovery Plan Dashboard</span>
             <span style={{ fontSize: '10.5px', fontWeight: 800, color: 'var(--primary)', background: 'rgba(79, 70, 229, 0.1)', padding: '2px 8px', borderRadius: '8px' }}>
-              Interactive
+              Card {carouselIndex + 1} of 4
             </span>
           </div>
           <button className="section-link" onClick={() => setActiveTab('plan')}>View full schedule &rarr;</button>
         </div>
 
-        {/* 4 Core Recovery Dashboard Cards Grid (Reference-Inspired) */}
-        <div className="recovery-plan-grid">
-          {renderShalomRecoverCard()}
-          {renderPhysicalActivityCard()}
-          {renderDailyWaterCard()}
-          {renderIncisionSafetyCard()}
-        </div>
+        {/* Single Carousel Card (Shalom AI → Physical Activity → Water Log → Incision Safety) */}
+        {renderRecoveryPlanCarousel()}
 
         {/* Talk to Shalom AI - Compact Horizontal Link Card */}
         <div className="glass-card talk-shalom-bar" style={{
@@ -1608,18 +1729,13 @@ function App() {
           </div>
         </div>
 
-        {/* Interactive Recovery Plan 4-Card Dashboard */}
+        {/* Interactive Recovery Plan Carousel Card */}
         <div style={{ marginTop: '16px', marginBottom: '8px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
             <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--text-main)' }}>Interactive Recovery Dashboard</span>
-            <span style={{ fontSize: '10.5px', color: 'var(--primary)', fontWeight: 700 }}>4 Core Milestones</span>
+            <span style={{ fontSize: '10.5px', color: 'var(--primary)', fontWeight: 700 }}>Card {carouselIndex + 1} of 4</span>
           </div>
-          <div className="recovery-plan-grid">
-            {renderShalomRecoverCard()}
-            {renderPhysicalActivityCard()}
-            {renderDailyWaterCard()}
-            {renderIncisionSafetyCard()}
-          </div>
+          {renderRecoveryPlanCarousel()}
         </div>
 
         {/* Category Filters Bar */}
