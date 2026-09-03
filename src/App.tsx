@@ -143,8 +143,9 @@ function App() {
   };
   
   // Screen sub-tab toggles
-  const [progressSubTab, setProgressSubTab] = useState<'overview' | 'checkins' | 'trends'>('overview');
+  const [progressSubTab, setProgressSubTab] = useState<'overview' | 'trends'>('overview');
   const [planCategoryFilter, setPlanCategoryFilter] = useState<'all' | 'medication' | 'activity' | 'wound' | 'checkin'>('all');
+  const [showFullHistoryPage, setShowFullHistoryPage] = useState<boolean>(false);
   
   // Sliders Form State (Screen 3)
   const [showCheckInForm, setShowCheckInForm] = useState<boolean>(false);
@@ -679,7 +680,7 @@ function App() {
     handleCheckInComplete(answers, status, report);
     setShowCheckInForm(false);
     setActiveTab('trends');
-    setProgressSubTab('checkins');
+    setProgressSubTab('overview');
   };
 
   // ==========================================
@@ -2176,71 +2177,6 @@ function App() {
       </div>
     );
 
-    // Check-in History List Component
-    const renderCheckinHistory = () => (
-      <div className="glass-card" style={{ background: 'var(--bg-glass-card)', border: '1px solid var(--border-glass)', padding: '20px', borderRadius: '24px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-          <div>
-            <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Clinical Records
-            </span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
-              <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
-                Daily Check-In History
-              </h3>
-              <ClipboardList size={18} style={{ color: 'var(--primary)' }} />
-            </div>
-          </div>
-          <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{historyLogs.length} logs recorded</span>
-        </div>
-
-        <div className="history-list" style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '320px', overflowY: 'auto', paddingRight: '4px' }}>
-          {historyLogs.slice().reverse().map((log, idx) => {
-            const originalIdx = historyLogs.length - 1 - idx;
-            const isSelected = originalIdx === selectedLogIndex;
-            return (
-              <div 
-                key={idx} 
-                className={`history-item-row ${isSelected ? 'selected' : ''}`} 
-                onClick={() => setSelectedLogIndex(originalIdx)}
-                style={{
-                  borderColor: isSelected ? 'var(--primary)' : 'var(--border-glass)',
-                  background: isSelected ? 'var(--primary-light)' : 'var(--bg-glass-card)',
-                  cursor: 'pointer',
-                  padding: '12px 16px',
-                  borderRadius: '16px',
-                  borderWidth: '1px',
-                  borderStyle: 'solid',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                <div className="history-item-left">
-                  <span className="history-item-date" style={{ fontWeight: 700, fontSize: '12.5px' }}>
-                    {log.date} &bull; <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 500 }}>{log.time}</span>
-                  </span>
-                </div>
-                <div className="history-item-right" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span style={{ 
-                    fontSize: '11.5px', fontWeight: 800, padding: '3px 8px', borderRadius: '8px',
-                    background: log.status === 'Green' ? 'rgba(33, 140, 116, 0.1)' : log.status === 'Yellow' ? 'rgba(217, 119, 6, 0.1)' : 'rgba(220, 38, 38, 0.1)',
-                    color: log.status === 'Green' ? '#218C74' : log.status === 'Yellow' ? '#D97706' : '#DC2626'
-                  }}>
-                    Pain {log.painLevel}/10
-                  </span>
-                  <Smile size={18} style={{ 
-                    color: log.status === 'Green' ? 'var(--color-green)' : log.status === 'Yellow' ? 'var(--color-yellow)' : 'var(--color-red)'
-                  }} />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-
     // ==========================================
     // DESKTOP LAYOUT (>= 1024px)
     // ==========================================
@@ -2254,11 +2190,10 @@ function App() {
             {renderShalomLetter()}
           </div>
 
-          {/* Right Column: Milestones Roadmap, Healing Trajectory & History */}
+          {/* Right Column: Milestones Roadmap & Healing Trajectory */}
           <div className="progress-right-col" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             {renderRecoveryJourney()}
             {renderSimpleTrends()}
-            {renderCheckinHistory()}
           </div>
         </div>
       );
@@ -2283,14 +2218,7 @@ function App() {
             onClick={() => setProgressSubTab('trends')}
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
           >
-            <Target size={13} /> Milestones
-          </button>
-          <button 
-            className={`tab-header-btn ${progressSubTab === 'checkins' ? 'active' : ''}`}
-            onClick={() => setProgressSubTab('checkins')}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
-          >
-            <ClipboardList size={13} /> Records
+            <Target size={13} /> Milestones &amp; Trajectory
           </button>
         </div>
 
@@ -2302,14 +2230,9 @@ function App() {
             {renderSimpleTrends()}
             {renderShalomLetter()}
           </div>
-        ) : progressSubTab === 'trends' ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            {renderRecoveryJourney()}
-            {renderSimpleTrends()}
-          </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            {renderCheckinHistory()}
+            {renderRecoveryJourney()}
             {renderSimpleTrends()}
           </div>
         )}
@@ -2463,9 +2386,263 @@ function App() {
   };
 
   // ==========================================
+  // FULL DAILY CHECK-IN HISTORY PAGE
+  // ==========================================
+  const renderFullHistoryPage = () => {
+    return (
+      <div className="detail-scroller" style={{ animation: 'fadeIn 0.28s ease-out' }}>
+        {/* Top Navigation Bar */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
+          <button 
+            type="button"
+            className="choice-pill-btn" 
+            onClick={() => setShowFullHistoryPage(false)}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 16px', fontWeight: 700, fontSize: '12px' }}
+          >
+            <ChevronLeft size={16} /> Back to Profile
+          </button>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ 
+              fontSize: '11px', fontWeight: 700, padding: '3px 10px', borderRadius: '10px',
+              background: 'rgba(0, 140, 140, 0.08)', color: 'var(--primary)'
+            }}>
+              Patient Record &bull; Aïda Garba
+            </span>
+          </div>
+        </div>
+
+        {/* Page Title & Clinical Subtitle */}
+        <div style={{ marginBottom: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
+            <div style={{
+              width: '36px', height: '36px', borderRadius: '10px',
+              background: 'rgba(0, 140, 140, 0.1)', color: 'var(--primary)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0
+            }}>
+              <ClipboardList size={20} />
+            </div>
+            <div>
+              <h2 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-main)', margin: 0, letterSpacing: '-0.3px' }}>
+                Daily Check-In History
+              </h2>
+              <span style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>
+                Comprehensive medical records of daily symptoms, pain metrics &amp; surgical team status
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Clinical Summary Bar (Key Metrics) */}
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: isDesktop ? 'repeat(4, 1fr)' : 'repeat(2, 1fr)', 
+          gap: '12px', 
+          marginBottom: '24px' 
+        }}>
+          <div className="glass-card" style={{ padding: '14px', borderRadius: '16px', border: '1px solid var(--border-glass)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+              <Calendar size={13} style={{ color: 'var(--primary)' }} />
+              <span style={{ fontSize: '10.5px', color: 'var(--text-muted)', fontWeight: 600 }}>Total Check-Ins</span>
+            </div>
+            <strong style={{ fontSize: '18px', color: 'var(--text-main)' }}>{historyLogs.length} Days</strong>
+            <span style={{ fontSize: '9.5px', color: '#218C74', fontWeight: 700, display: 'block', marginTop: '2px' }}>
+              100% Adherence Streak
+            </span>
+          </div>
+
+          <div className="glass-card" style={{ padding: '14px', borderRadius: '16px', border: '1px solid var(--border-glass)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+              <TrendingDown size={13} style={{ color: '#218C74' }} />
+              <span style={{ fontSize: '10.5px', color: 'var(--text-muted)', fontWeight: 600 }}>Latest Pain Score</span>
+            </div>
+            <strong style={{ fontSize: '18px', color: '#218C74' }}>
+              {historyLogs[historyLogs.length - 1]?.painLevel || 4}/10
+            </strong>
+            <span style={{ fontSize: '9.5px', color: 'var(--text-muted)', fontWeight: 600, display: 'block', marginTop: '2px' }}>
+              Down from 7/10 on Day 1
+            </span>
+          </div>
+
+          <div className="glass-card" style={{ padding: '14px', borderRadius: '16px', border: '1px solid var(--border-glass)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+              <Thermometer size={13} style={{ color: '#D97706' }} />
+              <span style={{ fontSize: '10.5px', color: 'var(--text-muted)', fontWeight: 600 }}>Temperature Trend</span>
+            </div>
+            <strong style={{ fontSize: '18px', color: 'var(--text-main)' }}>
+              {historyLogs[historyLogs.length - 1]?.temperature || 98.6}°F
+            </strong>
+            <span style={{ fontSize: '9.5px', color: '#218C74', fontWeight: 700, display: 'block', marginTop: '2px' }}>
+              Optimal / Afebrile
+            </span>
+          </div>
+
+          <div className="glass-card" style={{ padding: '14px', borderRadius: '16px', border: '1px solid var(--border-glass)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+              <Activity size={13} style={{ color: 'var(--primary)' }} />
+              <span style={{ fontSize: '10.5px', color: 'var(--text-muted)', fontWeight: 600 }}>Mobility Flexion</span>
+            </div>
+            <strong style={{ fontSize: '18px', color: 'var(--primary)' }}>75° Target</strong>
+            <span style={{ fontSize: '9.5px', color: 'var(--primary)', fontWeight: 700, display: 'block', marginTop: '2px' }}>
+              Next Goal: 90° Flexion
+            </span>
+          </div>
+        </div>
+
+        {/* Full Chronological Logs Stream */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '28px' }}>
+          {historyLogs.slice().reverse().map((log, idx) => {
+            const originalIdx = historyLogs.length - 1 - idx;
+            const summary = getSeniorFriendlySummary(log);
+            const isLatest = idx === 0;
+
+            return (
+              <div 
+                key={idx}
+                className="glass-card" 
+                style={{
+                  background: 'var(--bg-glass-card)',
+                  border: isLatest ? '1.5px solid rgba(0, 140, 140, 0.35)' : '1px solid var(--border-glass)',
+                  padding: '18px 20px',
+                  borderRadius: '20px',
+                  boxShadow: isLatest ? '0 8px 24px rgba(0, 140, 140, 0.08)' : '0 4px 12px rgba(15, 23, 42, 0.02)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px'
+                }}
+              >
+                {/* Header Row: Date, Day Chip & Clinical Status */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{
+                      width: '32px', height: '32px', borderRadius: '50%',
+                      background: log.status === 'Green' ? 'rgba(33, 140, 116, 0.12)' : log.status === 'Yellow' ? 'rgba(217, 119, 6, 0.12)' : 'rgba(220, 38, 38, 0.12)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center'
+                    }}>
+                      <Smile size={18} style={{ 
+                        color: log.status === 'Green' ? 'var(--color-green)' : log.status === 'Yellow' ? 'var(--color-yellow)' : 'var(--color-red)'
+                      }} />
+                    </div>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-main)' }}>
+                          Day {originalIdx + 1} Post-Op
+                        </span>
+                        {isLatest && (
+                          <span style={{
+                            fontSize: '9px', fontWeight: 800, padding: '1px 6px', borderRadius: '6px',
+                            background: 'var(--primary)', color: '#ffffff', textTransform: 'uppercase'
+                          }}>
+                            Latest
+                          </span>
+                        )}
+                      </div>
+                      <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 500 }}>
+                        {log.date} &bull; {log.time}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ 
+                      fontSize: '11.5px', fontWeight: 800, padding: '4px 10px', borderRadius: '10px',
+                      background: log.status === 'Green' ? 'rgba(33, 140, 116, 0.1)' : log.status === 'Yellow' ? 'rgba(217, 119, 6, 0.1)' : 'rgba(220, 38, 38, 0.1)',
+                      color: log.status === 'Green' ? '#218C74' : log.status === 'Yellow' ? '#D97706' : '#DC2626'
+                    }}>
+                      Pain {log.painLevel}/10 &bull; {log.status === 'Green' ? 'Stable' : log.status === 'Yellow' ? 'Warning' : 'Urgent'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Vitals Snapshot Track */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(4, 1fr)',
+                  gap: '8px',
+                  background: 'rgba(255, 255, 255, 0.6)',
+                  padding: '10px 14px',
+                  borderRadius: '12px',
+                  border: '1px solid rgba(0, 140, 140, 0.05)'
+                }}>
+                  <div>
+                    <span style={{ fontSize: '9.5px', color: 'var(--text-muted)', display: 'block' }}>Pain Level</span>
+                    <strong style={{ fontSize: '12.5px', color: 'var(--text-main)' }}>{log.painLevel}/10</strong>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '9.5px', color: 'var(--text-muted)', display: 'block' }}>Temperature</span>
+                    <strong style={{ fontSize: '12.5px', color: 'var(--text-main)' }}>{log.temperature || 98.6}°F</strong>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '9.5px', color: 'var(--text-muted)', display: 'block' }}>Swelling</span>
+                    <strong style={{ fontSize: '12.5px', color: 'var(--text-main)' }}>Level {log.swellingLevel || 3}/10</strong>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '9.5px', color: 'var(--text-muted)', display: 'block' }}>Adherence</span>
+                    <strong style={{ fontSize: '12.5px', color: '#218C74' }}>{log.medsAdherence || 100}%</strong>
+                  </div>
+                </div>
+
+                {/* Shalom AI Clinical Note */}
+                <div style={{
+                  background: 'linear-gradient(135deg, rgba(0, 140, 140, 0.04) 0%, rgba(255, 255, 255, 0.7) 100%)',
+                  border: '1px solid rgba(0, 140, 140, 0.1)',
+                  borderRadius: '12px',
+                  padding: '12px 14px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '4px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Sparkles size={13} style={{ color: 'var(--primary)' }} />
+                    <span style={{ fontSize: '10.5px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--primary-dark)', letterSpacing: '0.4px' }}>
+                      Shalom AI Clinical Guidance &bull; {summary.painText}
+                    </span>
+                  </div>
+                  <p style={{ fontSize: '12px', lineHeight: 1.5, color: 'var(--text-main)', margin: 0 }}>
+                    {summary.painAdvice}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Bottom Actions */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '16px', borderTop: '1px solid var(--border-glass)', flexWrap: 'wrap', gap: '10px' }}>
+          <button 
+            type="button"
+            className="choice-pill-btn" 
+            onClick={() => setShowFullHistoryPage(false)}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 18px', fontWeight: 700 }}
+          >
+            <ChevronLeft size={16} /> Back to Profile
+          </button>
+
+          <button 
+            type="button"
+            className="choice-pill-btn"
+            onClick={() => {
+              setShowFullHistoryPage(false);
+              setActiveTab('chat');
+            }}
+            style={{ padding: '8px 18px', background: 'var(--primary)', color: '#ffffff', fontWeight: 700 }}
+          >
+            Ask Shalom AI About My History
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  // ==========================================
   // RENDER TAB 5: Profile (Settings - Screen 10)
   // ==========================================
   const renderSettingsTab = () => {
+    if (showFullHistoryPage) {
+      return renderFullHistoryPage();
+    }
+
     const isSuccess = !!pdfUploadedName && !pdfUploading;
     const normalized = normalizePatientRecord(medicalHistory);
 
@@ -2510,6 +2687,60 @@ function App() {
             <div className="profile-menu-row">
               <span className="profile-menu-left">Surgery Date</span>
               <span className="profile-menu-value">May 6, 2025</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Daily Check-In History Card (Clickable to open Full History Page) */}
+        <div className="profile-menu-section">
+          <span className="profile-menu-title">Clinical History</span>
+          <div 
+            className="profile-menu-card history-entry-card" 
+            onClick={() => setShowFullHistoryPage(true)}
+            style={{ 
+              padding: '16px 18px', 
+              cursor: 'pointer',
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'space-between',
+              transition: 'all 0.2s ease',
+              background: 'linear-gradient(135deg, rgba(255,255,255,0.85) 0%, rgba(0, 140, 140, 0.05) 100%)',
+              border: '1px solid rgba(0, 140, 140, 0.15)'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+              <div style={{
+                width: '42px', height: '42px', borderRadius: '12px',
+                background: 'rgba(0, 140, 140, 0.1)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: 'var(--primary)',
+                flexShrink: 0
+              }}>
+                <ClipboardList size={22} />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                <span style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-main)' }}>
+                  Daily Check-In History
+                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                    {historyLogs.length} logs recorded &bull; Latest: Pain {historyLogs[historyLogs.length - 1]?.painLevel || 4}/10
+                  </span>
+                  <span style={{ 
+                    fontSize: '9.5px', fontWeight: 700, padding: '1px 6px', borderRadius: '6px', 
+                    background: 'rgba(33, 140, 116, 0.12)', color: '#218C74' 
+                  }}>
+                    Active Track
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+              <span style={{ fontSize: '11.5px', fontWeight: 700, color: 'var(--primary)' }}>
+                View Full History
+              </span>
+              <ChevronRightIcon size={16} style={{ color: 'var(--primary)' }} />
             </div>
           </div>
         </div>
