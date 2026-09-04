@@ -48,6 +48,7 @@ import {
   Key
 } from 'lucide-react';
 import { ChatInterface } from './components/ChatInterface';
+import { WebAppHeader } from './components/WebAppHeader';
 import { type CheckInAnswers, type CareTeamReport, normalizePatientRecord } from './utils/shalomAgent';
 import { extractTextFromPdf } from './utils/pdfParser';
 
@@ -185,6 +186,8 @@ function App() {
   // Calendar and date-based task states
   const [selectedDate, setSelectedDate] = useState<Date>(new Date(2026, 7, 28)); // August 28, 2026
   const [tasksByDate, setTasksByDate] = useState<Record<string, TodayTask[]>>({});
+  const tasksByDateRef = useRef(tasksByDate);
+  tasksByDateRef.current = tasksByDate;
 
   const getDateKey = (d: Date) => {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -505,13 +508,13 @@ function App() {
     if (getDateKey(selectedDate) === todayKey) {
       setTodayTasks(list);
     }
-  }, [medicalHistory, checkInComplete]);
+  }, [medicalHistory, checkInComplete, selectedDate, historyLogs.length]);
 
   // Observer for selected calendar date
   useEffect(() => {
     const key = getDateKey(selectedDate);
-    if (tasksByDate[key]) {
-      setTodayTasks(tasksByDate[key]);
+    if (tasksByDateRef.current[key]) {
+      setTodayTasks(tasksByDateRef.current[key]);
     } else {
       // Seed default baseline tasks for this date
       const base: TodayTask[] = [
@@ -544,7 +547,7 @@ function App() {
       setTasksByDate(prev => ({ ...prev, [key]: seeded }));
       setTodayTasks(seeded);
     }
-  }, [selectedDate]);
+  }, [selectedDate, historyLogs.length]);
 
   // Speech synthesizer voices
   useEffect(() => {
@@ -879,8 +882,14 @@ function App() {
         <div className="recovery-master-header">
           <div className="recovery-master-brand-box">
             <div className="recovery-master-brand-row">
-              <div className="recovery-master-icon-badge">
-                <Heart size={16} fill="#FFFFFF" color="#FFFFFF" />
+              <div className="shalom-bubble-logo" style={{ width: '28px', height: '28px' }} role="img" aria-label="Shalom AI Logo">
+                <div className="bubble-halo" style={{ top: '-3px', left: '-3px', right: '-3px', bottom: '-3px' }} />
+                <div className="bubble-sphere">
+                  <div className="bubble-sheen" style={{ top: '3px', left: '5px', width: '9px', height: '5px' }} />
+                  <div className="bubble-highlight" style={{ top: '6px', left: '8px', width: '2px', height: '2px' }} />
+                  <div className="bubble-glow-core" />
+                </div>
+                <span className="bubble-pulse-dot" style={{ width: '7px', height: '7px', bottom: '-1px', right: '-1px' }} />
               </div>
               <span className="recovery-master-title">Shalom Recover AI</span>
               <div className="recovery-master-live-badge">
@@ -1722,25 +1731,30 @@ function App() {
 
     return (
       <div className="home-tab-container" style={{ animation: 'fadeIn 0.3s ease-out' }}>
-        {/* Top Greeting Row with Avatar */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{
-              width: '40px', height: '40px', borderRadius: '50%',
-              background: 'linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%)',
-              color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontWeight: 800, fontSize: '14px', border: '2px solid #ffffff',
-              boxShadow: '0 4px 12px rgba(0, 31, 63, 0.1)'
-            }}>
-              AÏ
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span style={{ fontSize: '10.5px', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Recovery Plan</span>
-              <strong style={{ fontSize: '16px', color: 'var(--text-main)', fontWeight: '800' }}>Good morning, Aïda!</strong>
-            </div>
-          </div>
+        {/* Top Greeting Row */}
+        <div className="home-greeting-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+          <h1 style={{ 
+            fontSize: isDesktop ? '26px' : '22px', 
+            color: 'var(--text-main)', 
+            fontWeight: 800, 
+            letterSpacing: '-0.5px',
+            margin: 0,
+            lineHeight: 1.2
+          }}>
+            Good morning, Aïda!
+          </h1>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--primary)', background: 'var(--primary-light)', padding: '4px 10px', borderRadius: '12px' }}>
+            <span style={{ 
+              fontSize: '11.5px', 
+              fontWeight: 800, 
+              color: 'var(--primary)', 
+              background: 'var(--primary-light)', 
+              padding: '5px 12px', 
+              borderRadius: '12px',
+              border: '1px solid rgba(124, 58, 237, 0.15)',
+              letterSpacing: '0.2px',
+              whiteSpace: 'nowrap'
+            }}>
               Day 6 Post-Op
             </span>
           </div>
@@ -1756,13 +1770,7 @@ function App() {
         {renderUnifiedRecoveryMasterCard()}
 
         {/* The 4 Recovery Cards - Moved Up and Reorganized for Optimal UX */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: isDesktop ? 'repeat(4, 1fr)' : 'repeat(2, 1fr)',
-          gap: '14px',
-          marginTop: '14px',
-          marginBottom: '16px'
-        }}>
+        <div className="recovery-uniform-grid" style={{ marginTop: '14px', marginBottom: '16px' }}>
           {renderSubcardShalomAi()}
           {renderSubcardActivity()}
           {renderSubcardWaterLog()}
@@ -4565,7 +4573,7 @@ function App() {
             <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '0 0 10px 0', lineHeight: '1.4' }}>
               Select your preferred speaking tempo for care instructions and reminders:
             </p>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+            <div className="voice-speed-grid">
               <button
                 type="button"
                 className={`theme-chip-btn ${ttsSpeed <= 0.80 ? 'active' : ''}`}
@@ -5001,8 +5009,37 @@ function App() {
     <div className="desktop-layout">
       {/* Centered Web Viewport / App Shell */}
       <div className="web-app-viewport">
-        {/* Left Sidebar Navigation (Desktop) / Bottom Bar (Mobile) */}
-        <nav className="viewport-tab-bar">
+        {/* Top Header: Shalom Logo, Reminders Notification Icon, Profile */}
+        <WebAppHeader
+          onNavigateToHome={() => {
+            setShowCheckInForm(false);
+            setSelectedTaskId(null);
+            setHomeCardSummary(null);
+            setActiveTab('home');
+          }}
+          onNavigateToProfile={() => {
+            setShowCheckInForm(false);
+            setSelectedTaskId(null);
+            setHomeCardSummary(null);
+            setShowSurgeryDetailPage(false);
+            setShowNotificationSettingsPage(false);
+            setShowPrivacySecurityPage(false);
+            setShowFullHistoryPage(false);
+            setActiveTab('settings');
+          }}
+          onNavigateToPlan={() => {
+            setShowCheckInForm(false);
+            setSelectedTaskId(null);
+            setHomeCardSummary(null);
+            setActiveTab('plan');
+          }}
+          patientName="Aïda Garba"
+        />
+
+        {/* Workspace Body: Sidebar Navigation + Main Content */}
+        <div className="app-workspace-body">
+          {/* Left Sidebar Navigation (Desktop) / Bottom Bar (Mobile) */}
+          <nav className="viewport-tab-bar">
           {/* Desktop Sidebar Branding & Patient Profile */}
           <div className="sidebar-logo-area">
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
@@ -5120,6 +5157,7 @@ function App() {
           {renderActiveTabContent()}
         </main>
       </div>
+    </div>
 
       {showAppointmentSummaryModal && (
         <div className="glass-modal-overlay" style={{
