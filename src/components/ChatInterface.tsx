@@ -19,18 +19,19 @@ import {
   ChevronRight, 
   TrendingUp, 
   Flame,
-  Clock
+  Clock,
+  ExternalLink
 } from 'lucide-react';
 import { 
   type Message, 
   type CheckInAnswers, 
   type CareTeamReport,
+  type GroundingSource,
   classifyRisk, 
   generateCareTeamReport, 
-  evaluateSafety, 
+  evaluateSafetyAndRedFlags, 
   getGeminiResponse,
-  searchFAQDataset,
-  getSimulatedResponse
+  generatePersonalizedResponse
 } from '../utils/shalomAgent';
 
 interface ChatInterfaceProps {
@@ -44,7 +45,7 @@ interface ChatInterfaceProps {
   clearPresetScenarioTrigger: () => void;
   onResetStatus: () => void;
   medicalHistory: any | null;
-  faqDataset: any | null;
+  faqDataset?: any | null;
   isTtsEnabled: boolean;
   selectedVoiceName: string;
   voices: SpeechSynthesisVoice[];
@@ -62,7 +63,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   clearPresetScenarioTrigger,
   onResetStatus,
   medicalHistory,
-  faqDataset,
+  faqDataset: _faqDataset,
   isTtsEnabled,
   selectedVoiceName,
   voices,
@@ -170,12 +171,11 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }
   };
 
-  // Chat send message handler (strictly questions & advice)
+  // Chat send message handler (strictly questions & clinical advice)
   const handleSendMessage = async (textToSend: string) => {
     if (!textToSend.trim()) return;
 
-    const faqMatch = searchFAQDataset(textToSend, faqDataset);
-    const { isEmergency, isMedicalAdvice } = evaluateSafety(textToSend);
+    const safety = evaluateSafetyAndRedFlags(textToSend);
 
     const userMessage: Message = {
       id: `user-msg-${Date.now()}`,
@@ -190,18 +190,33 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
     setTimeout(async () => {
       let responseText = '';
+      let groundingSources: GroundingSource[] = [];
       const serializedHistory = medicalHistory ? JSON.stringify(medicalHistory, null, 2) : undefined;
 
-      if (isEmergency) {
-        responseText = "** EMERGENCY DIRECTIVE **\n\nBased on your reported symptoms (such as chest pain or severe shortness of breath), please **call 911 or go to the nearest emergency department immediately**. These signs require urgent, in-person clinical care.";
-      } else if (apiKey.trim() && !isMedicalAdvice) {
-        responseText = await getGeminiResponse([...messages, userMessage], apiKey, textToSend, serializedHistory, faqDataset);
+      if (safety.isEmergency && safety.directiveMessage) {
+        responseText = safety.directiveMessage;
+        groundingSources = [{
+          title: 'Pulmonary Embolism & VTE Emergency Warning Signs',
+          source: 'CDC',
+          url: 'https://www.cdc.gov/blood-clots/about/'
+        }];
+      } else if (apiKey.trim() && !safety.isMedicalAdvice) {
+        const geminiRes = await getGeminiResponse(
+          [...messages, userMessage],
+          apiKey,
+          textToSend,
+          serializedHistory
+        );
+        responseText = geminiRes.text;
+        groundingSources = geminiRes.sources;
       } else {
-        if (faqMatch.matched && faqMatch.response) {
-          responseText = faqMatch.response;
-        } else {
-          responseText = getSimulatedResponse(textToSend, [...messages, userMessage], medicalHistory, faqDataset);
-        }
+        const localRes = generatePersonalizedResponse(
+          textToSend,
+          [...messages, userMessage],
+          medicalHistory
+        );
+        responseText = localRes.text;
+        groundingSources = localRes.sources;
       }
 
       const botBubble: Message = {
@@ -209,8 +224,9 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         sender: 'shalom',
         text: responseText,
         timestamp: new Date(),
-        isEmergency,
-        isMedicalWarning: isMedicalAdvice
+        isEmergency: safety.isEmergency,
+        isMedicalWarning: safety.isMedicalAdvice || safety.isUrgentCallSurgeon,
+        groundingSources
       };
 
       setMessages(prev => [...prev, botBubble]);
@@ -230,18 +246,18 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       {
         id: `welcome-${Date.now()}`,
         sender: 'shalom',
-        text: "Conversation refreshed. Ask me anything about your recovery, exercises, wound care, or medications!",
+        text: "Conversation refreshed. Ask me anything about your recovery exercises, wound care, swelling, pain management, or medications!",
         timestamp: new Date()
       }
     ]);
   };
 
-  // Suggested question chips
+  // Suggested recovery question chips grounded in clinical knowledge
   const prebakedQueries = [
-    "Can I shower with my knee dressing?",
-    "Is swelling normal at Day 6 post-op?",
-    "When is it safe to start driving?",
-    "Tips to reduce nighttime knee pain"
+    "Can I shower or soak my knee at Day 6?",
+    "Is warm redness around the incision an infection?",
+    "My calf feels tight and sore—what should I do?",
+    "What exercises and walking routine are recommended today?"
   ];
 
   // Work Side: Check-in complete submission
@@ -1087,7 +1103,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             onClick={() => setActiveFilter('chat')}
           >
             <MessageSquare size={16} />
-            <span>Chat (Q&amp;A)</span>
+            <span>Chat</span>
           </button>
           <button
             type="button"
@@ -1198,6 +1214,36 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                         return <p key={idx} style={{ margin: '2px 0', fontSize: '12px' }}>{line}</p>;
                       })}
                     </div>
+
+                    {msg.groundingSources && msg.groundingSources.length > 0 && (
+                      <div className="chat-grounding-container">
+                        <details className="chat-grounding-details">
+                          <summary className="chat-grounding-summary">
+                            <span className="grounding-summary-left">
+                              <ShieldCheck size={11} className="grounding-shield-icon" />
+                              <span>Clinical references ({msg.groundingSources.length})</span>
+                            </span>
+                            <span className="grounding-summary-hint">View sources</span>
+                          </summary>
+                          <div className="chat-grounding-pills">
+                            {msg.groundingSources.map((source, sIdx) => (
+                              <a
+                                key={sIdx}
+                                href={source.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="chat-grounding-pill"
+                                title={`View official medical reference: ${source.title}`}
+                              >
+                                <span className="source-org-tag">{source.source}</span>
+                                <span className="source-title-text">{source.title}</span>
+                                <ExternalLink size={9} style={{ opacity: 0.7, flexShrink: 0 }} />
+                              </a>
+                            ))}
+                          </div>
+                        </details>
+                      </div>
+                    )}
 
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px', borderTop: '1px solid rgba(0,0,0,0.04)', paddingTop: '4px' }}>
                       {!isUser && (

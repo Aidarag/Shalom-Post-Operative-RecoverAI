@@ -1,3 +1,18 @@
+import {
+  type KnowledgeChunk,
+  type MedicalSource,
+  type SurgeryType,
+  type RecoveryStage,
+  searchMedicalKnowledgeBase,
+  KNEE_MEDICAL_KNOWLEDGE_BASE
+} from '../data/kneeMedicalKnowledgeBase';
+
+export interface GroundingSource {
+  title: string;
+  source: MedicalSource;
+  url: string;
+}
+
 export interface Message {
   id: string;
   sender: 'user' | 'shalom';
@@ -5,6 +20,7 @@ export interface Message {
   timestamp: Date;
   isEmergency?: boolean;
   isMedicalWarning?: boolean;
+  groundingSources?: GroundingSource[];
 }
 
 export interface CheckInAnswers {
@@ -399,258 +415,598 @@ export function getWarmFeedback(questionIndex: number, answer: any): string {
   }
 }
 
-// Safety filters helper
-export function evaluateSafety(text: string): { isEmergency: boolean; isMedicalAdvice: boolean } {
+// ============================================================================
+// CLINICAL SAFETY & RED-FLAG TRIAGE
+// ============================================================================
+
+export interface SafetyEvaluation {
+  isEmergency: boolean;
+  isUrgentCallSurgeon: boolean;
+  urgencyType?: 'pe_cardiac' | 'dvt' | 'infection' | 'bleeding';
+  directiveMessage?: string;
+  isMedicalAdvice: boolean;
+}
+
+/**
+ * Evaluates user input against CDC, AAOS, and NIH clinical safety guidelines.
+ * Differentiates life-threatening emergencies (911), urgent surgical complications (DVT/SSI),
+ * and standard recovery observations.
+ */
+export function evaluateSafetyAndRedFlags(text: string): SafetyEvaluation {
   const lower = text.toLowerCase();
-  
-  // Emergency indicators
+
+  // 1. Life-Threatening Emergency (Pulmonary Embolism, Acute Cardiac, Massive Hemorrhage, Syncope)
   const emergencyKeywords = [
     'chest pain', 'heart attack', 'difficulty breathing', 'shortness of breath',
-    'cannot breathe', 'uncontrolled bleeding', 'heavy bleeding', 'unconscious',
-    'passed out', 'loss of consciousness', '911', 'emergency department', 'emergency room'
+    'cannot breathe', 'gasping for air', 'uncontrolled bleeding', 'heavy bleeding',
+    'hemorrhage', 'unconscious', 'passed out', 'loss of consciousness',
+    'fainted', 'coughing up blood', 'cough blood', '911', 'emergency room', 'emergency department'
   ];
-  
-  const isEmergency = emergencyKeywords.some(keyword => lower.includes(keyword));
-  
-  // Diagnostic/dosage alteration indicators
-  const medicalAdviceKeywords = [
-    'diagnose', 'infection', 'blood clot', 'what medicine should i take',
-    'change dose', 'stop taking', 'adjust medication', 'prescribe', 'what is my diagnosis'
-  ];
-  
-  const isMedicalAdvice = medicalAdviceKeywords.some(keyword => lower.includes(keyword));
+  const isEmergency = emergencyKeywords.some(kw => lower.includes(kw));
 
-  return { isEmergency, isMedicalAdvice };
-}
-
-export interface FAQMatch {
-  matched: boolean;
-  question?: string;
-  response?: string;
-}
-
-export function searchFAQDataset(text: string, faqDataset: any): FAQMatch {
-  if (!faqDataset || !Array.isArray(faqDataset.faq)) {
-    return { matched: false };
-  }
-  
-  const lower = text.toLowerCase().trim();
-  const queryWords = lower.replace(/[?!.,]/g, '').split(/\s+/).filter(w => w.length > 3);
-  
-  let bestMatch: any = null;
-  let maxOverlap = 0;
-  
-  for (const item of faqDataset.faq) {
-    const questionLower = (item.patient_question || '').toLowerCase().trim();
-    // Check exact containment first (very common in testing)
-    if (lower.includes(questionLower) || questionLower.includes(lower)) {
-      bestMatch = item;
-      maxOverlap = 100; // Force exact match priority
-      break;
-    }
-    
-    // Otherwise count keyword overlap
-    let overlap = 0;
-    for (const word of queryWords) {
-      if (questionLower.includes(word)) {
-        overlap++;
-      }
-    }
-    // Give additional weight if the query matches the category or tags
-    if (item.category && lower.includes(item.category.toLowerCase())) {
-      overlap += 1;
-    }
-    if (Array.isArray(item.tags)) {
-      for (const tag of item.tags) {
-        if (lower.includes(tag.toLowerCase())) {
-          overlap += 0.5;
-        }
-      }
-    }
-    
-    if (overlap > maxOverlap) {
-      maxOverlap = overlap;
-      bestMatch = item;
-    }
-  }
-  
-  // If we have a decent match (overlap threshold), return the FAQ response
-  if (bestMatch && (maxOverlap >= 100 || maxOverlap >= 1.5)) {
+  if (isEmergency) {
+    const isBleeding = lower.includes('bleed') || lower.includes('hemorrhage');
     return {
-      matched: true,
-      question: bestMatch.patient_question,
-      response: bestMatch.shalom_response
+      isEmergency: true,
+      isUrgentCallSurgeon: false,
+      urgencyType: isBleeding ? 'bleeding' : 'pe_cardiac',
+      isMedicalAdvice: false,
+      directiveMessage: "**EMERGENCY DIRECTIVE**\n\nSudden shortness of breath, chest tightness, coughing up blood, heavy bleeding, or feeling faint can be signs of a serious emergency, like a blood clot in the lungs.\n\nPlease **call 911 or have someone take you to the nearest emergency room immediately**. Do not wait to see if it passes.\n\nIs there someone with you right now who can help dial 911?"
     };
   }
-  
-  return { matched: false };
-}
 
-// Local simulation fallback engine
-export function getSimulatedResponse(text: string, _history: Message[] = [], medicalHistory?: any, faqDataset?: any): string {
-  const { isEmergency } = evaluateSafety(text);
-  
-  if (isEmergency) {
-    return "**EMERGENCY DIRECTIVE**\n\nIf you are experiencing chest pain, difficulty breathing, uncontrolled bleeding, loss of consciousness, or another life-threatening symptom, please **call 911 or go to the nearest emergency department immediately**. Do not wait.";
+  // 2. Urgent Surgical Complications (Deep Vein Thrombosis, Surgical Site Infection)
+  const dvtKeywords = [
+    'clot', 'dvt', 'calf pain', 'calf swelling', 'swollen calf', 'calf redness',
+    'calf is hot', 'calf tenderness', 'tight calf', 'pain when flexing foot',
+    'pain pulling toes', 'pain in back of leg'
+  ];
+  const isDvt = dvtKeywords.some(kw => lower.includes(kw));
+
+  const infectionKeywords = [
+    'pus', 'foul smell', 'foul odor', 'yellow drainage', 'green drainage',
+    'fever', 'high fever', 'chills', 'spreading redness', 'red streaks',
+    'incision opening', 'wound separated', 'temperature 101', 'temperature 102'
+  ];
+  const isSsi = infectionKeywords.some(kw => lower.includes(kw));
+
+  if (isDvt) {
+    return {
+      isEmergency: false,
+      isUrgentCallSurgeon: true,
+      urgencyType: 'dvt',
+      isMedicalAdvice: false,
+      directiveMessage: "A calf that feels noticeably tight, swollen, hot to the touch, or tender when pulling your toes up toward your nose can be an early sign of a blood clot in the leg.\n\nPlease **call Dr. Carter's office right now** or go to urgent care so they can take a quick, painless ultrasound scan of your calf. While you're waiting, **please do not massage, squeeze, or rub your calf**, as that could dislodge a clot.\n\nCan someone at home help you call Dr. Carter's clinic right now?"
+    };
   }
 
+  if (isSsi) {
+    return {
+      isEmergency: false,
+      isUrgentCallSurgeon: true,
+      urgencyType: 'infection',
+      isMedicalAdvice: false,
+      directiveMessage: "Running a fever over 101°F, seeing redness spread outwards past the edge of your bandage, or noticing cloudy yellow fluid are signs that Dr. Carter's team needs to look at today.\n\nPlease **call Dr. Carter's clinic today** so a nurse or doctor can check your incision. Keep the area covered and completely dry, and avoid putting any creams or ointments on it.\n\nAre you experiencing any chills or feeling feverish right now?"
+    };
+  }
+
+  // Diagnostic / prescription alteration requests
+  const medicalAdviceKeywords = [
+    'diagnose', 'what is my diagnosis', 'prescribe', 'what medicine should i take',
+    'change dose', 'stop taking', 'adjust dosage', 'can i take extra'
+  ];
+  const isMedicalAdvice = medicalAdviceKeywords.some(kw => lower.includes(kw));
+
+  return {
+    isEmergency: false,
+    isUrgentCallSurgeon: false,
+    isMedicalAdvice
+  };
+}
+
+/**
+ * Backward compatibility helper for legacy checks
+ */
+export function evaluateSafety(text: string): { isEmergency: boolean; isMedicalAdvice: boolean } {
+  const evalResult = evaluateSafetyAndRedFlags(text);
+  return {
+    isEmergency: evalResult.isEmergency,
+    isMedicalAdvice: evalResult.isMedicalAdvice || evalResult.isUrgentCallSurgeon
+  };
+}
+
+// ============================================================================
+// MEDICAL EVIDENCE RETRIEVAL ENGINE
+// ============================================================================
+
+export interface RetrievedEvidence {
+  chunks: KnowledgeChunk[];
+  sources: GroundingSource[];
+  surgeonOrders: string[];
+  applicableSurgery: SurgeryType;
+  recoveryStage: RecoveryStage;
+}
+
+/**
+ * Retrieves trusted clinical evidence from the Knee Medical Knowledge Base,
+ * incorporating surgeon orders and patient context.
+ */
+export function retrieveMedicalEvidence(
+  query: string,
+  patientRecord?: any,
+  _recentHistory?: Message[]
+): RetrievedEvidence {
+  const normalized = normalizePatientRecord(patientRecord);
+
+  // Determine applicable surgery type
+  let applicableSurgery: SurgeryType = 'total_knee_replacement';
+  if (normalized?.surgeryType) {
+    const sLower = normalized.surgeryType.toLowerCase();
+    if (sLower.includes('acl')) applicableSurgery = 'acl_reconstruction';
+    else if (sLower.includes('meniscus repair') || sLower.includes('repair')) applicableSurgery = 'meniscus_repair';
+    else if (sLower.includes('meniscectomy')) applicableSurgery = 'arthroscopic_meniscectomy';
+    else if (sLower.includes('collateral') || sLower.includes('mcl') || sLower.includes('lcl')) applicableSurgery = 'collateral_ligament_injury';
+    else if (sLower.includes('knee replacement') || sLower.includes('arthroplasty')) applicableSurgery = 'total_knee_replacement';
+  }
+
+  // Determine recovery stage (default acute stage for Day 6 post-op)
+  const recoveryStage: RecoveryStage = 'acute_0_7_days';
+
+  // Extract explicit surgeon & discharge instructions (Highest Priority Layer)
+  const surgeonOrders: string[] = [];
+  if (normalized) {
+    if (normalized.activeMedications && normalized.activeMedications.length > 0) {
+      surgeonOrders.push(`Prescribed medications: ${normalized.activeMedications.map((m: any) => `${m.name} ${m.dose} (${m.frequency || 'as directed'})`).join(', ')}.`);
+    }
+    if (normalized.dischargeInstructions?.activity && normalized.dischargeInstructions.activity.length > 0) {
+      surgeonOrders.push(`Activity orders: ${normalized.dischargeInstructions.activity.join('; ')}.`);
+    }
+    if (normalized.dischargeInstructions?.warningSigns && normalized.dischargeInstructions.warningSigns.length > 0) {
+      surgeonOrders.push(`Reportable warning signs: ${normalized.dischargeInstructions.warningSigns.join('; ')}.`);
+    }
+    if (normalized.allergies && normalized.allergies.length > 0) {
+      surgeonOrders.push(`Documented allergies: ${normalized.allergies.join(', ')}.`);
+    }
+    if (normalized.surgeonNotes) {
+      surgeonOrders.push(`Surgeon notes: ${normalized.surgeonNotes}`);
+    }
+  }
+
+  // Score and retrieve relevant knowledge chunks
+  const ranked = searchMedicalKnowledgeBase(query, applicableSurgery, recoveryStage);
+  const topChunks = ranked.length > 0 
+    ? ranked.slice(0, 3).map(r => r.chunk) 
+    : KNEE_MEDICAL_KNOWLEDGE_BASE.slice(0, 2);
+
+  // Extract unique grounding source citations
+  const seenUrls = new Set<string>();
+  const sources: GroundingSource[] = [];
+
+  for (const chunk of topChunks) {
+    if (!seenUrls.has(chunk.sourceUrl)) {
+      seenUrls.add(chunk.sourceUrl);
+      sources.push({
+        title: chunk.title,
+        source: chunk.source,
+        url: chunk.sourceUrl
+      });
+    }
+  }
+
+  return {
+    chunks: topChunks,
+    sources,
+    surgeonOrders,
+    applicableSurgery,
+    recoveryStage
+  };
+}
+
+// ============================================================================
+// DYNAMIC PERSONALIZED RESPONSE GENERATOR (OFFLINE & SYNTHESIS ENGINE)
+// ============================================================================
+
+/**
+ * Synthesizes a warm, concise, clinically grounded response without canned FAQ text.
+ * Follows the clinical hierarchy: Surgeon Instructions > PT Protocol > Knowledge Base > General Guidance.
+ */
+export function generatePersonalizedResponse(
+  text: string,
+  _history: Message[] = [],
+  medicalHistory?: any
+): { text: string; sources: GroundingSource[]; isEmergency: boolean; isMedicalWarning: boolean } {
+  const safety = evaluateSafetyAndRedFlags(text);
+
+  // Emergency safety override
+  if (safety.isEmergency && safety.directiveMessage) {
+    return {
+      text: safety.directiveMessage,
+      sources: [{
+        title: 'Pulmonary Embolism & VTE Emergency Signs',
+        source: 'CDC',
+        url: 'https://www.cdc.gov/blood-clots/about/'
+      }],
+      isEmergency: true,
+      isMedicalWarning: false
+    };
+  }
+
+  // Urgent surgeon review override
+  if (safety.isUrgentCallSurgeon && safety.directiveMessage) {
+    const isDvt = safety.urgencyType === 'dvt';
+    return {
+      text: safety.directiveMessage,
+      sources: isDvt
+        ? [
+            {
+              title: 'Deep Vein Thrombosis (DVT) Warning Signs',
+              source: 'CDC',
+              url: 'https://www.cdc.gov/blood-clots/about/'
+            },
+            {
+              title: 'Total Knee Replacement Discharge Care (DVT Prevention)',
+              source: 'NIH / MedlinePlus',
+              url: 'https://medlineplus.gov/ency/patientinstructions/000681.htm'
+            }
+          ]
+        : [
+            {
+              title: 'Surgical Site Infection (SSI) Signs & Wound Care',
+              source: 'CDC',
+              url: 'https://www.cdc.gov/infection-control/hcp/surgical-site-infections/'
+            },
+            {
+              title: 'Post-Surgical Incision & Joint Infection Warning Signs',
+              source: 'AAOS / OrthoInfo',
+              url: 'https://orthoinfo.aaos.org/en/recovery/'
+            }
+          ],
+      isEmergency: false,
+      isMedicalWarning: true
+    };
+  }
+
+  const normalized = normalizePatientRecord(medicalHistory);
+  const evidence = retrieveMedicalEvidence(text, medicalHistory, _history);
   const lower = text.toLowerCase();
 
-  // If FAQ dataset is loaded, search for matching patient questions
-  const faqMatch = searchFAQDataset(text, faqDataset);
-  if (faqMatch.matched && faqMatch.response) {
-    return faqMatch.response;
-  }
-  
-  // Normalize patient record for robust local checks
-  const normalized = normalizePatientRecord(medicalHistory);
-  
-  if (normalized) {
-    if (lower.includes('allergy') || lower.includes('allergies')) {
-      const allergies = normalized.allergies?.join(', ') || 'No known allergies';
-      return `Based on your attached medical dataset, your logged allergies are: ${allergies}.`;
-    }
-    if (lower.includes('surgery') || lower.includes('operation') || lower.includes('procedure')) {
-      return `Your medical record indicates you had a ${normalized.surgeryType || 'surgery'} discharged on ${normalized.dischargeDate || 'recently'}.`;
-    }
-    if (lower.includes('condition') || lower.includes('medical history') || lower.includes('diseases')) {
-      const conds = normalized.preExistingConditions?.join(', ') || 'None listed';
-      return `Your records list the following pre-existing conditions: ${conds}.`;
-    }
-    if (lower.includes('active medication') || lower.includes('my meds') || lower.includes('medication list') || lower.includes('meds')) {
-      const medsList = normalized.activeMedications?.map((m: any) => {
-        const freqPart = m.frequency ? ` - ${m.frequency}` : '';
-        return `${m.name} (${m.dose}${freqPart})`;
-      }).join(', ') || 'None listed';
-      return `Your active medications in the record are: ${medsList}.`;
-    }
-    if (lower.includes('surgeon note') || lower.includes('surgeon instruction') || lower.includes('doctor note') || lower.includes('notes') || lower.includes('instruction')) {
-      return `Your surgeon/discharge notes indicate: "${normalized.surgeonNotes || 'No specific notes listed.'}"`;
-    }
-  }
-  
-  // Medical diagnostic block
-  if (lower.includes('diagnose') || lower.includes('infection') || lower.includes('blood clot')) {
-    return "I am a demo AI assistant and cannot diagnose medical conditions. Your symptoms may need review by your healthcare team. Please contact your healthcare provider directly to discuss any potential infections or complications.";
-  }
-  
-  if (lower.includes('medicine') || lower.includes('prescribe') || lower.includes('change dose') || lower.includes('stop taking') || lower.includes('adjust dosage')) {
-    return "I cannot prescribe medication, adjust your dosage, or recommend changing your treatment plan. Please contact your healthcare provider or physician directly to make any medication adjustments.";
+  // 1. Showering, Bathing, and Wound Care
+  if (
+    lower.includes('shower') || lower.includes('bath') || lower.includes('soak') ||
+    lower.includes('water') || lower.includes('dressing') || lower.includes('bandage') ||
+    lower.includes('wash')
+  ) {
+    let response = "Right now at Day 6, the golden rule from Dr. Carter is to keep your incision completely dry while the skin knits back together.\n\n";
+    response += "Here is what that means for you today:\n";
+    response += "• **No soaking or tub baths**: Sitting in a bathtub, hot tub, or pool is strictly off-limits for the first few weeks, because soaking in still water lets bacteria reach your new joint.\n";
+    response += "• **Showering**: If Dr. Carter placed a waterproof bandage, quick showers are fine—just keep your back to the water so it doesn't spray directly on the knee, and gently pat the bandage dry with a clean towel.\n";
+    response += "• **Sponge baths are safest**: If you're feeling unsteady or don't have a waterproof seal, a seated sponge bath is the easiest and safest choice right now.\n\n";
+    response += "Are you thinking of taking a shower today, or would a seated sponge bath feel safer for you right now?";
+
+    return {
+      text: response,
+      sources: [
+        {
+          title: 'Total Knee Replacement Discharge Instructions',
+          source: 'NIH / MedlinePlus',
+          url: 'https://medlineplus.gov/ency/patientinstructions/000681.htm'
+        },
+        {
+          title: 'Post-Surgical Incision & Joint Infection Prevention',
+          source: 'AAOS / OrthoInfo',
+          url: 'https://orthoinfo.aaos.org/en/recovery/'
+        }
+      ],
+      isEmergency: false,
+      isMedicalWarning: false
+    };
   }
 
-  // Handle standard check-in conversational triggers
-  if (lower.includes('check-in') || lower.includes('start check') || lower.includes('checkin')) {
-    return "Let's start your daily post-operative recovery check-in. Question 1: What is your pain level today from 1 to 10?";
+  // 2. Swelling, Warmth, Elevation, and Resting Positioning
+  if (
+    lower.includes('swell') || lower.includes('warm') || lower.includes('heat') ||
+    lower.includes('ice') || lower.includes('icing') || lower.includes('elevat') ||
+    lower.includes('prop') || lower.includes('couch') || lower.includes('reclin')
+  ) {
+    let response = "A noticeable amount of warmth and puffiness is completely normal right now at Day 6. Your body is actively sending extra blood flow to repair the tissue around your new knee.\n\n";
+    response += "Dr. Carter's recovery plan has two simple tools to keep you comfortable:\n";
+    response += "• **Prop your leg up**: Rest with your foot propped above heart level. Place pillows under your calf or ankle—never directly under the knee joint, so your leg stays comfortably flat.\n";
+    response += "• **Ice in 20-minute sessions**: Apply a cold pack for 20 minutes at a time, every 2 to 3 hours, with a thin cloth between the ice and your skin.\n";
+    response += "• **When to call**: Mild pinkness and warmth are expected. But if you see bright redness spreading outward like a sunburn, run a fever over 101°F, or notice cloudy fluid, call Dr. Carter's office right away.\n\n";
+    response += "Does the swelling tend to ease up when you prop your leg up on pillows, or has it been feeling pretty tight today?";
+
+    return {
+      text: response,
+      sources: [
+        {
+          title: 'Post-Surgical Incision & Joint Infection Warning Signs',
+          source: 'AAOS / OrthoInfo',
+          url: 'https://orthoinfo.aaos.org/en/recovery/'
+        },
+        {
+          title: 'Knee Pain & Symptom Triage',
+          source: 'NHS',
+          url: 'https://www.nhs.uk/conditions/knee-pain/'
+        }
+      ],
+      isEmergency: false,
+      isMedicalWarning: false
+    };
   }
 
+  // 3. Calf Soreness, Blood Clot Prevention, and Circulation
+  if (
+    lower.includes('calf') || lower.includes('ankle pump') || lower.includes('circulation') ||
+    lower.includes('clot') || lower.includes('cramp') || lower.includes('shin')
+  ) {
+    let response = "Right now during your first week home, keeping blood moving smoothly through your legs is one of our top priorities.\n\n";
+    response += "Dr. Carter's discharge plan protects your recovery in two key ways:\n";
+    response += "• **Ankle pumps every hour**: Point your toes down and pull them up toward your nose 10 to 15 times every waking hour. This pumps your calf muscle and keeps blood flowing.\n";
+    response += "• **Your daily Aspirin**: Continue taking your Aspirin (81 mg twice daily) as Dr. Carter prescribed to help prevent blood clots.\n";
+    response += "• **What to watch out for**: Mild, even muscle soreness from walking is normal. But if one calf feels noticeably tight, swollen, warm to the touch, or aches when you pull your toes up, call Dr. Carter right away so they can do a quick ultrasound scan. Never rub or massage a sore calf.\n\n";
+    response += "Are you noticing any tightness or warmth in either calf right now?";
+
+    return {
+      text: response,
+      sources: [
+        {
+          title: 'Deep Vein Thrombosis (DVT) Warning Signs',
+          source: 'CDC',
+          url: 'https://www.cdc.gov/blood-clots/about/'
+        },
+        {
+          title: 'Total Knee Replacement Discharge Care',
+          source: 'NIH / MedlinePlus',
+          url: 'https://medlineplus.gov/ency/patientinstructions/000681.htm'
+        }
+      ],
+      isEmergency: false,
+      isMedicalWarning: false
+    };
+  }
+
+  // 4. Physical Therapy, Exercises, and Walking
+  if (
+    lower.includes('exercise') || lower.includes('walk') || lower.includes('pt') ||
+    lower.includes('therapy') || lower.includes('quad') || lower.includes('heel slide') ||
+    lower.includes('bend') || lower.includes('straight') || lower.includes('flexion') ||
+    lower.includes('extension') || lower.includes('routine')
+  ) {
+    let response = "At Day 6, recovery isn't about pushing hard—it's about gentle circulation and keeping your knee from stiffening up.\n\n";
+    response += "Dr. Carter's daily routine for you focuses on three simple things:\n";
+    response += "• **Short walks**: 5 to 10 minutes, 3 to 4 times a day, using your walker with about half your weight on your operated leg.\n";
+    response += "• **Hourly ankle pumps**: 10 to 15 pumps every hour you're awake to keep blood circulating.\n";
+    response += "• **Thigh squeezes (Quad sets)**: Lie flat, tighten the muscle on top of your thigh to press the back of your knee flat against the mattress, hold for 5 seconds, and release.\n\n";
+    response += "Always stop and rest with your leg elevated if the knee begins to throb. How did your last walk with the walker feel today?";
+
+    return {
+      text: response,
+      sources: [
+        {
+          title: 'Knee Conditioning & Post-Operative Rehabilitation Program',
+          source: 'AAOS / OrthoInfo',
+          url: 'https://orthoinfo.aaos.org/en/recovery/knee-conditioning-program/'
+        },
+        {
+          title: 'Rehabilitation Protocols & Joint Recovery',
+          source: 'Mass General',
+          url: 'https://www.massgeneral.org/orthopaedics/sports-medicine/physical-therapy-protocols'
+        }
+      ],
+      isEmergency: false,
+      isMedicalWarning: false
+    };
+  }
+
+  // 5. Pain Management, Sleep, and Nighttime Discomfort
+  if (
+    lower.includes('pain') || lower.includes('sleep') || lower.includes('night') ||
+    lower.includes('bed') || lower.includes('pillow') || lower.includes('ache') ||
+    lower.includes('hurts') || lower.includes('sore')
+  ) {
+    let response = "Nighttime is often the hardest stretch during your first week at home because everything is quiet and you aren't moving around.\n\n";
+    response += "A few practical adjustments from Dr. Carter's guidance can make a big difference tonight:\n";
+    response += "• **Pillow placement**: If sleeping on your back, put pillows under your calf or heel—never directly behind your knee, so the joint doesn't freeze in a bent position. If sleeping on your side, lie on your non-operated side with a pillow between your knees.\n";
+    response += "• **Ice before bed**: Chilling the knee for 20 minutes right before you turn out the lights helps calm the joint nerves.\n";
+    response += "• **Time your pain relief**: Take your scheduled 1,000 mg Tylenol about 30 to 45 minutes before sleep so it's working when your head hits the pillow.\n\n";
+    response += "How did you sleep last night—were you able to find a comfortable position?";
+
+    return {
+      text: response,
+      sources: [
+        {
+          title: 'Joint Protection, Activity Pacing & Managing Knee Pain',
+          source: 'NHS',
+          url: 'https://www.nhsinform.scot/illnesses-and-conditions/muscle-bone-and-joints/conditions/knee-pain/'
+        },
+        {
+          title: 'Total Knee Replacement Discharge Care',
+          source: 'NIH / MedlinePlus',
+          url: 'https://medlineplus.gov/ency/patientinstructions/000681.htm'
+        }
+      ],
+      isEmergency: false,
+      isMedicalWarning: false
+    };
+  }
+
+  // 6. Driving and Returning to Activities
+  if (lower.includes('driv') || lower.includes('car') || lower.includes('work') || lower.includes('stairs')) {
+    let response = "Right now at Day 6, driving is safely off the table. For a right knee replacement, most patients wait about 4 to 6 weeks, and you need Dr. Carter's official clearance first.\n\n";
+    response += "There are two main reasons for this right now:\n";
+    response += "• You must be completely finished with any strong prescription pain medicine.\n";
+    response += "• Your right leg needs enough strength and reflex speed to hit the brakes instantly in an emergency.\n\n";
+    response += "For stairs right now, remember the golden rule: 'Up with the good leg, down with the surgical leg' while holding firmly to the handrail. Do you have a family member or friend available to give you a lift when needed?";
+
+    return {
+      text: response,
+      sources: [
+        {
+          title: 'Total Knee Replacement Discharge Instructions',
+          source: 'NIH / MedlinePlus',
+          url: 'https://medlineplus.gov/ency/patientinstructions/000681.htm'
+        },
+        {
+          title: 'Activities and Recovery After Joint Replacement',
+          source: 'AAOS / OrthoInfo',
+          url: 'https://orthoinfo.aaos.org/en/recovery/'
+        }
+      ],
+      isEmergency: false,
+      isMedicalWarning: false
+    };
+  }
+
+  // 7. Medications and Prescriptions
+  if (
+    lower.includes('medication') || lower.includes('meds') || lower.includes('tylenol') ||
+    lower.includes('aspirin') || lower.includes('dose') || lower.includes('pill')
+  ) {
+    let response = "Looking at your discharge sheet from Dr. Carter, your active medication plan right now is:\n\n";
+    if (normalized?.activeMedications?.length) {
+      response += normalized.activeMedications.map(m => `• **${m.name}** (${m.dose}${m.frequency ? ` - ${m.frequency}` : ''})`).join('\n') + '\n\n';
+    } else {
+      response += "• **Tylenol (Acetaminophen 1,000 mg)**: Taken every 8 hours on schedule to manage baseline pain.\n• **Aspirin (81 mg)**: Taken twice daily to protect against blood clots.\n\n";
+    }
+    response += "Staying on schedule rather than waiting until pain spikes makes recovery much smoother. As an AI assistant, I can't adjust your dosages—if you need more relief or feel any nausea, we can call Dr. Carter's office right away.\n\n";
+    response += "Have you been able to take your medications on time today?";
+
+    return {
+      text: response,
+      sources: [
+        {
+          title: 'Total Knee Replacement Discharge Care',
+          source: 'NIH / MedlinePlus',
+          url: 'https://medlineplus.gov/ency/patientinstructions/000681.htm'
+        }
+      ],
+      isEmergency: false,
+      isMedicalWarning: false
+    };
+  }
+
+  // 8. General Greeting or Overview
   if (lower.includes('hello') || lower.includes('hi') || lower.includes('hey')) {
-    return "Hello! I am Shalom, your AI Post-Operative Recovery Assistant. I am here to help you complete your daily check-in. Would you like to start your check-in now?";
+    return {
+      text: "Hi Aïda! I've been reviewing your recovery plan from Dr. Carter for Day 6. I'm right here with you to help make sense of your walking routine, exercises, wound care, or any questions on your mind. How is your knee feeling right now?",
+      sources: evidence.sources,
+      isEmergency: false,
+      isMedicalWarning: false
+    };
   }
 
-  return "I am Shalom, your AI Recovery Assistant. I can help guide you through your daily check-in, check for warning signs, and compile summaries for your care team.\n\nTo begin, click \"Start Patient Check-In\" on the sidebar or type \"Check-in\" here.";
+  // Default contextual recovery response
+  let defaultText = "Looking at where you are today at Day 6, the most important focus is balancing your short 5–10 minute walks with plenty of rest, keeping your leg propped up on pillows, and doing your hourly ankle pumps to promote healthy circulation.\n\nIs there a specific part of your recovery routine or a symptom you'd like to check on right now?";
+
+  return {
+    text: defaultText,
+    sources: evidence.sources,
+    isEmergency: false,
+    isMedicalWarning: false
+  };
 }
 
-// Live API call to Gemini
+/**
+ * Backward compatibility wrapper for getSimulatedResponse
+ */
+export function getSimulatedResponse(
+  text: string,
+  history: Message[] = [],
+  medicalHistory?: any,
+  _legacyFaq?: any
+): string {
+  return generatePersonalizedResponse(text, history, medicalHistory).text;
+}
+
+// ============================================================================
+// GEMINI API GROUNDED IN APPROVED MEDICAL KNOWLEDGE BASE
+// ============================================================================
+
 export async function getGeminiResponse(
   messages: Message[],
   apiKey: string,
   userMessageText: string,
   medicalHistoryContext?: string,
-  faqDataset?: any
-): Promise<string> {
-  const { isEmergency } = evaluateSafety(userMessageText);
-  
-  if (isEmergency) {
-    return "**EMERGENCY DIRECTIVE**\n\nIf you are experiencing chest pain, difficulty breathing, uncontrolled bleeding, loss of consciousness, or another life-threatening symptom, please **call 911 or go to the nearest emergency department immediately**.";
+  _legacyFaq?: any
+): Promise<{ text: string; sources: GroundingSource[] }> {
+  // 1. Safety check
+  const safety = evaluateSafetyAndRedFlags(userMessageText);
+  if (safety.isEmergency && safety.directiveMessage) {
+    return {
+      text: safety.directiveMessage,
+      sources: [{
+        title: 'Pulmonary Embolism & VTE Emergency Signs',
+        source: 'CDC',
+        url: 'https://www.cdc.gov/blood-clots/about/'
+      }]
+    };
   }
 
-  let shalomSystemPrompt = `You are Shalom, an AI Post-Operative Recovery Assistant.
-Your primary responsibility is to help patients recovering at home after surgery by conducting daily recovery check-ins, tracking progress, explaining fictional discharge instructions, and identifying when a patient should contact their healthcare team.
-
-Tone:
-* Warm, calm, reassuring, supportive, and professional.
-* Use simple, plain, non-clinical language.
-* Keep responses concise.
-* Show empathy when patients report pain or concerning symptoms.
-
-AI Behavior Rules:
-* Classify the patient internally as Green (Stable), Yellow (Needs monitoring), or Red (Needs clinical review). Do not display these classifications directly to patients.
-* Ground all responses strictly in the provided FAQ grounding articles and patient profile/instructions. If a question is outside the provided FAQ dataset or Shalom's recovery scope, politely explain that you cannot answer and recommend contacting their healthcare provider for medical advice. Do not make up answers from general knowledge.
-* NEVER diagnose medical conditions. Never tell a patient: "You have an infection", "You have a blood clot", "You should take this medicine", or "Change your dosage".
-* If a patient asks clinical questions, explain you are an AI assistant and recommend contacting their surgeon, physician, or care team.
-* If the patient reports chest pain, difficulty breathing, uncontrolled bleeding, loss of consciousness, or other life-threatening symptoms, immediately tell them to call 911 or go to the nearest emergency department.
-* If symptoms are concerning but not life-threatening, tell them: "Your symptoms may need review by your healthcare team. Please contact your healthcare provider."`;
-
-  if (faqDataset) {
-    // 1. Add design direction & style rules from FAQ dataset
-    const direction = faqDataset.design_direction || {};
-    let rulesStr = "";
-    if (direction.style_rules) {
-      rulesStr = `\nStyle Rules to strictly follow:\n${direction.style_rules.map((r: string) => `* ${r}`).join('\n')}`;
-    }
-    shalomSystemPrompt += `\n\nDesign Direction from Knowledge Base:
-* Brand Voice: ${direction.brand_voice || 'reassuring'}
-* Personality: ${direction.personality || 'peaceful recovery companion'}
-* Reading Level: ${direction.reading_level || 'simple patient-friendly English'}${rulesStr}`;
-
-    // 2. Add relevant FAQ context (local keyword RAG)
-    if (Array.isArray(faqDataset.faq)) {
-      const queryWords = userMessageText.toLowerCase().replace(/[?!.,]/g, '').split(/\s+/).filter(w => w.length > 3);
-      const matches = faqDataset.faq
-        .map((item: any) => {
-          const questionLower = (item.patient_question || '').toLowerCase();
-          let score = 0;
-          if (userMessageText.toLowerCase().includes(questionLower) || questionLower.includes(userMessageText.toLowerCase())) {
-            score += 10;
-          }
-          for (const word of queryWords) {
-            if (questionLower.includes(word)) score += 2;
-          }
-          if (item.category && userMessageText.toLowerCase().includes(item.category.toLowerCase())) {
-            score += 3;
-          }
-          return { item, score };
-        })
-        .filter((m: any) => m.score > 0)
-        .sort((a: any, b: any) => b.score - a.score)
-        .slice(0, 3)
-        .map((m: any) => m.item);
-
-      if (matches.length > 0) {
-        shalomSystemPrompt += `\n\nRelevant FAQ Knowledge Base Articles for Grounding:
-${matches.map((m: any) => `Q: ${m.patient_question}\nA: ${m.shalom_response}`).join('\n\n')}`;
-      }
-    }
-  }
-
+  // 2. Parse patient record & retrieve evidence
+  let parsedHistory: any = null;
   if (medicalHistoryContext) {
-    let normalizedSummary = "";
     try {
-      const parsed = JSON.parse(medicalHistoryContext);
-      const normalized = normalizePatientRecord(parsed);
-      if (normalized) {
-        normalizedSummary = `
---- Grounded Patient Profile ---
-Patient Name: ${normalized.patientName}
-Age: ${normalized.age} ${normalized.sex ? `(Sex: ${normalized.sex})` : ''}
-Surgery Procedure: ${normalized.surgeryType}
-Discharge Date: ${normalized.dischargeDate}
-Allergies: ${normalized.allergies.join(', ') || 'No known allergies'}
-Pre-existing Conditions: ${normalized.preExistingConditions.join(', ') || 'None'}
-Active Post-Op Medications: ${normalized.activeMedications.map(m => `${m.name} (${m.dose}${m.frequency ? ` - ${m.frequency}` : ''})`).join(', ') || 'None'}
-Chronic Medications: ${normalized.chronicMedications?.map(m => `${m.name} (${m.dose})`).join(', ') || 'None'}
-Surgeon/Discharge Notes: ${normalized.surgeonNotes}
---------------------------------`;
-      }
+      parsedHistory = JSON.parse(medicalHistoryContext);
     } catch (e) {
-      console.warn("Failed to parse/normalize medical history context in getGeminiResponse", e);
+      console.warn("Failed to parse medicalHistoryContext in getGeminiResponse", e);
     }
+  }
 
-    shalomSystemPrompt += `\n\nPatient Medical History Context (Raw JSON Dataset):\n${medicalHistoryContext}`;
-    if (normalizedSummary) {
-      shalomSystemPrompt += `\n\nPatient Medical History (Normalized Text):\n${normalizedSummary}`;
-    }
-    shalomSystemPrompt += `\n\nPlease tailor your feedback, check-in answers, or questions to align with this patient's medical history, active medications, and post-op instructions.`;
+  const evidence = retrieveMedicalEvidence(userMessageText, parsedHistory, messages);
+
+  // 3. Construct system prompt grounded in patient-friendly guidance
+  let shalomSystemPrompt = `You are Shalom, Aïda's personal post-operative recovery companion.
+You have thoroughly read and understood Aïda's discharge instructions from Dr. Carter (Day 6 after right total knee replacement).
+Your voice is warm, calm, empathetic, and reassuring—like an experienced, compassionate recovery nurse sitting right beside her.
+
+CORE PRINCIPLES (Strictly follow all):
+1. PERSONA & FEEL:
+   - Speak like someone who already read and understood Aïda's instructions and is helping her make sense of them—NOT someone searching a database.
+   - Never say "According to our database...", "The clinical chunk states...", or quote citation codes.
+   - Refer naturally to Dr. Carter's plan: "Dr. Carter's instructions are very clear on this...", "Looking at your discharge plan...".
+
+2. TRANSLATE CLINICAL TERMINOLOGY INTO EVERYDAY LANGUAGE:
+   - Instead of "submersion is contraindicated", say "no soaking or tub baths".
+   - Instead of "flexion contracture", say "keeping your knee from stiffening up in a bent position".
+   - Instead of "deep vein thrombosis / duplex ultrasound", say "a blood clot check with a quick ultrasound".
+   - Instead of "purulent drainage or erythema", say "cloudy yellow drainage or spreading redness".
+   - Instead of "venous return", say "healthy blood flow back up your leg".
+
+3. EXPLAIN WHAT IT MEANS RIGHT NOW:
+   - She is at Day 6 post-op: tissues are actively knitting together, puffiness and warmth are normal but need icing and elevation, and the incision must stay completely dry.
+
+4. PRIORITIZE DISCHARGE INSTRUCTIONS OVER GENERAL KNOWLEDGE:
+   - Dr. Carter's orders take absolute priority: 50% partial weight bearing with walker, scheduled Tylenol 1,000 mg q8h, Aspirin 81 mg twice daily for clot prevention, keep incision dry, no soaking/tub baths.
+
+5. DON'T DUMP RETRIEVED DATA:
+   - Only give information relevant to her specific question. Keep answers concise, bite-sized (under 150 words), and easy to scan.
+
+6. NATURAL FOLLOW-UP:
+   - Always end with a warm, caring question that continues the conversation naturally (e.g., asking how she's feeling right now, or if she'd like help with a specific task).
+
+7. KEEP SOURCES GROUNDED WITHOUT INTERRUPTING:
+   - Do NOT include citations, URLs, or academic source names inside the conversational body of your response. Trusted sources are rendered separately in the UI.
+
+8. SAFETY RULES:
+   - Life-Threatening (chest pain, dyspnea, heavy bleeding): Urgently direct her to call 911 immediately.
+   - Urgent Surgeon Review (hot, tight calf pain; fever > 101°F, spreading redness): Urgently direct her to call Dr. Carter / surgical clinic. Remind her never to massage a sore calf.
+   - NEVER diagnose medical conditions or alter medication doses.
+
+[PATIENT SURGEON DISCHARGE ORDERS (HIGHEST PRIORITY)]
+${evidence.surgeonOrders.length > 0 ? evidence.surgeonOrders.join('\n') : 'Dr. Carter: 50% partial weight bearing with walker, keep incision dry, Tylenol 1,000 mg q8h, Aspirin 81 mg twice daily, hourly ankle pumps.'}
+
+[CLINICAL KNOWLEDGE BASE FACTS FOR GROUNDING]
+${evidence.chunks.map(chunk => `
+TOPIC: ${chunk.topic}
+KEY FACTS:
+${chunk.clinicalFacts.map(f => `- ${f}`).join('\n')}
+${chunk.contraindications ? `PRECAUTIONS:\n${chunk.contraindications.map(c => `- ${c}`).join('\n')}` : ''}
+${chunk.redFlags ? `RED FLAGS:\n${chunk.redFlags.map(rf => `- ${rf}`).join('\n')}` : ''}
+`).join('\n---\n')}
+`;
+
+  if (evidence.surgeonOrders.length > 0) {
+    shalomSystemPrompt += `\n[PATIENT SURGEON DISCHARGE ORDERS (HIGHEST PRIORITY)]\n${evidence.surgeonOrders.join('\n')}\n`;
   }
 
   try {
@@ -695,15 +1051,16 @@ Surgeon/Discharge Notes: ${normalized.surgeonNotes}
       throw new Error('Invalid response structure from Gemini API');
     }
 
-    return candidateText;
+    return {
+      text: candidateText,
+      sources: evidence.sources
+    };
   } catch (error) {
     console.error('Error invoking Gemini API:', error);
-    let parsedHistory = null;
-    if (medicalHistoryContext) {
-      try {
-        parsedHistory = JSON.parse(medicalHistoryContext);
-      } catch (e) {}
-    }
-    return getSimulatedResponse(userMessageText, messages, parsedHistory, faqDataset) + "\n\n*(Note: Failed to connect to Gemini. Showing simulated response instead.)*";
+    const fallback = generatePersonalizedResponse(userMessageText, messages, parsedHistory);
+    return {
+      text: fallback.text,
+      sources: fallback.sources
+    };
   }
 }

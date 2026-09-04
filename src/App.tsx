@@ -116,7 +116,6 @@ function App() {
 
   // Grounding datasets
   const [medicalHistory, setMedicalHistory] = useState<any | null>(null);
-  const [faqDataset, setFaqDataset] = useState<any | null>(null);
 
   // Unified State for Redesign
   const [todayTasks, setTodayTasks] = useState<TodayTask[]>([]);
@@ -137,6 +136,44 @@ function App() {
   const [showIncisionCheckModal, setShowIncisionCheckModal] = useState<boolean>(false);
   const [toastNotification, setToastNotification] = useState<string | null>(null);
   const [showAppointmentSummaryModal, setShowAppointmentSummaryModal] = useState<boolean>(false);
+  const [homeCardSummary, setHomeCardSummary] = useState<'all' | 'activity' | 'water' | 'wound' | 'recovery' | 'appointment' | null>(null);
+  const [walkSessions, setWalkSessions] = useState<{
+    id: string;
+    title: string;
+    timeHour: string;
+    duration: string;
+    completed: boolean;
+    location: string;
+    instructions: string;
+  }[]>([
+    {
+      id: 'walk-1',
+      title: 'Morning Circulation Walk',
+      timeHour: '10:00 AM',
+      duration: '5–10 min',
+      completed: true,
+      location: 'Hallway / Living Area',
+      instructions: 'Completed after breakfast with walker. Good steady rhythm.'
+    },
+    {
+      id: 'walk-2',
+      title: 'Mid-Day Mobility Walk',
+      timeHour: '02:30 PM',
+      duration: '5–10 min',
+      completed: false,
+      location: 'Main floor / Kitchen circuit',
+      instructions: 'Practice standing tall. Keep walker or cane close to you.'
+    },
+    {
+      id: 'walk-3',
+      title: 'Evening Gentle Walk',
+      timeHour: '06:30 PM',
+      duration: '5–10 min',
+      completed: false,
+      location: 'Living area stroll',
+      instructions: 'Gentle walk before dinner. Follow with 15–20 min ice and leg elevation.'
+    }
+  ]);
 
   const triggerToast = (msg: string) => {
     setToastNotification(msg);
@@ -351,18 +388,6 @@ function App() {
 
   // Load default datasets
   useEffect(() => {
-    const loadDefaultFaq = async () => {
-      try {
-        const response = await fetch('/Dataset_main_patient.json');
-        if (response.ok) {
-          const data = await response.json();
-          setFaqDataset(data);
-        }
-      } catch (e) {
-        console.error("Failed to load default FAQ dataset", e);
-      }
-    };
-    
     const loadDefaultPatient = async () => {
       try {
         const response = await fetch('/patient_record.json');
@@ -375,7 +400,6 @@ function App() {
       }
     };
 
-    loadDefaultFaq();
     loadDefaultPatient();
   }, []);
 
@@ -847,6 +871,9 @@ function App() {
         className="recovery-master-card"
         role="region"
         aria-label="Recovery Plan Master Overview"
+        onClick={() => setHomeCardSummary('all')}
+        style={{ cursor: 'pointer' }}
+        title="Click to view daily recovery summary"
       >
         {/* Master Header: Brand + Speech Greeting + Signature 3D Glowing Orb */}
         <div className="recovery-master-header">
@@ -862,7 +889,10 @@ function App() {
               </div>
               <button
                 type="button"
-                onClick={() => toggleHeroSpeech("Good morning, Aïda. Your swelling is mild and your recovery is progressing beautifully. Let’s keep your healing on track today.")}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleHeroSpeech("Good morning, Aïda. Your swelling is mild and your recovery is progressing beautifully. Let’s keep your healing on track today.");
+                }}
                 style={{
                   background: 'rgba(255, 255, 255, 0.06)',
                   border: '1px solid rgba(255, 255, 255, 0.12)',
@@ -910,7 +940,12 @@ function App() {
   const renderSubcardShalomAi = () => {
     const currentStatus = activeReport?.status || (checkInComplete ? 'Green' : 'Pending');
     return (
-      <div className="recovery-subcard" onClick={() => setActiveTab('trends')} style={{ cursor: 'pointer' }} title="Click to view recovery trends">
+      <div 
+        className="recovery-subcard" 
+        onClick={() => setHomeCardSummary('recovery')} 
+        style={{ cursor: 'pointer', transition: 'all 0.22s ease' }} 
+        title="Click to view Shalom AI recovery status & vitals summary"
+      >
         <div className="recovery-subcard-top">
           <div className="recovery-subcard-badge">
             <div className="recovery-subcard-icon" style={{ background: 'linear-gradient(135deg, #6D28D9 0%, #8B5CF6 100%)', color: '#FFFFFF' }}>
@@ -940,12 +975,15 @@ function App() {
   };
 
   const renderSubcardActivity = () => {
-    const ptTasks = todayTasks.filter(t => t.type === 'activity');
-    const ptDone = ptTasks.filter(t => t.completed).length;
-    const ptTotal = ptTasks.length || 3;
-    const nextActivity = ptTasks.find(t => !t.completed) || ptTasks[0];
+    const completedWalks = walkSessions.filter(w => w.completed).length;
+    const totalWalks = walkSessions.length;
     return (
-      <div className="recovery-subcard" onClick={() => nextActivity && setSelectedTaskId(nextActivity.id)} style={{ cursor: 'pointer' }} title="Click to view activity details">
+      <div 
+        className="recovery-subcard" 
+        onClick={() => setHomeCardSummary('activity')} 
+        style={{ cursor: 'pointer', transition: 'all 0.22s ease' }} 
+        title="Click to view Time to Move routine & summary"
+      >
         <div className="recovery-subcard-top">
           <div className="recovery-subcard-badge">
             <div className="recovery-subcard-icon" style={{ background: 'linear-gradient(135deg, #7C3AED 0%, #A855F7 100%)', color: '#FFFFFF' }}>
@@ -954,26 +992,26 @@ function App() {
             <span className="recovery-subcard-track">ACTIVITY</span>
           </div>
           <span className="recovery-subcard-pill" style={{ background: 'rgba(124, 58, 237, 0.08)', color: '#6D28D9', border: '1px solid rgba(124, 58, 237, 0.2)' }}>
-            {ptDone} of {ptTotal} Done
+            {completedWalks} of {totalWalks} Done
           </span>
         </div>
         <div className="recovery-subcard-body">
           <h4 className="recovery-subcard-headline">Time to Move</h4>
-          <p className="recovery-subcard-subtitle">{nextActivity?.name || 'Walk 5–10 min'} &bull; 3x today</p>
+          <p className="recovery-subcard-subtitle">Walk 5–10 minutes three times daily &bull; 3x today</p>
         </div>
         <div>
           <div className="recovery-subcard-meter-bg">
             <div 
               className="recovery-subcard-meter-fill" 
               style={{ 
-                width: `${Math.min(100, Math.round((ptDone / ptTotal) * 100))}%`, 
+                width: `${Math.min(100, Math.round((completedWalks / totalWalks) * 100))}%`, 
                 background: 'linear-gradient(90deg, #7C3AED, #C084FC)' 
               }} 
             />
           </div>
           <div className="recovery-subcard-footer">
             <span>Prescribed Routine</span>
-            <span>Next: {nextActivity?.timeHour || '10:00 AM'}</span>
+            <span>Next: 10:00 AM</span>
           </div>
         </div>
       </div>
@@ -982,13 +1020,12 @@ function App() {
 
   const renderSubcardWaterLog = () => {
     return (
-      <div className="recovery-subcard" onClick={() => {
-        setHydrationGlasses(prev => {
-          const next = Math.min(12, prev + 1);
-          triggerToast(`Logged a glass of water (${next} of 8 glasses)`);
-          return next;
-        });
-      }} style={{ cursor: 'pointer' }} title="Click to log a glass of water">
+      <div 
+        className="recovery-subcard" 
+        onClick={() => setHomeCardSummary('water')} 
+        style={{ cursor: 'pointer', transition: 'all 0.22s ease' }} 
+        title="Click to view Water Log & Hydration summary"
+      >
         <div className="recovery-subcard-top">
           <div className="recovery-subcard-badge">
             <div className="recovery-subcard-icon" style={{ background: 'linear-gradient(135deg, #8B5CF6 0%, #C084FC 100%)', color: '#FFFFFF' }}>
@@ -1025,7 +1062,12 @@ function App() {
 
   const renderSubcardWoundSafety = () => {
     return (
-      <div className="recovery-subcard" onClick={() => setShowIncisionCheckModal(true)} style={{ cursor: 'pointer' }} title="Click to review incision checklist">
+      <div 
+        className="recovery-subcard" 
+        onClick={() => setHomeCardSummary('wound')} 
+        style={{ cursor: 'pointer', transition: 'all 0.22s ease' }} 
+        title="Click to view Wound Safety & Incision summary"
+      >
         <div className="recovery-subcard-top">
           <div className="recovery-subcard-badge">
             <div className="recovery-subcard-icon" style={{ background: 'linear-gradient(135deg, #7C3AED 0%, #9333EA 100%)', color: '#FFFFFF' }}>
@@ -1059,9 +1101,625 @@ function App() {
   };
 
   // ==========================================
+  // HOME CARD SUMMARY PAGE (DAILY ROUTINE & SAFETY BREAKDOWN)
+  // ==========================================
+  const renderHomeCardSummaryPage = () => {
+    const completedWalks = walkSessions.filter(w => w.completed).length;
+    const totalWalks = walkSessions.length;
+    const glassesRemaining = Math.max(0, 8 - hydrationGlasses);
+
+    const toggleWalkSession = (walkId: string) => {
+      setWalkSessions(prev => prev.map(w => {
+        if (w.id === walkId) {
+          const nextState = !w.completed;
+          triggerToast(nextState ? `Marked ${w.title} completed! Great job.` : `Reset ${w.title} status.`);
+          return { ...w, completed: nextState };
+        }
+        return w;
+      }));
+    };
+
+    return (
+      <div className="summary-page-scroller">
+        {/* Top Navigation Bar */}
+        <div className="summary-top-nav">
+          <button
+            type="button"
+            className="summary-back-btn"
+            onClick={() => setHomeCardSummary(null)}
+          >
+            <ChevronLeft size={16} />
+            <span>Back to Dashboard</span>
+          </button>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--primary)', background: 'var(--primary-light)', padding: '4px 10px', borderRadius: '12px' }}>
+              Day 6 Post-Op
+            </span>
+            <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', background: 'rgba(0,0,0,0.04)', padding: '4px 10px', borderRadius: '12px' }}>
+              Right Knee TKA
+            </span>
+          </div>
+        </div>
+
+        {/* Page Title & Reassurance Header */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <h2 style={{ fontSize: '22px', fontWeight: 800, color: 'var(--text-main)', margin: 0, letterSpacing: '-0.3px' }}>
+            Daily Recovery Summary
+          </h2>
+          <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0, lineHeight: '1.5' }}>
+            A simple, clear guide to today's movement, hydration, incision care, and clinic follow-up.
+          </p>
+        </div>
+
+        {/* Segmented Filter Pills */}
+        <div className="summary-segmented-bar">
+          <button
+            type="button"
+            className={`summary-tab-pill ${homeCardSummary === 'all' ? 'active' : ''}`}
+            onClick={() => setHomeCardSummary('all')}
+          >
+            <ClipboardList size={14} />
+            <span>All Summaries</span>
+          </button>
+          <button
+            type="button"
+            className={`summary-tab-pill ${homeCardSummary === 'activity' ? 'active' : ''}`}
+            onClick={() => setHomeCardSummary('activity')}
+          >
+            <Activity size={14} />
+            <span>Time to Move</span>
+          </button>
+          <button
+            type="button"
+            className={`summary-tab-pill ${homeCardSummary === 'water' ? 'active' : ''}`}
+            onClick={() => setHomeCardSummary('water')}
+          >
+            <Droplets size={14} />
+            <span>Water Log</span>
+          </button>
+          <button
+            type="button"
+            className={`summary-tab-pill ${homeCardSummary === 'wound' ? 'active' : ''}`}
+            onClick={() => setHomeCardSummary('wound')}
+          >
+            <ShieldCheck size={14} />
+            <span>Wound Safety</span>
+          </button>
+          <button
+            type="button"
+            className={`summary-tab-pill ${homeCardSummary === 'recovery' ? 'active' : ''}`}
+            onClick={() => setHomeCardSummary('recovery')}
+          >
+            <Heart size={14} />
+            <span>Vitals &amp; Status</span>
+          </button>
+          <button
+            type="button"
+            className={`summary-tab-pill ${homeCardSummary === 'appointment' ? 'active' : ''}`}
+            onClick={() => setHomeCardSummary('appointment')}
+          >
+            <Calendar size={14} />
+            <span>Next Visit</span>
+          </button>
+        </div>
+
+        {/* SECTION 1: TIME TO MOVE */}
+        {(homeCardSummary === 'all' || homeCardSummary === 'activity') && (
+          <div className="summary-card" style={{ borderLeft: '4px solid #7C3AED' }}>
+            <div className="summary-section-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'linear-gradient(135deg, #7C3AED 0%, #A855F7 100%)', color: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Activity size={18} />
+                </div>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <h3 style={{ fontSize: '17px', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
+                      Time to Move
+                    </h3>
+                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#7C3AED', background: 'rgba(124, 58, 237, 0.08)', padding: '2px 8px', borderRadius: '6px' }}>
+                      Prescribed Routine
+                    </span>
+                  </div>
+                  <p style={{ fontSize: '12.5px', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>
+                    Walk 5–10 minutes three times daily &bull; 3x today &bull; Next: 10:00 AM
+                  </p>
+                </div>
+              </div>
+
+              <div style={{ textAlign: 'right' }}>
+                <span style={{ fontSize: '12.5px', fontWeight: 800, color: '#7C3AED' }}>
+                  {completedWalks} of {totalWalks} Completed
+                </span>
+                <div style={{ width: '130px', height: '6px', background: 'rgba(0,0,0,0.06)', borderRadius: '6px', overflow: 'hidden', marginTop: '4px' }}>
+                  <div style={{ width: `${Math.round((completedWalks / totalWalks) * 100)}%`, height: '100%', background: 'linear-gradient(90deg, #7C3AED, #C084FC)', borderRadius: '6px', transition: 'width 0.4s ease' }} />
+                </div>
+              </div>
+            </div>
+
+            {/* 3 Walk Sessions */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '14px' }}>
+              {walkSessions.map((walk) => (
+                <div key={walk.id} className={`summary-session-row ${walk.completed ? 'completed' : ''}`}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <button
+                      type="button"
+                      onClick={() => toggleWalkSession(walk.id)}
+                      style={{
+                        width: '28px', height: '28px', borderRadius: '50%',
+                        border: walk.completed ? 'none' : '2px solid #CBD5E1',
+                        background: walk.completed ? 'linear-gradient(135deg, #7C3AED 0%, #A855F7 100%)' : '#FFFFFF',
+                        color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        cursor: 'pointer', flexShrink: 0
+                      }}
+                      title={walk.completed ? "Click to mark as incomplete" : "Click to mark as completed"}
+                    >
+                      {walk.completed ? <Check size={16} strokeWidth={3} /> : null}
+                    </button>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <strong style={{ fontSize: '13.5px', color: 'var(--text-main)' }}>{walk.title}</strong>
+                        <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748B', background: '#F1F5F9', padding: '1px 6px', borderRadius: '4px' }}>
+                          {walk.timeHour}
+                        </span>
+                        <span style={{ fontSize: '11px', color: '#7C3AED', fontWeight: 600 }}>
+                          ({walk.duration})
+                        </span>
+                      </div>
+                      <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '3px 0 0 0' }}>
+                        {walk.instructions}
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => toggleWalkSession(walk.id)}
+                    style={{
+                      fontSize: '11.5px',
+                      fontWeight: 700,
+                      padding: '6px 12px',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      border: walk.completed ? '1px solid rgba(124, 58, 237, 0.2)' : 'none',
+                      background: walk.completed ? 'rgba(124, 58, 237, 0.08)' : 'linear-gradient(135deg, #7C3AED 0%, #A855F7 100%)',
+                      color: walk.completed ? '#7C3AED' : '#FFFFFF',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    {walk.completed ? 'Completed ✓' : 'Mark Done'}
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {/* Why 3 Daily Walks Are Crucial */}
+            <div className="summary-tip-box">
+              <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: '#FFFFFF', color: '#7C3AED', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 2px 6px rgba(124, 58, 237, 0.1)' }}>
+                <Info size={16} />
+              </div>
+              <div style={{ fontSize: '12px', color: 'var(--text-dark)', lineHeight: '1.55' }}>
+                <strong style={{ color: '#581C87', display: 'block', marginBottom: '2px' }}>Why 5–10 Minutes 3 Times Daily?</strong>
+                Taking three short walks throughout the day is much safer and more effective than one long walk. Each step acts as a calf muscle pump, returning blood to your heart to prevent blood clots (DVT) and preventing your new knee joint from stiffening up.
+              </div>
+            </div>
+
+            {/* Safety Checklist */}
+            <div style={{ marginTop: '14px', paddingTop: '12px', borderTop: '1px solid rgba(226, 232, 240, 0.8)' }}>
+              <span style={{ fontSize: '11.5px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px', display: 'block', marginBottom: '8px' }}>
+                Walking Safety Rules
+              </span>
+              <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(2, 1fr)' : '1fr', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: 'var(--text-dark)' }}>
+                  <CheckCircle2 size={14} color="#7C3AED" />
+                  <span>Use walker or cane for steady support</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: 'var(--text-dark)' }}>
+                  <CheckCircle2 size={14} color="#7C3AED" />
+                  <span>Wear non-slip, supportive flat shoes</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: 'var(--text-dark)' }}>
+                  <CheckCircle2 size={14} color="#7C3AED" />
+                  <span>Stand tall and look forward, not down</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: 'var(--text-dark)' }}>
+                  <CheckCircle2 size={14} color="#7C3AED" />
+                  <span>Ice knee for 15–20 min after your walk</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* SECTION 2: WATER LOG (HYDRATION) */}
+        {(homeCardSummary === 'all' || homeCardSummary === 'water') && (
+          <div className="summary-card" style={{ borderLeft: '4px solid #8B5CF6' }}>
+            <div className="summary-section-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'linear-gradient(135deg, #8B5CF6 0%, #C084FC 100%)', color: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Droplets size={18} />
+                </div>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <h3 style={{ fontSize: '17px', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
+                      WATER LOG: Stay Hydrated
+                    </h3>
+                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#6D28D9', background: 'rgba(124, 58, 237, 0.08)', padding: '2px 8px', borderRadius: '6px' }}>
+                      {hydrationGlasses} of 8 Glasses
+                    </span>
+                  </div>
+                  <p style={{ fontSize: '12.5px', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>
+                    {glassesRemaining > 0 ? `${glassesRemaining} glasses to daily goal` : 'Daily hydration goal achieved!'} &bull; Tissue Recovery &bull; Next: 2:00 PM
+                  </p>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (hydrationGlasses > 0) {
+                      setHydrationGlasses(prev => prev - 1);
+                      triggerToast("Adjusted water log (-1 glass)");
+                    }
+                  }}
+                  style={{
+                    width: '32px', height: '32px', borderRadius: '8px',
+                    border: '1.5px solid rgba(124, 58, 237, 0.2)',
+                    background: '#FFFFFF', color: '#7C3AED',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    cursor: 'pointer', fontWeight: 800, fontSize: '16px'
+                  }}
+                  title="Remove 1 glass"
+                >
+                  -
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setHydrationGlasses(prev => {
+                      const next = Math.min(12, prev + 1);
+                      triggerToast(`Logged a glass of water (${next} of 8 glasses)`);
+                      return next;
+                    });
+                  }}
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '6px',
+                    padding: '6px 14px', borderRadius: '10px',
+                    background: 'linear-gradient(135deg, #7C3AED 0%, #A855F7 100%)',
+                    color: '#FFFFFF', fontWeight: 700, fontSize: '12px',
+                    border: 'none', cursor: 'pointer', boxShadow: '0 2px 8px rgba(124, 58, 237, 0.2)'
+                  }}
+                >
+                  <Plus size={14} strokeWidth={3} />
+                  <span>Log 1 Glass</span>
+                </button>
+              </div>
+            </div>
+
+            {/* 8 Visual Glass Indicators */}
+            <div style={{ marginTop: '14px', padding: '16px', borderRadius: '16px', background: 'rgba(248, 250, 252, 0.8)', border: '1px solid rgba(226, 232, 240, 0.8)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-dark)' }}>
+                  Today's Hydration Progress: <strong>{Math.round((hydrationGlasses / 8) * 100)}%</strong>
+                </span>
+                <span style={{ fontSize: '11px', color: '#7C3AED', fontWeight: 700 }}>
+                  Target: 64 oz / 2 Liters Daily
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }}>
+                {[1, 2, 3, 4, 5, 6, 7, 8].map((glassNum) => {
+                  const isFilled = glassNum <= hydrationGlasses;
+                  return (
+                    <div
+                      key={glassNum}
+                      className={`summary-glass-cup ${isFilled ? 'filled' : ''}`}
+                      onClick={() => {
+                        setHydrationGlasses(glassNum);
+                        triggerToast(`Hydration set to ${glassNum} of 8 glasses`);
+                      }}
+                      title={`Glass #${glassNum}: ${isFilled ? 'Drank ✓' : 'Tap to log'}`}
+                    >
+                      <div className="summary-glass-water-level" style={{ height: isFilled ? '75%' : '0%' }} />
+                      <span style={{
+                        position: 'relative', zIndex: 2, fontSize: '10px', fontWeight: 800,
+                        color: isFilled ? '#FFFFFF' : 'var(--text-muted)', marginBottom: '4px'
+                      }}>
+                        {isFilled ? '✓' : `#${glassNum}`}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Why Hydration Matters for Knee Healing */}
+            <div className="summary-tip-box">
+              <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: '#FFFFFF', color: '#8B5CF6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 2px 6px rgba(124, 58, 237, 0.1)' }}>
+                <Droplets size={16} />
+              </div>
+              <div style={{ fontSize: '12px', color: 'var(--text-dark)', lineHeight: '1.55' }}>
+                <strong style={{ color: '#581C87', display: 'block', marginBottom: '2px' }}>Why Hydration Equals Tissue Recovery</strong>
+                Water flushes post-surgery medications and anesthesia out of your body, keeps the synovial fluid around your knee implant smooth and lubricated, promotes rapid surgical incision healing, and prevents constipation caused by pain medication.
+              </div>
+            </div>
+
+            {/* Hydration Timing Guide */}
+            <div style={{ marginTop: '14px', display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(3, 1fr)' : '1fr', gap: '10px' }}>
+              <div style={{ padding: '10px 12px', borderRadius: '12px', background: '#FFFFFF', border: '1px solid rgba(226, 232, 240, 0.8)' }}>
+                <span style={{ fontSize: '11px', fontWeight: 800, color: '#7C3AED' }}>🌅 Morning (8 AM – 12 PM)</span>
+                <p style={{ fontSize: '11.5px', color: 'var(--text-muted)', margin: '4px 0 0 0' }}>3 glasses with breakfast, morning pills, and first walk.</p>
+              </div>
+              <div style={{ padding: '10px 12px', borderRadius: '12px', background: '#FFFFFF', border: '1px solid rgba(226, 232, 240, 0.8)' }}>
+                <span style={{ fontSize: '11px', fontWeight: 800, color: '#7C3AED' }}>☀️ Afternoon (12 PM – 5 PM)</span>
+                <p style={{ fontSize: '11.5px', color: 'var(--text-muted)', margin: '4px 0 0 0' }}>3 glasses with lunch, afternoon walk, and PT exercises.</p>
+              </div>
+              <div style={{ padding: '10px 12px', borderRadius: '12px', background: '#FFFFFF', border: '1px solid rgba(226, 232, 240, 0.8)' }}>
+                <span style={{ fontSize: '11px', fontWeight: 800, color: '#7C3AED' }}>🌙 Evening (5 PM – 8 PM)</span>
+                <p style={{ fontSize: '11.5px', color: 'var(--text-muted)', margin: '4px 0 0 0' }}>2 glasses with dinner; taper after 8 PM for uninterrupted sleep.</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* SECTION 3: WOUND SAFETY (INCISION CARE) */}
+        {(homeCardSummary === 'all' || homeCardSummary === 'wound') && (
+          <div className="summary-card" style={{ borderLeft: '4px solid #7C3AED' }}>
+            <div className="summary-section-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'linear-gradient(135deg, #7C3AED 0%, #9333EA 100%)', color: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <ShieldCheck size={18} />
+                </div>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <h3 style={{ fontSize: '17px', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
+                      WOUND SAFETY: Incision Secure
+                    </h3>
+                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#6D28D9', background: 'rgba(124, 58, 237, 0.08)', padding: '2px 8px', borderRadius: '6px' }}>
+                      All Clear
+                    </span>
+                  </div>
+                  <p style={{ fontSize: '12.5px', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>
+                    Dressing Clean &amp; Dry &bull; No Swelling &bull; Infection Defense Verified Today &bull; Next: 12:00 PM
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowIncisionCheckModal(true)}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '6px',
+                  padding: '6px 14px', borderRadius: '10px',
+                  background: 'rgba(124, 58, 237, 0.08)',
+                  color: '#7C3AED', fontWeight: 700, fontSize: '12px',
+                  border: '1px solid rgba(124, 58, 237, 0.2)', cursor: 'pointer'
+                }}
+              >
+                <span>Re-Inspect Wound</span>
+                <span>&rarr;</span>
+              </button>
+            </div>
+
+            {/* 5-Point Daily Inspection Checklist */}
+            <div style={{ marginTop: '14px' }}>
+              <span style={{ fontSize: '11.5px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px', display: 'block', marginBottom: '8px' }}>
+                Daily Incision Inspection Checklist (Day 6)
+              </span>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <div className="summary-checklist-item">
+                  <CheckCircle2 size={16} color="#7C3AED" style={{ marginTop: '2px', flexShrink: 0 }} />
+                  <div>
+                    <strong style={{ fontSize: '13px', color: 'var(--text-dark)' }}>Dressing is Dry &amp; Secure</strong>
+                    <p style={{ fontSize: '11.5px', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>Bandage edges adhere smoothly; no fluid leaking through.</p>
+                  </div>
+                </div>
+
+                <div className="summary-checklist-item">
+                  <CheckCircle2 size={16} color="#7C3AED" style={{ marginTop: '2px', flexShrink: 0 }} />
+                  <div>
+                    <strong style={{ fontSize: '13px', color: 'var(--text-dark)' }}>No Spreading Redness</strong>
+                    <p style={{ fontSize: '11.5px', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>Normal faint pink seam; no angry red blotches spreading outward.</p>
+                  </div>
+                </div>
+
+                <div className="summary-checklist-item">
+                  <CheckCircle2 size={16} color="#7C3AED" style={{ marginTop: '2px', flexShrink: 0 }} />
+                  <div>
+                    <strong style={{ fontSize: '13px', color: 'var(--text-dark)' }}>Normal Healing Warmth</strong>
+                    <p style={{ fontSize: '11.5px', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>Knee feels gently warm from active blood circulation, not burning hot.</p>
+                  </div>
+                </div>
+
+                <div className="summary-checklist-item">
+                  <CheckCircle2 size={16} color="#7C3AED" style={{ marginTop: '2px', flexShrink: 0 }} />
+                  <div>
+                    <strong style={{ fontSize: '13px', color: 'var(--text-dark)' }}>No Yellow or Foul Drainage</strong>
+                    <p style={{ fontSize: '11.5px', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>No cloudy, yellowish-green drainage or unpleasant odor detected.</p>
+                  </div>
+                </div>
+
+                <div className="summary-checklist-item">
+                  <CheckCircle2 size={16} color="#7C3AED" style={{ marginTop: '2px', flexShrink: 0 }} />
+                  <div>
+                    <strong style={{ fontSize: '13px', color: 'var(--text-dark)' }}>Surgical Tape (Steri-Strips) Intact</strong>
+                    <p style={{ fontSize: '11.5px', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>Tape strips remain undisturbed; they will loosen and fall off naturally.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Crucial Home Care Rules */}
+            <div style={{ marginTop: '14px', padding: '14px', borderRadius: '14px', background: 'rgba(248, 250, 252, 0.9)', border: '1px solid rgba(226, 232, 240, 0.9)' }}>
+              <span style={{ fontSize: '11.5px', fontWeight: 800, color: '#581C87', textTransform: 'uppercase', letterSpacing: '0.4px', display: 'block', marginBottom: '8px' }}>
+                Simple Incision Rules for Home
+              </span>
+              <ul style={{ margin: 0, paddingLeft: '18px', fontSize: '12px', color: 'var(--text-dark)', lineHeight: '1.6' }}>
+                <li><strong>Keep dressing dry:</strong> Use a plastic wrap or waterproof shower sleeve during quick showers.</li>
+                <li><strong>Never soak in water:</strong> No bathtubs, hot tubs, or swimming pools until Dr. Carter signs off.</li>
+                <li><strong>Hands off scabs:</strong> Do not peel or scratch peeling tape or scabs.</li>
+                <li><strong>Pat dry:</strong> If damp, pat gently with a clean towel; never rub vigorously.</li>
+              </ul>
+            </div>
+
+            {/* Red Flag Warning Box with Direct Clinic Call */}
+            <div className="summary-call-card">
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', maxWidth: '440px' }}>
+                <AlertTriangle size={20} color="#DC2626" style={{ marginTop: '2px', flexShrink: 0 }} />
+                <div>
+                  <strong style={{ fontSize: '13px', color: '#991B1B' }}>When to Call Dr. Carter Immediately</strong>
+                  <p style={{ fontSize: '11.5px', color: '#7F1D1D', margin: '2px 0 0 0', lineHeight: '1.45' }}>
+                    Call right away if temperature exceeds 101.0°F, redness spreads rapidly, drainage soaks through the dressing, or you develop sudden calf pain.
+                  </p>
+                </div>
+              </div>
+
+              <a
+                href="tel:5550192834"
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '6px',
+                  padding: '8px 16px', borderRadius: '10px',
+                  background: '#DC2626', color: '#FFFFFF',
+                  fontWeight: 700, fontSize: '12px', textDecoration: 'none',
+                  boxShadow: '0 2px 8px rgba(220, 38, 38, 0.25)', whiteSpace: 'nowrap'
+                }}
+              >
+                <PhoneCall size={14} />
+                <span>Call Clinic: (555) 019-2834</span>
+              </a>
+            </div>
+          </div>
+        )}
+
+        {/* SECTION 4: CLINICAL VITALS & STATUS (SHALOM AI) */}
+        {(homeCardSummary === 'all' || homeCardSummary === 'recovery') && (
+          <div className="summary-card" style={{ borderLeft: '4px solid #6D28D9' }}>
+            <div className="summary-section-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'linear-gradient(135deg, #6D28D9 0%, #8B5CF6 100%)', color: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Heart size={18} fill="#FFFFFF" color="#FFFFFF" />
+                </div>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <h3 style={{ fontSize: '17px', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
+                      SHALOM AI: Recovery On Track
+                    </h3>
+                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#6D28D9', background: 'rgba(124, 58, 237, 0.08)', padding: '2px 8px', borderRadius: '6px' }}>
+                      Clinical Protocol: Normal &amp; Stable
+                    </span>
+                  </div>
+                  <p style={{ fontSize: '12.5px', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>
+                    Pain: 4/10 &bull; Mild Swelling &bull; Continuous AI Monitoring Active
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Vitals Cards Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(4, 1fr)' : 'repeat(2, 1fr)', gap: '10px', marginTop: '14px' }}>
+              <div style={{ padding: '12px', borderRadius: '14px', background: '#F8FAFC', border: '1px solid rgba(226, 232, 240, 0.8)' }}>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>Pain Level</span>
+                <div style={{ fontSize: '18px', fontWeight: 800, color: '#7C3AED', marginTop: '2px' }}>4 / 10</div>
+                <span style={{ fontSize: '10.5px', color: 'var(--color-green)', fontWeight: 600 }}>Controlled with Tylenol</span>
+              </div>
+
+              <div style={{ padding: '12px', borderRadius: '14px', background: '#F8FAFC', border: '1px solid rgba(226, 232, 240, 0.8)' }}>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>Body Temp</span>
+                <div style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-main)', marginTop: '2px' }}>98.6°F</div>
+                <span style={{ fontSize: '10.5px', color: 'var(--color-green)', fontWeight: 600 }}>Normal &bull; No Fever</span>
+              </div>
+
+              <div style={{ padding: '12px', borderRadius: '14px', background: '#F8FAFC', border: '1px solid rgba(226, 232, 240, 0.8)' }}>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>Knee Flexion</span>
+                <div style={{ fontSize: '18px', fontWeight: 800, color: '#7C3AED', marginTop: '2px' }}>88°</div>
+                <span style={{ fontSize: '10.5px', color: 'var(--color-green)', fontWeight: 600 }}>Target: 90° (On Pace)</span>
+              </div>
+
+              <div style={{ padding: '12px', borderRadius: '14px', background: '#F8FAFC', border: '1px solid rgba(226, 232, 240, 0.8)' }}>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>Blood Pressure</span>
+                <div style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-main)', marginTop: '2px' }}>122/78</div>
+                <span style={{ fontSize: '10.5px', color: 'var(--color-green)', fontWeight: 600 }}>Optimal Range</span>
+              </div>
+            </div>
+
+            {/* Shalom AI Guidance Quote */}
+            <div className="summary-tip-box" style={{ marginTop: '14px' }}>
+              <Sparkles size={16} color="#7C3AED" style={{ flexShrink: 0, marginTop: '2px' }} />
+              <div style={{ fontSize: '12px', color: 'var(--text-dark)', lineHeight: '1.55' }}>
+                <strong style={{ color: '#581C87', display: 'block', marginBottom: '2px' }}>Shalom AI Recovery Note</strong>
+                "Good morning, Aïda. Your swelling is mild and your recovery is progressing beautifully. Day 6 is a key transition where joint mobility increases. Stay dedicated to your 3 short walks and balance them with ice packs and rest."
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* SECTION 5: FOLLOW-UP APPOINTMENT SUMMARY */}
+        {(homeCardSummary === 'all' || homeCardSummary === 'appointment') && (
+          <div className="summary-card" style={{ borderLeft: '4px solid #4F46E5' }}>
+            <div className="summary-section-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)', color: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Calendar size={18} />
+                </div>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <h3 style={{ fontSize: '17px', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
+                      Follow-Up Appointment
+                    </h3>
+                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#4F46E5', background: 'rgba(79, 70, 229, 0.08)', padding: '2px 8px', borderRadius: '6px' }}>
+                      In 6 Days
+                    </span>
+                  </div>
+                  <p style={{ fontSize: '12.5px', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>
+                    Thursday, Sept 5, 2026 &bull; 10:30 AM &bull; Suite 400 &bull; Orthopedic Rehabilitation Clinic
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowAppointmentSummaryModal(true)}
+                style={{
+                  padding: '6px 14px', borderRadius: '10px',
+                  background: 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)',
+                  color: '#FFFFFF', fontWeight: 700, fontSize: '12px',
+                  border: 'none', cursor: 'pointer'
+                }}
+              >
+                Pre-Visit Instructions &rarr;
+              </button>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(3, 1fr)' : '1fr', gap: '10px', marginTop: '14px' }}>
+              <div style={{ padding: '12px', borderRadius: '12px', background: '#FFFFFF', border: '1px solid rgba(226, 232, 240, 0.8)' }}>
+                <strong style={{ fontSize: '12px', color: 'var(--text-main)' }}>👨‍⚕️ Surgeon</strong>
+                <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '3px 0 0 0' }}>Dr. James Carter, MD &bull; Orthopedics</p>
+              </div>
+              <div style={{ padding: '12px', borderRadius: '12px', background: '#FFFFFF', border: '1px solid rgba(226, 232, 240, 0.8)' }}>
+                <strong style={{ fontSize: '12px', color: 'var(--text-main)' }}>📍 Location</strong>
+                <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '3px 0 0 0' }}>Suite 400 &bull; Main Orthopedic Wing</p>
+              </div>
+              <div style={{ padding: '12px', borderRadius: '12px', background: '#FFFFFF', border: '1px solid rgba(226, 232, 240, 0.8)' }}>
+                <strong style={{ fontSize: '12px', color: 'var(--text-main)' }}>⏱️ Visit Goal</strong>
+                <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '3px 0 0 0' }}>Incision check, X-ray &amp; PT plan review</p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // ==========================================
   // RENDER TAB 1: Today (Home Tab - Screen 1)
   // ==========================================
   const renderHomeTab = () => {
+    if (homeCardSummary !== null) {
+      return renderHomeCardSummaryPage();
+    }
+
     return (
       <div className="home-tab-container" style={{ animation: 'fadeIn 0.3s ease-out' }}>
         {/* Top Greeting Row with Avatar */}
@@ -1112,18 +1770,25 @@ function App() {
         </div>
 
         {/* Follow-Up Appointment - The Last Card */}
-        <div className="glass-card" style={{
-          padding: '16px 22px',
-          borderRadius: '20px',
-          border: '1.5px solid var(--border-glass)',
-          background: 'var(--bg-glass-card)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '16px',
-          boxShadow: '0 4px 18px rgba(0, 31, 63, 0.04)'
-        }}>
+        <div 
+          className="glass-card" 
+          onClick={() => setHomeCardSummary('appointment')}
+          style={{
+            padding: '16px 22px',
+            borderRadius: '20px',
+            border: '1.5px solid var(--border-glass)',
+            background: 'var(--bg-glass-card)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '16px',
+            boxShadow: '0 4px 18px rgba(0, 31, 63, 0.04)',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease'
+          }}
+          title="Click to view Follow-Up Appointment Summary"
+        >
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
             <div style={{
               width: '40px', height: '40px', borderRadius: '12px',
@@ -1150,7 +1815,10 @@ function App() {
             type="button"
             className="meds-action-btn"
             style={{ fontSize: '12px', padding: '10px 18px', borderRadius: '12px', whiteSpace: 'nowrap', cursor: 'pointer', fontWeight: 700 }}
-            onClick={() => setShowAppointmentSummaryModal(true)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setHomeCardSummary('appointment');
+            }}
           >
             Pre-Visit Instructions &rarr;
           </button>
@@ -1579,7 +2247,6 @@ function App() {
         clearPresetScenarioTrigger={() => setPresetScenarioTrigger(null)}
         onResetStatus={handleResetCheckIn}
         medicalHistory={medicalHistory}
-        faqDataset={faqDataset}
         isTtsEnabled={isTtsEnabled}
         selectedVoiceName={selectedVoiceName}
         voices={voices}
@@ -1685,12 +2352,12 @@ function App() {
     const weeklyWins = [
       {
         id: 'streak',
-        icon: <Flame size={20} style={{ color: '#FF6B6B' }} />,
+        icon: <Flame size={20} style={{ color: 'var(--primary)' }} />,
         title: 'Daily Check-In Streak',
         metric: '6 Days',
         tag: '100% Consistent',
         desc: 'You logged every morning on time, keeping your surgical team fully updated.',
-        color: '#FF6B6B'
+        color: 'var(--primary)'
       },
       {
         id: 'meds',
@@ -1712,12 +2379,12 @@ function App() {
       },
       {
         id: 'pain',
-        icon: <TrendingDown size={20} style={{ color: '#218C74' }} />,
+        icon: <TrendingDown size={20} style={{ color: 'var(--accent)' }} />,
         title: 'Comfort Improvement',
         metric: '-3 Points Pain',
         tag: 'Healing Faster',
         desc: 'Dropped from 7/10 on Day 1 to a calm 4/10 today, beating the clinical curve.',
-        color: '#218C74'
+        color: 'var(--accent)'
       }
     ];
 
@@ -1726,17 +2393,6 @@ function App() {
       <div className="celebration-hero-card">
         <div className="celebration-hero-orb celebration-hero-orb-1" />
         <div className="celebration-hero-orb celebration-hero-orb-2" />
-
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px', zIndex: 5, position: 'relative' }}>
-          <div className="celebration-badge gold">
-            <Trophy size={14} style={{ color: '#FFD166' }} />
-            <span>Day 6 Milestone Achieved</span>
-          </div>
-          <div className="celebration-badge emerald">
-            <Sparkles size={14} style={{ color: '#00FFC2' }} />
-            <span>Ahead of Recovery Curve</span>
-          </div>
-        </div>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '20px', zIndex: 5, position: 'relative' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -1748,9 +2404,6 @@ function App() {
             </p>
 
             <div style={{ display: 'flex', gap: '14px', marginTop: '6px', flexWrap: 'wrap' }}>
-              <span style={{ fontSize: '11.5px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '5px', color: 'rgba(255,255,255,0.95)' }}>
-                <Flame size={14} style={{ color: '#FFAA00' }} /> 6-Day Streak
-              </span>
               <span style={{ fontSize: '11.5px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '5px', color: 'rgba(255,255,255,0.95)' }}>
                 <CheckCircle2 size={14} style={{ color: '#00FFC2' }} /> 18/22 Tasks Done
               </span>
@@ -2052,17 +2705,17 @@ function App() {
               <span style={{ fontSize: '10.5px', color: 'var(--text-muted)', fontWeight: 600 }}>Total Check-Ins</span>
             </div>
             <strong style={{ fontSize: '18px', color: 'var(--text-main)' }}>{historyLogs.length} Days</strong>
-            <span style={{ fontSize: '9.5px', color: '#218C74', fontWeight: 700, display: 'block', marginTop: '2px' }}>
+            <span style={{ fontSize: '9.5px', color: 'var(--primary)', fontWeight: 700, display: 'block', marginTop: '2px' }}>
               100% Adherence Streak
             </span>
           </div>
 
           <div className="glass-card" style={{ padding: '14px', borderRadius: '16px', border: '1px solid var(--border-glass)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
-              <TrendingDown size={13} style={{ color: '#218C74' }} />
+              <TrendingDown size={13} style={{ color: 'var(--primary)' }} />
               <span style={{ fontSize: '10.5px', color: 'var(--text-muted)', fontWeight: 600 }}>Latest Pain Score</span>
             </div>
-            <strong style={{ fontSize: '18px', color: '#218C74' }}>
+            <strong style={{ fontSize: '18px', color: 'var(--primary)' }}>
               {historyLogs[historyLogs.length - 1]?.painLevel || 4}/10
             </strong>
             <span style={{ fontSize: '9.5px', color: 'var(--text-muted)', fontWeight: 600, display: 'block', marginTop: '2px' }}>
@@ -2078,7 +2731,7 @@ function App() {
             <strong style={{ fontSize: '18px', color: 'var(--text-main)' }}>
               {historyLogs[historyLogs.length - 1]?.temperature || 98.6}°F
             </strong>
-            <span style={{ fontSize: '9.5px', color: '#218C74', fontWeight: 700, display: 'block', marginTop: '2px' }}>
+            <span style={{ fontSize: '9.5px', color: 'var(--primary)', fontWeight: 700, display: 'block', marginTop: '2px' }}>
               Optimal / Afebrile
             </span>
           </div>
@@ -2542,8 +3195,8 @@ function App() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{ 
               fontSize: '11px', fontWeight: 700, padding: '3px 10px', borderRadius: '10px',
-              background: remindersEnabled && notificationsEnabled ? 'rgba(33, 140, 116, 0.12)' : 'rgba(217, 119, 6, 0.12)', 
-              color: remindersEnabled && notificationsEnabled ? '#218C74' : '#D97706'
+              background: remindersEnabled && notificationsEnabled ? 'var(--primary-light)' : 'rgba(217, 119, 6, 0.12)', 
+              color: remindersEnabled && notificationsEnabled ? 'var(--primary)' : '#D97706'
             }}>
               {remindersEnabled && notificationsEnabled ? 'All Systems Active' : 'Partially Muted'}
             </span>
@@ -2721,7 +3374,7 @@ function App() {
               borderRadius: '14px', padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(33, 140, 116, 0.1)', color: '#218C74', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <Pill size={16} />
                 </div>
                 <div>
@@ -3010,7 +3663,7 @@ function App() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{ 
               fontSize: '11px', fontWeight: 700, padding: '3px 10px', borderRadius: '10px',
-              background: 'rgba(33, 140, 116, 0.12)', color: '#218C74',
+              background: 'var(--primary-light)', color: 'var(--primary)',
               display: 'inline-flex', alignItems: 'center', gap: '4px'
             }}>
               <ShieldCheck size={13} /> HIPAA &amp; HITECH Certified
@@ -3023,7 +3676,7 @@ function App() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
             <div style={{
               width: '38px', height: '38px', borderRadius: '10px',
-              background: 'rgba(33, 140, 116, 0.12)', color: '#218C74',
+              background: 'var(--primary-light)', color: 'var(--primary)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               flexShrink: 0
             }}>
@@ -3044,7 +3697,7 @@ function App() {
         <div className="glass-card" style={{
           padding: '20px',
           borderRadius: '20px',
-          border: '1px solid rgba(33, 140, 116, 0.25)',
+          border: '1px solid var(--border-glass)',
           background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.94) 0%, rgba(124, 58, 237, 0.05) 100%)',
           marginBottom: '20px'
         }}>
@@ -3071,15 +3724,15 @@ function App() {
               {/* 3 Trust Pillars */}
               <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'repeat(3, 1fr)' : '1fr', gap: '8px' }}>
                 <div style={{ padding: '8px 12px', borderRadius: '10px', background: 'rgba(255,255,255,0.8)', border: '1px solid var(--border-glass)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <CheckCircle2 size={14} style={{ color: '#218C74', flexShrink: 0 }} />
+                  <CheckCircle2 size={14} style={{ color: 'var(--primary)', flexShrink: 0 }} />
                   <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-main)' }}>BAA On File (St. Jude)</span>
                 </div>
                 <div style={{ padding: '8px 12px', borderRadius: '10px', background: 'rgba(255,255,255,0.8)', border: '1px solid var(--border-glass)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <CheckCircle2 size={14} style={{ color: '#218C74', flexShrink: 0 }} />
+                  <CheckCircle2 size={14} style={{ color: 'var(--primary)', flexShrink: 0 }} />
                   <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-main)' }}>TLS 1.3 In-Transit</span>
                 </div>
                 <div style={{ padding: '8px 12px', borderRadius: '10px', background: 'rgba(255,255,255,0.8)', border: '1px solid var(--border-glass)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <CheckCircle2 size={14} style={{ color: '#218C74', flexShrink: 0 }} />
+                  <CheckCircle2 size={14} style={{ color: 'var(--primary)', flexShrink: 0 }} />
                   <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-main)' }}>Audit Logged Access</span>
                 </div>
               </div>
@@ -3141,7 +3794,7 @@ function App() {
               borderRadius: '14px', padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(33, 140, 116, 0.1)', color: '#218C74', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <Key size={16} />
                 </div>
                 <div>
@@ -3273,7 +3926,7 @@ function App() {
               borderRadius: '14px', padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(33, 140, 116, 0.1)', color: '#218C74', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <User size={16} />
                 </div>
                 <div>
@@ -3440,7 +4093,7 @@ function App() {
           {/* Card: Export Medical Data */}
           <div className="glass-card" style={{ padding: '18px', borderRadius: '18px', border: '1px solid var(--border-glass)', background: 'var(--bg-glass-card)' }}>
             <strong style={{ fontSize: '13.5px', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
-              <Download size={16} style={{ color: '#218C74' }} />
+              <Download size={16} style={{ color: 'var(--primary)' }} />
               Patient Data Rights &amp; Export
             </strong>
             <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '0 0 12px 0' }}>
@@ -3458,7 +4111,7 @@ function App() {
               </button>
 
               {exportNotice && (
-                <div style={{ fontSize: '11px', color: '#218C74', fontWeight: 700, textAlign: 'center', background: 'rgba(33, 140, 116, 0.1)', padding: '6px', borderRadius: '8px' }}>
+                <div style={{ fontSize: '11px', color: 'var(--primary)', fontWeight: 700, textAlign: 'center', background: 'var(--primary-light)', padding: '6px', borderRadius: '8px' }}>
                   {exportNotice}
                 </div>
               )}
@@ -3575,7 +4228,7 @@ function App() {
                   </span>
                   <span style={{ 
                     fontSize: '9.5px', fontWeight: 700, padding: '1px 6px', borderRadius: '6px', 
-                    background: 'rgba(33, 140, 116, 0.12)', color: '#218C74' 
+                    background: 'var(--primary-light)', color: 'var(--primary)' 
                   }}>
                     Day 6 Post-Op
                   </span>
@@ -3605,16 +4258,16 @@ function App() {
               alignItems: 'center', 
               justifyContent: 'space-between',
               transition: 'all 0.2s ease',
-              background: 'linear-gradient(135deg, rgba(255,255,255,0.88) 0%, rgba(33, 140, 116, 0.05) 100%)',
-              border: '1px solid rgba(33, 140, 116, 0.15)'
+              background: 'linear-gradient(135deg, rgba(255,255,255,0.92) 0%, rgba(124, 58, 237, 0.04) 100%)',
+              border: '1px solid var(--border-glass)'
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
               <div style={{
                 width: '42px', height: '42px', borderRadius: '12px',
-                background: 'rgba(33, 140, 116, 0.1)',
+                background: 'var(--primary-light)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: '#218C74',
+                color: 'var(--primary)',
                 flexShrink: 0
               }}>
                 <ClipboardList size={22} />
@@ -3629,7 +4282,7 @@ function App() {
                   </span>
                   <span style={{ 
                     fontSize: '9.5px', fontWeight: 700, padding: '1px 6px', borderRadius: '6px', 
-                    background: 'rgba(33, 140, 116, 0.12)', color: '#218C74' 
+                    background: 'var(--primary-light)', color: 'var(--primary)' 
                   }}>
                     Normal Vitals
                   </span>
@@ -3638,10 +4291,10 @@ function App() {
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-              <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#218C74' }}>
+              <span style={{ fontSize: '11.5px', fontWeight: 700, color: 'var(--primary)' }}>
                 View Full History
               </span>
-              <ChevronRightIcon size={16} style={{ color: '#218C74' }} />
+              <ChevronRightIcon size={16} style={{ color: 'var(--primary)' }} />
             </div>
           </div>
         </div>
@@ -3656,8 +4309,8 @@ function App() {
             onClick={() => !pdfUploading && pdfInputRef.current?.click()}
             className="pdf-drop-box"
             style={{
-              borderColor: isDragging ? 'var(--primary)' : isSuccess ? 'var(--color-green)' : 'rgba(192, 122, 176, 0.35)',
-              background: isDragging ? 'rgba(192, 122, 176, 0.05)' : isSuccess ? 'rgba(33, 140, 116, 0.02)' : '#ffffff',
+              borderColor: isDragging ? 'var(--primary)' : isSuccess ? 'var(--primary)' : 'rgba(124, 58, 237, 0.25)',
+              background: isDragging ? 'var(--primary-light)' : isSuccess ? 'var(--primary-light)' : '#ffffff',
             }}
           >
             <input
@@ -3670,7 +4323,7 @@ function App() {
             {pdfUploading ? (
               <Loader2 size={18} style={{ color: 'var(--primary)', animation: 'spin 1s linear infinite' }} />
             ) : isSuccess ? (
-              <CheckCircle2 size={18} style={{ color: 'var(--color-green)' }} />
+              <CheckCircle2 size={18} style={{ color: 'var(--primary)' }} />
             ) : (
               <UploadCloud size={18} style={{ color: 'var(--primary)' }} />
             )}
@@ -3811,7 +4464,7 @@ function App() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <div style={{
                   width: '38px', height: '38px', borderRadius: '10px',
-                  background: notificationsEnabled ? 'rgba(79, 70, 229, 0.1)' : 'rgba(100, 116, 139, 0.1)',
+                  background: notificationsEnabled ? 'var(--primary-light)' : 'rgba(100, 116, 139, 0.1)',
                   color: notificationsEnabled ? 'var(--primary)' : 'var(--text-muted)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   flexShrink: 0
@@ -3823,8 +4476,8 @@ function App() {
                     <strong style={{ fontSize: '13.5px', color: 'var(--text-main)' }}>Push &amp; Sound Notifications</strong>
                     <span style={{ 
                       fontSize: '9.5px', fontWeight: 800, padding: '2px 7px', borderRadius: '6px',
-                      background: notificationsEnabled ? 'rgba(33, 140, 116, 0.12)' : 'rgba(100, 116, 139, 0.12)',
-                      color: notificationsEnabled ? '#218C74' : 'var(--text-muted)'
+                      background: notificationsEnabled ? 'var(--primary-light)' : 'rgba(100, 116, 139, 0.12)',
+                      color: notificationsEnabled ? 'var(--primary)' : 'var(--text-muted)'
                     }}>
                       {notificationsEnabled ? 'ENABLED' : 'MUTED'}
                     </span>
@@ -3958,7 +4611,7 @@ function App() {
         {/* Privacy & Security Card (Clickable to open Dedicated Privacy & Security Page) */}
         <div className="profile-menu-section">
           <span className="profile-menu-title" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <ShieldCheck size={13} style={{ color: '#218C74' }} />
+            <ShieldCheck size={13} style={{ color: 'var(--primary)' }} />
             Privacy &amp; Data Security
           </span>
           <div 
@@ -3971,16 +4624,16 @@ function App() {
               alignItems: 'center', 
               justifyContent: 'space-between',
               transition: 'all 0.2s ease',
-              background: 'linear-gradient(135deg, rgba(255,255,255,0.88) 0%, rgba(33, 140, 116, 0.05) 100%)',
-              border: '1px solid rgba(33, 140, 116, 0.2)'
+              background: 'linear-gradient(135deg, rgba(255,255,255,0.92) 0%, rgba(124, 58, 237, 0.04) 100%)',
+              border: '1px solid var(--border-glass)'
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
               <div style={{
                 width: '42px', height: '42px', borderRadius: '12px',
-                background: 'rgba(33, 140, 116, 0.12)',
+                background: 'var(--primary-light)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: '#218C74',
+                color: 'var(--primary)',
                 flexShrink: 0
               }}>
                 <ShieldCheck size={22} />
@@ -3992,7 +4645,7 @@ function App() {
                   </span>
                   <span style={{ 
                     fontSize: '9.5px', fontWeight: 700, padding: '1px 7px', borderRadius: '6px', 
-                    background: 'rgba(33, 140, 116, 0.12)', color: '#218C74' 
+                    background: 'var(--primary-light)', color: 'var(--primary)' 
                   }}>
                     HIPAA Shielded
                   </span>
@@ -4004,10 +4657,10 @@ function App() {
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-              <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#218C74' }}>
+              <span style={{ fontSize: '11.5px', fontWeight: 700, color: 'var(--primary)' }}>
                 Manage Security
               </span>
-              <ChevronRightIcon size={16} style={{ color: '#218C74' }} />
+              <ChevronRightIcon size={16} style={{ color: 'var(--primary)' }} />
             </div>
           </div>
         </div>
