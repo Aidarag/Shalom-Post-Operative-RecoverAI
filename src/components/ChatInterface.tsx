@@ -72,8 +72,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   currentRecoveryStatus: _currentRecoveryStatus = 'Green',
   onNavigateToProgress
 }) => {
-  // Mobile / Tab switch state: 'chat' or 'work'
-  const [mobileSide, setMobileSide] = useState<'chat' | 'work'>('chat');
+  // Filter toggle state: 'chat' (Q&A) vs 'checkin' (Daily Check-In)
+  const [activeFilter, setActiveFilter] = useState<'chat' | 'checkin'>('chat');
 
   // Chat conversation state (strictly for questions & clinical inquiries)
   const [messages, setMessages] = useState<Message[]>([
@@ -89,7 +89,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const [playingMessageId, setPlayingMessageId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Work Side State: Daily Clinical Check-In
+  // Daily Clinical Check-In State
   const [isCheckInSubmitted, setIsCheckInSubmitted] = useState<boolean>(checkInComplete);
   const [checkInStep, setCheckInStep] = useState<number>(0); // 0 to 5 for the 6 steps
   const [answers, setAnswers] = useState<CheckInAnswers>(
@@ -122,6 +122,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       const report = generateCareTeamReport(presetScenarioTrigger, status);
       onCheckInComplete(presetScenarioTrigger, status, report);
       setIsCheckInSubmitted(true);
+      setActiveFilter('checkin');
       clearPresetScenarioTrigger();
     }
   }, [presetScenarioTrigger, onCheckInComplete, clearPresetScenarioTrigger]);
@@ -252,7 +253,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     setIsCheckInSubmitted(true);
 
     // Notify user in Chat side
-    const summaryMsg = `I've analyzed your Day 6 check-in! Your Recovery Status has been updated on your Work Board.\n\n` +
+    const summaryMsg = `I've analyzed your Day 6 check-in! Your Recovery Status has been updated on your Daily Check-In page.\n\n` +
       `- **Pain Level**: ${finalAnswers.painLevel}/10\n` +
       `- **Temperature**: ${finalAnswers.temperature || 98.6}°F (${finalAnswers.hasFever ? 'Fever reported' : 'Normal'})\n` +
       `- **Medications**: ${finalAnswers.medsTaken ? 'All Taken ✓' : 'Missed Some'}\n` +
@@ -1073,48 +1074,51 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   };
 
   // ==========================================
-  // MAIN RENDER: SPLIT VIEW (CHAT SIDE & WORK SIDE)
+  // MAIN RENDER: UNIFIED NORMAL PAGE WITH FILTER
   // ==========================================
   return (
-    <div className="shalom-split-container">
-      {/* Mobile Switcher (Visible on screens < 1024px) */}
-      <div className="shalom-mobile-switcher">
-        <button
-          type="button"
-          className={`shalom-mobile-switch-btn ${mobileSide === 'chat' ? 'active' : ''}`}
-          onClick={() => setMobileSide('chat')}
-        >
-          <MessageSquare size={13} />
-          <span>Chat (Questions)</span>
-        </button>
-        <button
-          type="button"
-          className={`shalom-mobile-switch-btn ${mobileSide === 'work' ? 'active' : ''}`}
-          onClick={() => setMobileSide('work')}
-        >
-          <ClipboardList size={13} />
-          <span>Work (Check-In &amp; Status)</span>
-        </button>
+    <div className="shalom-page-container">
+      {/* Top Segmented Filter Header: Chat (Q&A) vs Daily Check-In */}
+      <div className="shalom-filter-header">
+        <div className="shalom-filter-tabs">
+          <button
+            type="button"
+            className={`shalom-filter-tab ${activeFilter === 'chat' ? 'active' : ''}`}
+            onClick={() => setActiveFilter('chat')}
+          >
+            <MessageSquare size={16} />
+            <span>Chat (Q&amp;A)</span>
+          </button>
+          <button
+            type="button"
+            className={`shalom-filter-tab ${activeFilter === 'checkin' ? 'active' : ''}`}
+            onClick={() => setActiveFilter('checkin')}
+          >
+            <ClipboardList size={16} />
+            <span>Daily Check-In</span>
+            {isCheckInSubmitted && (
+              <span className="shalom-done-chip">
+                <Check size={11} strokeWidth={3} /> Done
+              </span>
+            )}
+          </button>
+        </div>
       </div>
 
-      {/* Grid: Left Chat Side + Right Work Side */}
-      <div className="shalom-split-grid">
-        {/* ========================================================= */}
-        {/* LEFT SIDE: CHAT PANEL (FOR QUESTIONS & CLINICAL ANSWERS) */}
-        {/* ========================================================= */}
-        <div 
-          className="shalom-chat-panel"
-          style={{ display: mobileSide === 'chat' ? 'flex' : undefined }}
-        >
-          {/* Header */}
+      {/* ========================================================= */}
+      {/* VIEW 1: CHAT / Q&A VIEW */}
+      {/* ========================================================= */}
+      {activeFilter === 'chat' && (
+        <div className="shalom-chat-view">
+          {/* Chat Header Bar */}
           <div className="shalom-panel-header">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <div className="chat-header-avatar" />
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span className="chat-header-title">Ask Shalom</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span className="chat-header-title" style={{ fontSize: '15px' }}>Shalom AI Assistant</span>
                   <span style={{ 
-                    fontSize: '9px', fontWeight: 800, padding: '2px 7px', borderRadius: '6px', 
+                    fontSize: '9.5px', fontWeight: 800, padding: '2px 8px', borderRadius: '6px', 
                     background: 'var(--primary-light)', color: 'var(--primary)', textTransform: 'uppercase' 
                   }}>
                     Q&amp;A
@@ -1122,7 +1126,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 </div>
                 <span className="chat-header-status">
                   <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10B981', display: 'inline-block', boxShadow: '0 0 6px #10B981' }}></span>
-                  Questions &amp; Post-Op Guidance
+                  Questions &amp; Clinical Guidance &bull; Dr. Carter Protocol
                 </span>
               </div>
             </div>
@@ -1140,16 +1144,16 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
           {/* Messages Scroller */}
           <div className="chat-scroller-view">
             {messages.length <= 1 && (
-              <div className="chat-welcome-box" style={{ padding: '16px' }}>
-                <div className="hologram-chat-sphere" style={{ width: '46px', height: '46px', margin: '0 auto' }}></div>
-                <strong style={{ fontSize: '14px', color: 'var(--text-main)' }}>
-                  Hi Aïda, what questions do you have today?
+              <div className="chat-welcome-box" style={{ padding: '20px 24px', maxWidth: '780px', margin: '0 auto 12px auto', width: '100%' }}>
+                <div className="hologram-chat-sphere" style={{ width: '52px', height: '52px', margin: '0 auto 8px auto' }}></div>
+                <strong style={{ fontSize: '15px', color: 'var(--text-main)' }}>
+                  Hi Aïda, what questions do you have about your recovery?
                 </strong>
-                <p style={{ fontSize: '11.5px', color: 'var(--text-muted)', margin: 0, lineHeight: '1.4' }}>
-                  Ask about recovery timelines, swelling, pain relief, showering, or walking guidelines.
+                <p style={{ fontSize: '12.5px', color: 'var(--text-muted)', margin: 0, lineHeight: '1.5' }}>
+                  Ask about post-op timelines, medication schedules, icing routines, showering, or walking guidelines.
                 </p>
 
-                <div className="suggest-chips-grid" style={{ width: '100%', marginTop: '6px' }}>
+                <div className="suggest-chips-grid" style={{ width: '100%', marginTop: '10px' }}>
                   {prebakedQueries.map((q, idx) => (
                     <div 
                       key={idx} 
@@ -1276,67 +1280,67 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             </div>
           </div>
         </div>
+      )}
 
-        {/* ========================================================================= */}
-        {/* RIGHT SIDE: WORK PANEL (FOR DAILY CHECK-IN & DYNAMIC RECOVERY STATUS) */}
-        {/* ========================================================================= */}
-        <div 
-          className="shalom-work-panel"
-          style={{ display: mobileSide === 'work' ? 'flex' : undefined }}
-        >
-          {/* Header */}
-          <div className="shalom-panel-header">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div style={{
-                width: '32px', height: '32px', borderRadius: '10px',
-                background: 'var(--primary-light)', color: 'var(--primary)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center'
-              }}>
-                <ClipboardList size={16} />
-              </div>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span className="chat-header-title">Daily Clinical Check-In</span>
-                  <span style={{
-                    fontSize: '9.5px', fontWeight: 800, padding: '2px 7px', borderRadius: '6px',
-                    background: isCheckInSubmitted ? 'rgba(5, 150, 105, 0.1)' : 'var(--primary-light)',
-                    color: isCheckInSubmitted ? '#059669' : 'var(--primary)',
-                    textTransform: 'uppercase'
-                  }}>
-                    {isCheckInSubmitted ? 'Completed' : `Step ${checkInStep + 1} of 6`}
+      {/* ========================================================= */}
+      {/* VIEW 2: DAILY CHECK-IN VIEW */}
+      {/* ========================================================= */}
+      {activeFilter === 'checkin' && (
+        <div className="shalom-checkin-view">
+          <div className="shalom-checkin-card-container">
+            {/* Header */}
+            <div className="shalom-panel-header" style={{ marginBottom: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{
+                  width: '36px', height: '36px', borderRadius: '12px',
+                  background: 'var(--primary-light)', color: 'var(--primary)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }}>
+                  <ClipboardList size={18} />
+                </div>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span className="chat-header-title" style={{ fontSize: '15px' }}>Daily Clinical Check-In</span>
+                    <span style={{
+                      fontSize: '9.5px', fontWeight: 800, padding: '2px 8px', borderRadius: '6px',
+                      background: isCheckInSubmitted ? 'rgba(5, 150, 105, 0.1)' : 'var(--primary-light)',
+                      color: isCheckInSubmitted ? '#059669' : 'var(--primary)',
+                      textTransform: 'uppercase'
+                    }}>
+                      {isCheckInSubmitted ? 'Completed & Evaluated' : `Step ${checkInStep + 1} of 6`}
+                    </span>
+                  </div>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                    {isCheckInSubmitted ? 'Recovery status analyzed directly from your submitted answers' : 'Track daily vitals, pain level, wound safety & triage'}
                   </span>
                 </div>
-                <span style={{ fontSize: '10.5px', color: 'var(--text-muted)' }}>
-                  {isCheckInSubmitted ? 'Recovery status analyzed from your answers' : 'Daily vitals, pain scale & triage'}
-                </span>
               </div>
+
+              {isCheckInSubmitted && (
+                <button
+                  type="button"
+                  onClick={handleRetakeCheckIn}
+                  style={{
+                    background: 'var(--primary-light)',
+                    color: 'var(--primary)',
+                    border: '1px solid rgba(124, 58, 237, 0.2)',
+                    borderRadius: '12px',
+                    padding: '6px 14px',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  <RotateCcw size={12} /> Update Check-In
+                </button>
+              )}
             </div>
 
-            {isCheckInSubmitted && (
-              <button
-                type="button"
-                onClick={handleRetakeCheckIn}
-                style={{
-                  background: 'var(--primary-light)',
-                  color: 'var(--primary)',
-                  border: '1px solid rgba(124, 58, 237, 0.2)',
-                  borderRadius: '10px',
-                  padding: '4px 10px',
-                  fontSize: '11px',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px'
-                }}
-              >
-                <RotateCcw size={11} /> Retake
-              </button>
-            )}
-          </div>
-
-          {/* Work Body: Either the 6-step Check-In workflow OR the Dynamic Recovery Status Response */}
-          <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+            {/* Check-In Body: 6-step form OR Dynamic Recovery Status Response */}
             {!isCheckInSubmitted ? (
               renderCheckInWorkflow()
             ) : (
@@ -1344,7 +1348,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             )}
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

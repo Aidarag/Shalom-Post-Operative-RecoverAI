@@ -1580,8 +1580,8 @@ input, button, select, textarea {
   }
 }
 
-/* Split View: Chat Side & Work Side */
-.shalom-split-container {
+/* Unified Shalom AI Page: Chat & Check-In Views with Filter Switcher */
+.shalom-page-container {
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -1593,75 +1593,99 @@ input, button, select, textarea {
   animation: fadeIn 0.28s ease-out;
 }
 
-.shalom-mobile-switcher {
-  display: none;
-  margin-bottom: 12px;
+.shalom-filter-header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0 4px 14px 4px;
   flex-shrink: 0;
+  border-bottom: 1px solid var(--border-glass);
+  margin-bottom: 12px;
 }
 
-@media (max-width: 1023px) {
-  .shalom-mobile-switcher {
-    display: flex;
-    background: var(--bg-glass-card);
-    border: 1px solid var(--border-glass);
-    border-radius: 14px;
-    padding: 4px;
-    gap: 6px;
-  }
-  .shalom-mobile-switch-btn {
-    flex: 1;
-    padding: 8px 12px;
-    border-radius: 10px;
-    font-size: 12px;
-    font-weight: 700;
-    border: none;
-    background: transparent;
-    color: var(--text-muted);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    transition: var(--transition-fluid);
-  }
-  .shalom-mobile-switch-btn.active {
-    background: var(--primary);
-    color: #ffffff;
-    box-shadow: 0 2px 8px var(--primary-glow);
-  }
+.shalom-filter-tabs {
+  display: inline-flex;
+  background: rgba(124, 58, 237, 0.06);
+  border: 1px solid rgba(124, 58, 237, 0.16);
+  border-radius: 9999px;
+  padding: 4px;
+  gap: 6px;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.02);
 }
 
-.shalom-split-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-  flex: 1 1 0%;
-  min-height: 0;
-  height: 100%;
-  overflow: hidden;
+.shalom-filter-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 24px;
+  border-radius: 9999px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  letter-spacing: -0.1px;
 }
 
-@media (max-width: 1023px) {
-  .shalom-split-grid {
-    display: flex;
-    flex-direction: column;
-    overflow-y: auto;
-  }
+.shalom-filter-tab:hover {
+  color: var(--primary);
+  background: rgba(124, 58, 237, 0.07);
 }
 
-.shalom-chat-panel,
-.shalom-work-panel {
+.shalom-filter-tab.active {
+  background: linear-gradient(135deg, #7C3AED 0%, #A855F7 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.35);
+}
+
+.shalom-done-chip {
+  background: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  letter-spacing: 0.3px;
+}
+
+.shalom-filter-tab:not(.active) .shalom-done-chip {
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+}
+
+.shalom-chat-view {
   display: flex;
   flex-direction: column;
   height: 100%;
+  flex: 1 1 0%;
   min-height: 0;
-  background: #ffffff;
-  border: 1px solid var(--border-glass);
-  border-radius: 24px;
-  padding: 16px 18px;
-  box-shadow: 0 4px 20px rgba(124, 58, 237, 0.04);
   overflow: hidden;
-  position: relative;
+  background: #ffffff;
+}
+
+.shalom-checkin-view {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  flex: 1 1 0%;
+  min-height: 0;
+  overflow-y: auto;
+  background: #ffffff;
+  padding: 4px 12px 24px 12px;
+}
+
+.shalom-checkin-card-container {
+  max-width: 820px;
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .shalom-panel-header {
@@ -1676,7 +1700,7 @@ input, button, select, textarea {
 
 .work-step-pills {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   margin-bottom: 16px;
   overflow-x: auto;
   padding-bottom: 2px;
@@ -1684,7 +1708,7 @@ input, button, select, textarea {
 
 .work-step-pill {
   flex: 1;
-  height: 5px;
+  height: 6px;
   border-radius: 3px;
   background: rgba(124, 58, 237, 0.12);
   transition: all 0.25s ease;
